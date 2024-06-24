@@ -21,14 +21,14 @@ export class DBFlowStack extends Stack {
         // Create a layer for the initializer function containing psyscopg2 library, a PSQL for Python
         const psyscopg2 = new lambda.LayerVersion(this, "psyscopg2", {
             code: lambda.Code.fromAsset("./lambda/layers/psycopg2.zip"),
-            compatibleRuntimes: [lambda.Runtime.PYTHON_3_9],
+            compatibleRuntimes: [lambda.Runtime.PYTHON_3_12],
             description: "psycopg2 library for connecting to the PostgreSQL database",
         });
 
         // Create an initilizer for the RDS instance, only invoke during deployment
         const initializerLambda = new triggers.TriggerFunction(this, "aila-triggerLambda", {
             functionName: "aila-initializerFunction",
-            runtime: lambda.Runtime.PYTHON_3_9,
+            runtime: lambda.Runtime.PYTHON_3_12,
             handler: "initializer.handler",
             timeout: Duration.seconds(300),
             memorySize: 512,

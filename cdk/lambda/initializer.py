@@ -66,7 +66,7 @@ def handler(event, context):
             CREATE TABLE IF NOT EXISTS "Courses" (
             "course_id" uuid PRIMARY KEY DEFAULT (uuid_generate_v4()),
             "course_name" varchar,
-            "course_department" varchar,
+            "course_deparment" varchar,
             "course_number" integer,
             "course_access_code" integer,
             "course_student_access" bool,
@@ -98,18 +98,13 @@ def handler(event, context):
             "s3_bucket_reference" varchar,
             "filepath" varchar,
             "filename" varchar,
-            "time_uploaded" timestamp,
-            "file_context_embedding" float[]
+            "time_uploaded" timestamp
             );
 
-            CREATE TABLE IF NOT EXISTS "Module_Questions" (
-            "question_id" uuid PRIMARY KEY DEFAULT (uuid_generate_v4()),
-            "module_id" uuid,
-            "question" varchar,
-            "answer" varchar,
-            "options" varchar[],
-            "time_to_answer" integer,
-            "time_uploaded" timestamp
+            CREATE TABLE IF NOT EXISTS "Chunks" (
+            "chunk_id" uuid PRIMARY KEY DEFAULT (uuid_generate_v4()),
+            "file_id" uuid,
+            "vectors" float[]
             );
 
             CREATE TABLE IF NOT EXISTS "Student_Modules" (
@@ -119,14 +114,6 @@ def handler(event, context):
             "module_score" integer,
             "last_accessed" timestamp,
             "module_context_embedding" float[]
-            );
-
-            CREATE TABLE IF NOT EXISTS "Student_Module_Questions" (
-            "student_question_id" uuid PRIMARY KEY DEFAULT (uuid_generate_v4()),
-            "question_id" uuid,
-            "module_id" uuid,
-            "correctly_answered" bool,
-            "module_question_embedding" float[]
             );
 
             CREATE TABLE IF NOT EXISTS "Sessions" (
@@ -178,13 +165,7 @@ def handler(event, context):
 
             ALTER TABLE "Module_Files" ADD FOREIGN KEY ("module_id") REFERENCES "Course_Modules" ("module_id") ON DELETE CASCADE ON UPDATE CASCADE;
 
-            ALTER TABLE "Module_Questions" ADD FOREIGN KEY ("module_id") REFERENCES "Course_Modules" ("module_id") ON DELETE CASCADE ON UPDATE CASCADE;
-
             ALTER TABLE "Student_Modules" ADD FOREIGN KEY ("course_module_id") REFERENCES "Course_Modules" ("module_id") ON DELETE CASCADE ON UPDATE CASCADE;
-
-            ALTER TABLE "Student_Module_Questions" ADD FOREIGN KEY ("question_id") REFERENCES "Module_Questions" ("question_id") ON DELETE CASCADE ON UPDATE CASCADE;
-
-            ALTER TABLE "Student_Module_Questions" ADD FOREIGN KEY ("module_id") REFERENCES "Student_Modules" ("student_module_id") ON DELETE CASCADE ON UPDATE CASCADE;
 
             ALTER TABLE "Enrolments" ADD FOREIGN KEY ("enrolment_id") REFERENCES "LLM_Vectors" ("enrolment_id") ON DELETE CASCADE ON UPDATE CASCADE;
 
@@ -193,6 +174,8 @@ def handler(event, context):
             ALTER TABLE "Sessions" ADD FOREIGN KEY ("student_module_id") REFERENCES "Student_Modules" ("student_module_id") ON DELETE CASCADE ON UPDATE CASCADE;
 
             ALTER TABLE "Messages" ADD FOREIGN KEY ("session_id") REFERENCES "Sessions" ("session_id");
+
+            ALTER TABLE "Chunks" ADD FOREIGN KEY ("file_id") REFERENCES "Module_Files" ("file_id") ON DELETE CASCADE ON UPDATE CASCADE;
         """
 
         #

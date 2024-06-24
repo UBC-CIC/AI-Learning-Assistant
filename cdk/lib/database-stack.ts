@@ -72,7 +72,7 @@ export class DBStack extends Stack {
             autoMinorVersionUpgrade: true,
             backupRetention: Duration.days(7),
             deleteAutomatedBackups: true,
-            deletionProtection: true,/// To be chanaged
+            deletionProtection: true,/// To be changed
             databaseName: "aila",
             publiclyAccessible: false,
             cloudwatchLogsRetention: logs.RetentionDays.INFINITE,
@@ -89,25 +89,25 @@ export class DBStack extends Stack {
             );
         });
         
-        // /**
-        //  * 
-        //  * Create an RDS proxy that sit between lambda and RDS
-        //  */
-        // const rdsProxy = new rds.DatabaseProxy(this, "AILA-RDSProxy", {
-        //     proxyTarget: rds.ProxyTarget.fromInstance(this.dbInstance),
-        //     secrets: [this.secretPathUser!],
-        //     vpc: vpcStack.vpc,
-        //     securityGroups: this.dbInstance.connections.securityGroups,
-        //     // securityGroups: [ec2.SecurityGroup.fromSecurityGroupId(this, 'VpcDefaultSecurityGroup', vpcStack.vpc.vpcDefaultSecurityGroup)],
-        //     requireTLS: false,
-        // });
+        /**
+         * 
+         * Create an RDS proxy that sit between lambda and RDS
+         */
+        const rdsProxy = new rds.DatabaseProxy(this, "AILA-RDSProxy", {
+            proxyTarget: rds.ProxyTarget.fromInstance(this.dbInstance),
+            secrets: [this.secretPathUser!],
+            vpc: vpcStack.vpc,
+            securityGroups: this.dbInstance.connections.securityGroups,
+            // securityGroups: [ec2.SecurityGroup.fromSecurityGroupId(this, 'VpcDefaultSecurityGroup', vpcStack.vpc.vpcDefaultSecurityGroup)],
+            requireTLS: false,
+        });
       
-        // const dbProxyRole = new iam.Role(this, "DBProxyRole", {
-        //     assumedBy: new iam.AccountPrincipal(this.account),
-        // });
-        // rdsProxy.grantConnect(dbProxyRole); // Grant the role connection access to the DB Proxy for database user 'admin'.
+        const dbProxyRole = new iam.Role(this, "DBProxyRole", {
+            assumedBy: new iam.AccountPrincipal(this.account),
+        });
+        rdsProxy.grantConnect(dbProxyRole); // Grant the role connection access to the DB Proxy for database user 'admin'.
       
-        // this.rdsProxyEndpoint = rdsProxy.endpoint;
+        this.rdsProxyEndpoint = rdsProxy.endpoint;
         this.rdsProxyEndpoint = "";
 
     }

@@ -4,7 +4,7 @@ import { Construct } from 'constructs';
 import * as lambda from "aws-cdk-lib/aws-lambda";
 
 
-export class bedrock extends cdk.Stack {
+export class BedrockStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 // Lambda Function
@@ -12,7 +12,7 @@ const lambdaFunction = new lambda.Function(this, "chat", {
     code: lambda.Code.fromAsset("lambda"),
     handler: "LLM_Interaction.handler",
     timeout: cdk.Duration.seconds(15),
-    runtime: lambda.Runtime.NODEJS_18_X,
+    runtime: lambda.Runtime.PYTHON_3_12,
     memorySize: 2048,
     environment: {
       REGION: this.region,
@@ -26,7 +26,7 @@ const lambdaFunction = new lambda.Function(this, "chat", {
             // Grant Lambda permissions to call Bedrock API
             new PolicyStatement({
               resources: [
-                `arn:aws:bedrock:${this.region}::foundation-model/anthropic.claude-v2`,
+                `arn:aws:bedrock:${this.region}::foundation-model/llama.llama-3`,
               ],
               actions: ["bedrock:*"],
             }),

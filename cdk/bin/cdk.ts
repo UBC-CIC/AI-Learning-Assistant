@@ -5,7 +5,7 @@ import { AmplifyStack } from '../lib/amplify-stack';
 import { ApiGatewayStack } from '../lib/api-gateway-stack';
 import { BedrockStack } from '../lib/bedrock-stack';
 import { DataIngestionStack } from '../lib/data-ingestion-stack';
-import { DBStack } from '../lib/database-stack';
+import { DatabaseStack } from '../lib/database-stack';
 import { DBFlowStack } from '../lib/dbFlow-stack';
 import { DynamoStack } from '../lib/dynamo-stack';
 import { VpcStack } from '../lib/vpc-stack';
@@ -17,7 +17,7 @@ const env = {
 };
 
 const vpcStack = new VpcStack(app, 'VpcStack', { env });
-const dbStack = new DBStack(app, 'DBStack', vpcStack, { env });
+const dbStack = new DatabaseStack(app, 'DatabaseStack', vpcStack, { env });
 const dbFlowStack = new DBFlowStack(app, 'DBFlowStack', vpcStack, dbStack, { env });
 const dynamoStack = new DynamoStack(app, 'DynamoStack',vpcStack,  { env });
 const apiStack = new ApiGatewayStack(app, 'ApiGatewayStack', { env });

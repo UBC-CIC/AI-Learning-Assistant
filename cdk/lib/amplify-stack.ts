@@ -42,15 +42,15 @@ export class AmplifyStack extends cdk.Stack {
       sourceCodeProvider: new GitHubSourceCodeProvider({
         owner: username,
         repository: 'AI-LEARNING-ASSISTANT',
-        oauthToken: cdk.SecretValue.secretsManager('github-access-token', {
-          jsonField: 'github-token'
+        oauthToken: cdk.SecretValue.secretsManager('github-personal-access-token', {
+          jsonField: 'my-github-token'
         })
       }),
       environmentVariables: {
         'REACT_APP_AWS_REGION': this.region,
         'REACT_APP_COGNITO_USER_POOL_ID': apiStack.getUserPoolId(),
         'REACT_APP_COGNITO_USER_POOL_CLIENT_ID': apiStack.getUserPoolClientId(),
-        'REACT_APP_APPSYNC_ENDPOINT': apiStack.getEndpointUrl()
+        'REACT_APP_API_ENDPOINT': apiStack.getEndpointUrl()
       },
       buildSpec: BuildSpec.fromObjectToYaml(amplifyYaml),
     });

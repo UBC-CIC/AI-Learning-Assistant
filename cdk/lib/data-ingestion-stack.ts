@@ -19,7 +19,7 @@ export class DataIngestionStack extends cdk.Stack {
     const processUploadsFunction = new lambda.Function(this, 'ProcessUploadsFunction', {
       runtime: lambda.Runtime.PYTHON_3_12,
       handler: 'process_uploads.handler',
-      code: lambda.Code.fromAsset('lambda/process_uploads'),
+      code: lambda.Code.fromAsset('lambda'),
       environment: {
         BUCKET_NAME: bucket.bucketName,
       },

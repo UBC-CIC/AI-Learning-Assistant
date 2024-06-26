@@ -53,10 +53,6 @@ export class DynamoStack extends cdk.Stack {
       this,
       "ConversationHistoryFunction",
       {
-        vpc: vpcStack.vpc,
-        vpcSubnets: {
-          subnetType: ec2.SubnetType.PRIVATE_ISOLATED,
-        },
         code: lambda.Code.fromAsset("lambda"), // Path to your Lambda function code
         handler: "dynamo.handler",
         runtime: lambda.Runtime.PYTHON_3_12,

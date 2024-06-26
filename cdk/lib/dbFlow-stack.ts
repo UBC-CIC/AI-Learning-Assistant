@@ -9,36 +9,33 @@ import * as iam from 'aws-cdk-lib/aws-iam';
 // Stack import
 import { VpcStack } from './vpc-stack';
 import {DatabaseStack} from './database-stack';
+import { ApiGatewayStack } from './api-gateway-stack';
 
 export class DBFlowStack extends Stack {
-    constructor(scope: Construct, id: string, vpcStack: VpcStack, db: DatabaseStack, props?: StackProps){
+    constructor(scope: Construct, id: string, vpcStack: VpcStack, db: DatabaseStack, apiStack: ApiGatewayStack, props?: StackProps){
         super(scope, id, props);
 
         /**
          * 
          * Create an database initializer using lambda
          */
-        // Create a layer for the initializer function containing psyscopg2 library, a PSQL for Python
-        const psyscopg2 = new lambda.LayerVersion(this, "psyscopg2", {
-            code: lambda.Code.fromAsset("./lambda/layers/psycopg2.zip"),
-            compatibleRuntimes: [lambda.Runtime.PYTHON_3_12],
-            description: "psycopg2 library for connecting to the PostgreSQL database",
-        });
+
+        const psycopgLambdaLayer = apiStack.getLayers()['psycopg2'];   
 
         // Create an initilizer for the RDS instance, only invoke during deployment
         const initializerLambda = new triggers.TriggerFunction(this, "aila-triggerLambda", {
             functionName: "aila-initializerFunction",
-            runtime: lambda.Runtime.PYTHON_3_12,
+            runtime: lambda.Runtime.PYTHON_3_9,
             handler: "initializer.handler",
             timeout: Duration.seconds(300),
             memorySize: 512,
-            environment:{
+            environment: {
               DB_SECRET_NAME: db.secretPathAdminName,     // Admin Secret Manager name that only use once here.
               DB_USER_SECRET_NAME: db.secretPathUser.secretName
             },
-            vpc: vpcStack.vpc,
+            vpc: db.dbInstance.vpc,
             code: lambda.Code.fromAsset("lambda"),
-            layers: [psyscopg2],
+            layers: [psycopgLambdaLayer],
             // role: lambdaRole,
         });
 

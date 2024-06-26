@@ -3,6 +3,13 @@ import * as apigateway from "aws-cdk-lib/aws-apigateway";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as iam from "aws-cdk-lib/aws-iam";
 import { Construct } from "constructs";
+import {
+  Architecture,
+  Code,
+  Function,
+  LayerVersion,
+  Runtime,
+} from "aws-cdk-lib/aws-lambda";
 //import { VpcStack } from './vpc-stack';
 import * as cognito from "aws-cdk-lib/aws-cognito";
 import { CfnJson } from "aws-cdk-lib";
@@ -12,9 +19,13 @@ export class ApiGatewayStack extends cdk.Stack {
   public readonly appClient: cognito.UserPoolClient;
   public readonly userPool: cognito.UserPool;
   public readonly identityPool: cognito.CfnIdentityPool;
+  private readonly layerList: { [key: string]: LayerVersion };
   public getEndpointUrl = () => this.api.url;
   public getUserPoolId = () => this.userPool.userPoolId;
   public getUserPoolClientId = () => this.appClient.userPoolClientId;
+  public addLayer = (name: string, layer: LayerVersion) =>
+    (this.layerList[name] = layer);
+  public getLayers = () => this.layerList;
   constructor(
     scope: Construct,
     id: string,
@@ -22,6 +33,20 @@ export class ApiGatewayStack extends cdk.Stack {
     props?: cdk.StackProps
   ) {
     super(scope, id, props);
+
+    
+    this.layerList = {};
+
+    //create psycopglayer
+    const psycopgLayer = new LayerVersion(this, "psycopgLambdaLayer", {
+      code: Code.fromAsset("./layers/psycopg2.zip"),
+      compatibleRuntimes: [Runtime.PYTHON_3_9],
+      description: "Lambda layer containing the psycopg2 Python library",
+    });
+
+    this.layerList["psycopg2"] = psycopgLayer;
+
+
     // Create the API Gateway REST API
     this.api = new apigateway.RestApi(this, "MyApi", {
       restApiName: "MyApi",

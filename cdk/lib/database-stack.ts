@@ -44,6 +44,15 @@ export class DatabaseStack extends Stack {
                 password: SecretValue.unsafePlainText("applicationPassword")    // in the initializer
             }
         })
+        const parameterGroup = new rds.ParameterGroup(this, "rdsParameterGroup", {
+            engine: rds.DatabaseInstanceEngine.postgres({
+              version: rds.PostgresEngineVersion.VER_16_3,
+            }),
+            description: "Empty parameter group", // Might need to change this later
+            parameters: {
+              'rds.force_ssl': '0'
+            }
+          });
 
         /**
          * 
@@ -77,6 +86,7 @@ export class DatabaseStack extends Stack {
             cloudwatchLogsRetention: logs.RetentionDays.INFINITE,
             storageEncrypted: true, // storage encryption at rest
             monitoringInterval: Duration.seconds(60), // enhanced monitoring interval
+            parameterGroup: parameterGroup
         });
 
         this.dbInstance.connections.securityGroups.forEach(function (securityGroup) {

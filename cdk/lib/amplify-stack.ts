@@ -36,7 +36,7 @@ export class AmplifyStack extends cdk.Stack {
               commands:
                 - npm run build
           artifacts:
-            baseDirectory: build
+            baseDirectory: dist
             files:
               - '**/*'
           cache:
@@ -70,8 +70,9 @@ export class AmplifyStack extends cdk.Stack {
       buildSpec: BuildSpec.fromObjectToYaml(amplifyYaml),
     });
 
-    amplifyApp.addBranch("stacks");
-    amplifyApp.addBranch("frontend");
+    amplifyApp.addBranch('stacks')
+    amplifyApp.addBranch('main')
+    amplifyApp.addBranch('frontend')
 
     // // CloudFront distribution
     // const cloudFrontDistribution = new cloudfront.Distribution(this, 'CloudFrontDistribution', {

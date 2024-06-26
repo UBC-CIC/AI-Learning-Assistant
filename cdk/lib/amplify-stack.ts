@@ -1,15 +1,24 @@
-import { App, BasicAuth, GitHubSourceCodeProvider } from '@aws-cdk/aws-amplify-alpha';
-import * as cdk from 'aws-cdk-lib';
-import { BuildSpec } from 'aws-cdk-lib/aws-codebuild';
-import { Construct } from 'constructs';
-import * as yaml from 'yaml';
-import { ApiGatewayStack } from './api-gateway-stack';
-import * as waf from 'aws-cdk-lib/aws-wafv2';
-import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
-import * as origins from 'aws-cdk-lib/aws-cloudfront-origins';
+import {
+  App,
+  BasicAuth,
+  GitHubSourceCodeProvider,
+} from "@aws-cdk/aws-amplify-alpha";
+import * as cdk from "aws-cdk-lib";
+import { BuildSpec } from "aws-cdk-lib/aws-codebuild";
+import { Construct } from "constructs";
+import * as yaml from "yaml";
+import { ApiGatewayStack } from "./api-gateway-stack";
+import * as waf from "aws-cdk-lib/aws-wafv2";
+import * as cloudfront from "aws-cdk-lib/aws-cloudfront";
+import * as origins from "aws-cdk-lib/aws-cloudfront-origins";
 
 export class AmplifyStack extends cdk.Stack {
-  constructor(scope: Construct, id: string, apiStack: ApiGatewayStack, props?: cdk.StackProps) {
+  constructor(
+    scope: Construct,
+    id: string,
+    apiStack: ApiGatewayStack,
+    props?: cdk.StackProps
+  ) {
     super(scope, id, props);
 
     // Amplify
@@ -35,27 +44,34 @@ export class AmplifyStack extends cdk.Stack {
               - 'node_modules/**/*'
     `);
 
-    const username = cdk.aws_ssm.StringParameter.valueForStringParameter(this, 'aila-owner-name');
-     
-    const amplifyApp = new App(this, 'amplifyApp', {
-      appName: 'aila-amplify',
+    const username = cdk.aws_ssm.StringParameter.valueForStringParameter(
+      this,
+      "aila-owner-name"
+    );
+
+    const amplifyApp = new App(this, "amplifyApp", {
+      appName: "aila-amplify",
       sourceCodeProvider: new GitHubSourceCodeProvider({
         owner: username,
-        repository: 'AI-LEARNING-ASSISTANT',
-        oauthToken: cdk.SecretValue.secretsManager('github-personal-access-token', {
-          jsonField: 'my-github-token'
-        })
+        repository: "AI-LEARNING-ASSISTANT",
+        oauthToken: cdk.SecretValue.secretsManager(
+          "github-personal-access-token",
+          {
+            jsonField: "my-github-token",
+          }
+        ),
       }),
       environmentVariables: {
-        'REACT_APP_AWS_REGION': this.region,
-        'REACT_APP_COGNITO_USER_POOL_ID': apiStack.getUserPoolId(),
-        'REACT_APP_COGNITO_USER_POOL_CLIENT_ID': apiStack.getUserPoolClientId(),
-        'REACT_APP_API_ENDPOINT': apiStack.getEndpointUrl()
+        REACT_APP_AWS_REGION: this.region,
+        REACT_APP_COGNITO_USER_POOL_ID: apiStack.getUserPoolId(),
+        REACT_APP_COGNITO_USER_POOL_CLIENT_ID: apiStack.getUserPoolClientId(),
+        REACT_APP_API_ENDPOINT: apiStack.getEndpointUrl(),
       },
       buildSpec: BuildSpec.fromObjectToYaml(amplifyYaml),
     });
 
-    amplifyApp.addBranch('stacks')
+    amplifyApp.addBranch("stacks");
+    amplifyApp.addBranch("frontend");
 
     // // CloudFront distribution
     // const cloudFrontDistribution = new cloudfront.Distribution(this, 'CloudFrontDistribution', {
@@ -101,7 +117,5 @@ export class AmplifyStack extends cdk.Stack {
     //   resourceArn: cloudFrontDistribution.distributionId,
     //   webAclArn: webAcl.attrArn,
     // });
-    
-
   }
 }

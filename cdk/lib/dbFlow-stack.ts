@@ -8,10 +8,10 @@ import * as iam from 'aws-cdk-lib/aws-iam';
 
 // Stack import
 import { VpcStack } from './vpc-stack';
-import {DBStack} from './database-stack';
+import {DatabaseStack} from './database-stack';
 
 export class DBFlowStack extends Stack {
-    constructor(scope: Construct, id: string, vpcStack: VpcStack, db: DBStack, props?: StackProps){
+    constructor(scope: Construct, id: string, vpcStack: VpcStack, db: DatabaseStack, props?: StackProps){
         super(scope, id, props);
 
         /**

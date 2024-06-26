@@ -14,7 +14,7 @@ import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import { VpcStack } from './vpc-stack';
 
 
-export class DBStack extends Stack {
+export class DatabaseStack extends Stack {
     public readonly dbInstance: rds.DatabaseInstance;
     public readonly secretPathAdminName: string;
     public readonly secretPathUser: secretsmanager.Secret;
@@ -25,17 +25,16 @@ export class DBStack extends Stack {
         /**
          * 
          * Retrive a secrete from Secret Manager
-         * aws secretsmanager create-secret --name AILASecrets --secret-string "{"DB_Username":"DB-USERNAME"}"  --profile <your-profile-name>
+         * aws secretsmanager create-secret --name AILASecrets --secret-string '{\"DB_Username\":\"DB-USERNAME\"}' --profile <your-profile-name>
          */
         const secret = secretmanager.Secret.fromSecretNameV2(this, "ImportedSecrets", "AILASecrets");
-
         /**
          * 
          * Create Empty Secret Manager
          * Secrets will be populate at initalization of data
          */
-        this.secretPathAdminName = "AILA/credentials/dbCredentials"; // Name in the Secret Manager to store DB credentials
-        const secretPathUserName = "AILA/userCredentials/dbCredentials";
+        this.secretPathAdminName = "AILA/credentials/dbCredential"; // Name in the Secret Manager to store DB credentials        
+        const secretPathUserName = "AILA/userCredentials/dbCredential";
         this.secretPathUser = new secretsmanager.Secret(this, secretPathUserName, {
             secretName: secretPathUserName,
             description: "Secrets for clients to connect to RDS",
@@ -44,7 +43,7 @@ export class DBStack extends Stack {
                 username: SecretValue.unsafePlainText("applicationUsername"),   // this will change later at runtime
                 password: SecretValue.unsafePlainText("applicationPassword")    // in the initializer
             }
-        });
+        })
 
         /**
          * 
@@ -56,7 +55,7 @@ export class DBStack extends Stack {
                 subnetType: ec2.SubnetType.PRIVATE_ISOLATED,
             },
             engine: rds.DatabaseInstanceEngine.postgres({
-                version: rds.PostgresEngineVersion.VER_14_5,
+                version: rds.PostgresEngineVersion.VER_16_3,
             }),
             instanceType: ec2.InstanceType.of(
                 ec2.InstanceClass.BURSTABLE3,
@@ -89,10 +88,10 @@ export class DBStack extends Stack {
             );
         });
         
-        /**
-         * 
-         * Create an RDS proxy that sit between lambda and RDS
-         */
+        // /**
+        //  * 
+        //  * Create an RDS proxy that sit between lambda and RDS
+        //  */
         const rdsProxy = new rds.DatabaseProxy(this, "AILA-RDSProxy", {
             proxyTarget: rds.ProxyTarget.fromInstance(this.dbInstance),
             secrets: [this.secretPathUser!],

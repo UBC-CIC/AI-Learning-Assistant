@@ -2,6 +2,7 @@ import "./App.css";
 // amplify
 import { Amplify } from "aws-amplify";
 import "@aws-amplify/ui-react/styles.css";
+import Login from './pages/login'
 
 Amplify.configure({
   API: {
@@ -22,7 +23,7 @@ Amplify.configure({
 });
 
 function App() {
-  return <h1> hi </h1>;
+  return <Login />;
 }
 
 export default App;

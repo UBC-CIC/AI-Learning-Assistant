@@ -42,7 +42,7 @@ exports.handler = async (event) => {
 
           // SQL query to fetch all users who are instructors
           const instructors = await sqlConnection`
-                SELECT user_id, user_email, user_name
+                SELECT user_email, user_name
                 FROM Users
                 WHERE roles @> ARRAY['instructor']::varchar[];
               `;

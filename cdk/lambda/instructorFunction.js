@@ -328,9 +328,9 @@ exports.handler = async (event) => {
           try {
             const { course_id } = event.queryStringParameters;
 
-            // Fetch student user_id, username, and user_email enrolled in the course
+            // Fetch student , username, and user_email enrolled in the course
             const studentsData = await sqlConnection`
-                SELECT Users.user_id, Users.username, Users.user_email
+                SELECT Users.username, Users.user_email
                 FROM Users
                 JOIN Enrolments ON Users.user_email = Enrolments.user_email
                 WHERE Enrolments.course_id = ${course_id}
@@ -352,10 +352,10 @@ exports.handler = async (event) => {
           event.queryStringParameters != null &&
           event.queryStringParameters.course_id &&
           event.queryStringParameters.instructor_email &&
-          event.queryStringParameters.user_id
+          event.queryStringParameters.user_email
         ) {
           try {
-            const { course_id, instructor_email, user_id } =
+            const { course_id, instructor_email, user_email } =
               event.queryStringParameters;
 
             // Delete the student from the course enrolments
@@ -365,7 +365,7 @@ exports.handler = async (event) => {
                     AND user_email = (
                       SELECT user_email
                       FROM Users
-                      WHERE user_id = ${user_id}
+                      WHERE user_email = ${user_email}
                     )
                     AND enrolment_type = 'student'
                   RETURNING *;
@@ -392,7 +392,7 @@ exports.handler = async (event) => {
         } else {
           response.statusCode = 400;
           response.body =
-            "course_id, user_id, and instructor_email are required";
+            "course_id, user_email, and instructor_email are required";
         }
         break;
 

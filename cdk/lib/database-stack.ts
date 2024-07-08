@@ -13,7 +13,6 @@ import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 // Stack import
 import { VpcStack } from './vpc-stack';
 
-
 export class DatabaseStack extends Stack {
     public readonly dbInstance: rds.DatabaseInstance;
     public readonly secretPathAdminName: string;
@@ -117,7 +116,7 @@ export class DatabaseStack extends Stack {
         rdsProxy.grantConnect(dbProxyRole); // Grant the role connection access to the DB Proxy for database user 'admin'.
       
         this.rdsProxyEndpoint = rdsProxy.endpoint;
-        this.rdsProxyEndpoint = "";
+        // this.rdsProxyEndpoint = "";
 
     }
 }

@@ -1,8 +1,10 @@
+
 import * as cdk from "aws-cdk-lib";
 import * as apigateway from "aws-cdk-lib/aws-apigateway";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as iam from "aws-cdk-lib/aws-iam";
 import { Construct } from "constructs";
+import { Duration } from "aws-cdk-lib";
 import {
   Architecture,
   Code,
@@ -13,29 +15,50 @@ import {
 //import { VpcStack } from './vpc-stack';
 import * as cognito from "aws-cdk-lib/aws-cognito";
 import { CfnJson } from "aws-cdk-lib";
+import { VpcStack } from "./vpc-stack";
+import  {DatabaseStack} from "./database-stack"
+import { parse, stringify } from "yaml";
+import { Fn } from "aws-cdk-lib";
+import { Asset } from "aws-cdk-lib/aws-s3-assets";
+import * as s3 from "aws-cdk-lib/aws-s3";
 
 export class ApiGatewayStack extends cdk.Stack {
-  private readonly api: apigateway.RestApi;
+  private readonly api: apigateway.SpecRestApi;
   public readonly appClient: cognito.UserPoolClient;
   public readonly userPool: cognito.UserPool;
   public readonly identityPool: cognito.CfnIdentityPool;
   private readonly layerList: { [key: string]: LayerVersion };
+  public readonly stageARN_APIGW: string;
+  public readonly apiGW_basedURL: string;
   public getEndpointUrl = () => this.api.url;
   public getUserPoolId = () => this.userPool.userPoolId;
   public getUserPoolClientId = () => this.appClient.userPoolClientId;
+  public getIdentityPoolId = () => this.identityPool.ref
   public addLayer = (name: string, layer: LayerVersion) =>
     (this.layerList[name] = layer);
   public getLayers = () => this.layerList;
   constructor(
     scope: Construct,
     id: string,
-    //vpcStack: VpcStack,
+    db: DatabaseStack,
+    vpcStack: VpcStack,
     props?: cdk.StackProps
   ) {
     super(scope, id, props);
 
     
     this.layerList = {};
+
+    /**
+     *
+     * Create Integration Lambda layer for PSQL
+     */
+    const postgres = new lambda.LayerVersion(this, "postgres", {
+      code: lambda.Code.fromAsset("./layers/postgres.zip"),
+      compatibleRuntimes: [lambda.Runtime.NODEJS_16_X],
+      description: "Contains the postgres library for JS",
+    });
+
 
     //create psycopglayer
     const psycopgLayer = new LayerVersion(this, "psycopgLambdaLayer", {
@@ -45,17 +68,41 @@ export class ApiGatewayStack extends cdk.Stack {
     });
 
     this.layerList["psycopg2"] = psycopgLayer;
+    this.layerList["postgres"] = postgres;
 
+    /**
+     *
+     * Load OpenAPI file into API Gateway using REST API
+     */
+
+    // Read OpenAPI file and load file to S3
+    const asset = new Asset(this, "SampleAsset", {
+      path: "OpenAPI_Swagger_Definition.yaml",
+    });
 
     // Create the API Gateway REST API
-    this.api = new apigateway.RestApi(this, "MyApi", {
-      restApiName: "MyApi",
+    this.api = new apigateway.SpecRestApi(this, "APIGateway", {
+      apiDefinition: apigateway.AssetApiDefinition.fromAsset('OpenAPI_Swagger_Definition.yaml'),
+      endpointTypes: [apigateway.EndpointType.REGIONAL],
+      restApiName: "ailaAPI",
+      deploy: true,
       cloudWatchRole: true,
-      description: "API for my application",
       deployOptions: {
-        loggingLevel: apigateway.MethodLoggingLevel.INFO, // Set logging level here
+        metricsEnabled: true,
+        loggingLevel: apigateway.MethodLoggingLevel.ERROR,
+        dataTraceEnabled: true,
+        stageName: "prod",
+        methodOptions: {
+          "/*/*": {
+            throttlingRateLimit: 100,
+            throttlingBurstLimit: 200,
+          },
+        },
       },
     });
+
+    this.stageARN_APIGW = this.api.deploymentStage.stageArn;
+    this.apiGW_basedURL = this.api.urlForPath();
 
     // Create Cognito user pool
 
@@ -173,7 +220,7 @@ export class ApiGatewayStack extends cdk.Stack {
           createPolicyStatement(
             ["execute-api:Invoke"],
             [
-              `arn:aws:execute-api:${this.region}:${this.account}:${this.api.restApiId}/*/GET/*`,
+              `arn:aws:execute-api:${this.region}:${this.account}:${this.api.restApiId}/*/*/student/*`,
             ]
           ),
         ],
@@ -201,7 +248,7 @@ export class ApiGatewayStack extends cdk.Stack {
           createPolicyStatement(
             ["execute-api:Invoke"],
             [
-              `arn:aws:execute-api:${this.region}:${this.account}:${this.api.restApiId}/*/POST/*`,
+              `arn:aws:execute-api:${this.region}:${this.account}:${this.api.restApiId}/*/*/instructor/*`,
             ]
           ),
         ],
@@ -229,7 +276,9 @@ export class ApiGatewayStack extends cdk.Stack {
           createPolicyStatement(
             ["execute-api:Invoke"],
             [
-              `arn:aws:execute-api:${this.region}:${this.account}:${this.api.restApiId}/*`,
+              `arn:aws:execute-api:${this.region}:${this.account}:${this.api.restApiId}/*/*/admin/*`,
+              `arn:aws:execute-api:${this.region}:${this.account}:${this.api.restApiId}/*/*/instructor/*`,
+              `arn:aws:execute-api:${this.region}:${this.account}:${this.api.restApiId}/*/*/student/*`,
             ]
           ),
         ],
@@ -280,6 +329,54 @@ export class ApiGatewayStack extends cdk.Stack {
       ),
     });
 
+    const lambdaRole = new iam.Role(this, "postgresLambdaRole", {
+      roleName: "postgresLambdaRole",
+      assumedBy: new iam.ServicePrincipal("lambda.amazonaws.com"),
+    });
+
+    // Grant access to Secret Manager
+    lambdaRole.addToPolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: [
+          //Secrets Manager
+          "secretsmanager:GetSecretValue",
+        ],
+        resources: [
+          `arn:aws:secretsmanager:${this.region}:${this.account}:secret:*`,
+        ],
+      })
+    );
+
+    // Grant access to EC2
+    lambdaRole.addToPolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: [
+          "ec2:CreateNetworkInterface",
+          "ec2:DescribeNetworkInterfaces",
+          "ec2:DeleteNetworkInterface",
+          "ec2:AssignPrivateIpAddresses",
+          "ec2:UnassignPrivateIpAddresses",
+        ],
+        resources: ["*"], // must be *
+      })
+    );
+
+    // Grant access to log
+    lambdaRole.addToPolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: [
+          //Logs
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents",
+        ],
+        resources: ["arn:aws:logs:*:*:*"],
+      })
+    );
+
     // Attach roles to the identity pool
     new cognito.CfnIdentityPoolRoleAttachment(this, "IdentityPoolRoles", {
       identityPoolId: this.identityPool.ref,
@@ -289,38 +386,109 @@ export class ApiGatewayStack extends cdk.Stack {
       },
     });
 
-   
-    // Create the Lambda function for RDS
-    const lambdaFunctionRDS = new lambda.Function(this, "LambdaFunctionRDS", {
-      runtime: lambda.Runtime.NODEJS_16_X,
-      //vpc: vpcStack.vpc,
-      code: lambda.Code.fromAsset("lambda"),
-      handler: "RDS_Integration.handler",
+
+    const lambdaStudentFunction = new lambda.Function(this, "lambdaStudentFunction", {
+      runtime: lambda.Runtime.NODEJS_16_X, // Execution environment
+      code: lambda.Code.fromAsset("lambda"), // Code loaded from "lambda" directory
+      handler: "studentFunction.handler", // Code handler
+      timeout: Duration.seconds(300),
+      vpc: vpcStack.vpc,
+      environment: {
+        SM_DB_CREDENTIALS: db.secretPathUser.secretName,
+        RDS_PROXY_ENDPOINT: db.rdsProxyEndpoint,
+      },
+      functionName: "lambdaStudentFunction",
+      memorySize: 512,
+      layers: [postgres],
+      role: lambdaRole,
     });
 
-    // Create the Lambda function for Bedrock and DynamoDB
-    const lambdaFunctionBedrock = new lambda.Function(
-      this,
-      "LambdaFunctionBedrock",
-      {
-        runtime: lambda.Runtime.NODEJS_16_X,
-        code: lambda.Code.fromAsset("lambda"),
-        handler: "Bedrock_Dynamo.handler",
-      }
-    );
 
-    // Create the API Gateway resource for RDS
-    const rdsResource = this.api.root.addResource("rds");
-    rdsResource.addMethod(
-      "POST",
-      new apigateway.LambdaIntegration(lambdaFunctionRDS)
-    );
+    // Add the permission to the Lambda function's policy to allow API Gateway access
+    lambdaStudentFunction.addPermission("AllowApiGatewayInvoke", {
+      principal: new iam.ServicePrincipal("apigateway.amazonaws.com"),
+      action: "lambda:InvokeFunction",
+      sourceArn: `arn:aws:execute-api:${this.region}:${this.account}:${this.api.restApiId}/*/*/student*`,
+    });
 
-    // Create the API Gateway resource for Bedrock and DynamoDB
-    const bedrockResource = this.api.root.addResource("bedrock");
-    bedrockResource.addMethod(
-      "POST",
-      new apigateway.LambdaIntegration(lambdaFunctionBedrock)
-    );
+    const lambdaInstructorFunction = new lambda.Function(this, "lambdaInstructorFunction", {
+      runtime: lambda.Runtime.NODEJS_16_X, // Execution environment
+      code: lambda.Code.fromAsset("lambda"), // Code loaded from "lambda" directory
+      handler: "instructorFunction.handler", // Code handler
+      timeout: Duration.seconds(300),
+      vpc: vpcStack.vpc,
+      environment: {
+        SM_DB_CREDENTIALS: db.secretPathUser.secretName,
+        RDS_PROXY_ENDPOINT: db.rdsProxyEndpoint,
+      },
+      functionName: "lambdaInstructorFunction",
+      memorySize: 512,
+      layers: [postgres],
+      role: lambdaRole,
+    });
+
+
+    // Add the permission to the Lambda function's policy to allow API Gateway access
+    lambdaInstructorFunction.addPermission("AllowApiGatewayInvoke", {
+      principal: new iam.ServicePrincipal("apigateway.amazonaws.com"),
+      action: "lambda:InvokeFunction",
+      sourceArn: `arn:aws:execute-api:${this.region}:${this.account}:${this.api.restApiId}/*/*/instructor*`,
+    });
+    // Add the permission to the Lambda function's policy to allow API Gateway access
+    lambdaInstructorFunction.addPermission("AllowApiGatewayInvoke", {
+      principal: new iam.ServicePrincipal("apigateway.amazonaws.com"),
+      action: "lambda:InvokeFunction",
+      sourceArn: `arn:aws:execute-api:${this.region}:${this.account}:${this.api.restApiId}/*/*/student*`,
+    });
+
+
+    const lambdaAdminFunction = new lambda.Function(this, "lambdaAdminFunction", {
+      runtime: lambda.Runtime.NODEJS_16_X, // Execution environment
+      code: lambda.Code.fromAsset("lambda"), // Code loaded from "lambda" directory
+      handler: "adminFunction.handler", // Code handler
+      timeout: Duration.seconds(300),
+      vpc: vpcStack.vpc,
+      environment: {
+        SM_DB_CREDENTIALS: db.secretPathUser.secretName,
+        RDS_PROXY_ENDPOINT: db.rdsProxyEndpoint,
+      },
+      functionName: "lambdaAdminFunction",
+      memorySize: 512,
+      layers: [postgres],
+      role: lambdaRole,
+    });
+
+
+    // Add the permission to the Lambda function's policy to allow API Gateway access
+    lambdaAdminFunction.addPermission("AllowApiGatewayInvoke", {
+      principal: new iam.ServicePrincipal("apigateway.amazonaws.com"),
+      action: "lambda:InvokeFunction",
+      sourceArn: `arn:aws:execute-api:${this.region}:${this.account}:${this.api.restApiId}/*/*/admin*`,
+    });
+
+    const lambdaTechAdminFunction = new lambda.Function(this, "lambdaTechAdminFunction", {
+      runtime: lambda.Runtime.NODEJS_16_X, // Execution environment
+      code: lambda.Code.fromAsset("lambda"), // Code loaded from "lambda" directory
+      handler: "techadminFunction.handler", // Code handler
+      timeout: Duration.seconds(300),
+      vpc: vpcStack.vpc,
+      environment: {
+        SM_DB_CREDENTIALS: db.secretPathUser.secretName,
+        RDS_PROXY_ENDPOINT: db.rdsProxyEndpoint,
+      },
+      functionName: "lambdaTechAdminFunction",
+      memorySize: 512,
+      layers: [postgres],
+      role: lambdaRole,
+    });
+
+
+    // Add the permission to the Lambda function's policy to allow API Gateway access
+    lambdaTechAdminFunction.addPermission("AllowApiGatewayInvoke", {
+      principal: new iam.ServicePrincipal("apigateway.amazonaws.com"),
+      action: "lambda:InvokeFunction",
+      sourceArn: `arn:aws:execute-api:${this.region}:${this.account}:${this.api.restApiId}/*/*/admin*`,
+    });
+    
   }
 }

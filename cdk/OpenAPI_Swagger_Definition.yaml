@@ -45,7 +45,6 @@ x-common-options: &commonOptions
             application/json: |
               {}
 paths:
-  paths:
   /student/create_user:
     <<: *commonOptions
     post:

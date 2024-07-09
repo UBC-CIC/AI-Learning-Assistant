@@ -51,6 +51,16 @@ export class ApiGatewayStack extends cdk.Stack {
 
     /**
      *
+     * Create Integration Lambda layer for aws-jwt-verify
+     */
+    const jwt = new lambda.LayerVersion(this, "aws-jwt-verify", {
+      code: lambda.Code.fromAsset("./layers/aws-jwt-verify.zip"),
+      compatibleRuntimes: [lambda.Runtime.NODEJS_16_X],
+      description: "Contains the aws-jwt-verify library for JS",
+    });
+
+    /**
+     *
      * Create Integration Lambda layer for PSQL
      */
     const postgres = new lambda.LayerVersion(this, "postgres", {
@@ -68,6 +78,7 @@ export class ApiGatewayStack extends cdk.Stack {
 
     this.layerList["psycopg2"] = psycopgLayer;
     this.layerList["postgres"] = postgres;
+    this.layerList["jwt"] = jwt;
 
     /**
      *
@@ -79,11 +90,11 @@ export class ApiGatewayStack extends cdk.Stack {
       path: "OpenAPI_Swagger_Definition.yaml",
     });
 
+    const data = Fn.transform("AWS::Include", { Location: asset.s3ObjectUrl });
+
     // Create the API Gateway REST API
     this.api = new apigateway.SpecRestApi(this, "APIGateway", {
-      apiDefinition: apigateway.AssetApiDefinition.fromAsset(
-        "OpenAPI_Swagger_Definition.yaml"
-      ),
+      apiDefinition: apigateway.AssetApiDefinition.fromInline(data),
       endpointTypes: [apigateway.EndpointType.REGIONAL],
       restApiName: "ailaAPI",
       deploy: true,
@@ -409,7 +420,7 @@ export class ApiGatewayStack extends cdk.Stack {
 
     const lambdaStudentFunction = new lambda.Function(
       this,
-      "lambdaStudentFunction",
+      "studentFunction",
       {
         runtime: lambda.Runtime.NODEJS_16_X, // Execution environment
         code: lambda.Code.fromAsset("lambda"), // Code loaded from "lambda" directory
@@ -420,7 +431,7 @@ export class ApiGatewayStack extends cdk.Stack {
           SM_DB_CREDENTIALS: db.secretPathUser.secretName,
           RDS_PROXY_ENDPOINT: db.rdsProxyEndpoint,
         },
-        functionName: "lambdaStudentFunction",
+        functionName: "studentFunction",
         memorySize: 512,
         layers: [postgres],
         role: lambdaRole,
@@ -434,9 +445,12 @@ export class ApiGatewayStack extends cdk.Stack {
       sourceArn: `arn:aws:execute-api:${this.region}:${this.account}:${this.api.restApiId}/*/*/student*`,
     });
 
+    const cfnLambda_student = lambdaStudentFunction.node.defaultChild as lambda.CfnFunction;
+    cfnLambda_student.overrideLogicalId("studentFunction");
+
     const lambdaInstructorFunction = new lambda.Function(
       this,
-      "lambdaInstructorFunction",
+      "instructorFunction",
       {
         runtime: lambda.Runtime.NODEJS_16_X, // Execution environment
         code: lambda.Code.fromAsset("lambda"), // Code loaded from "lambda" directory
@@ -447,7 +461,7 @@ export class ApiGatewayStack extends cdk.Stack {
           SM_DB_CREDENTIALS: db.secretPathUser.secretName,
           RDS_PROXY_ENDPOINT: db.rdsProxyEndpoint,
         },
-        functionName: "lambdaInstructorFunction",
+        functionName: "instructorFunction",
         memorySize: 512,
         layers: [postgres],
         role: lambdaRole,
@@ -460,9 +474,15 @@ export class ApiGatewayStack extends cdk.Stack {
       action: "lambda:InvokeFunction",
       sourceArn: `arn:aws:execute-api:${this.region}:${this.account}:${this.api.restApiId}/*/*/{instructor,student}*`,
     });
+
+
+    const cfnLambda_Instructor = lambdaInstructorFunction.node.defaultChild as lambda.CfnFunction;
+    cfnLambda_Instructor.overrideLogicalId("instructorFunction");
+
+    
     const lambdaAdminFunction = new lambda.Function(
       this,
-      "lambdaAdminFunction",
+      "adminFunction",
       {
         runtime: lambda.Runtime.NODEJS_16_X, // Execution environment
         code: lambda.Code.fromAsset("lambda"), // Code loaded from "lambda" directory
@@ -473,7 +493,7 @@ export class ApiGatewayStack extends cdk.Stack {
           SM_DB_CREDENTIALS: db.secretPathUser.secretName,
           RDS_PROXY_ENDPOINT: db.rdsProxyEndpoint,
         },
-        functionName: "lambdaAdminFunction",
+        functionName: "adminFunction",
         memorySize: 512,
         layers: [postgres],
         role: lambdaRole,
@@ -487,9 +507,12 @@ export class ApiGatewayStack extends cdk.Stack {
       sourceArn: `arn:aws:execute-api:${this.region}:${this.account}:${this.api.restApiId}/*/*/{instructor,student, admin}*`,
     });
 
+    const cfnLambda_Admin = lambdaAdminFunction.node.defaultChild as lambda.CfnFunction;
+    cfnLambda_Admin.overrideLogicalId("adminFunction");
+
     const lambdaTechAdminFunction = new lambda.Function(
       this,
-      "lambdaTechAdminFunction",
+      "techadminFunction",
       {
         runtime: lambda.Runtime.NODEJS_16_X, // Execution environment
         code: lambda.Code.fromAsset("lambda"), // Code loaded from "lambda" directory
@@ -500,7 +523,7 @@ export class ApiGatewayStack extends cdk.Stack {
           SM_DB_CREDENTIALS: db.secretPathUser.secretName,
           RDS_PROXY_ENDPOINT: db.rdsProxyEndpoint,
         },
-        functionName: "lambdaTechAdminFunction",
+        functionName: "techadminFunction",
         memorySize: 512,
         layers: [postgres],
         role: lambdaRole,
@@ -514,15 +537,8 @@ export class ApiGatewayStack extends cdk.Stack {
       sourceArn: `arn:aws:execute-api:${this.region}:${this.account}:${this.api.restApiId}/*/*/*`,
     });
 
-    /**
-     *
-     * Create Integration Lambda layer for aws-jwt-verify
-     */
-    const jwt = new lambda.LayerVersion(this, "aws-jwt-verify", {
-      code: lambda.Code.fromAsset("./layers/aws-jwt-verify.zip"),
-      compatibleRuntimes: [lambda.Runtime.NODEJS_16_X],
-      description: "Contains the aws-jwt-verify library for JS",
-    });
+    const cfnLambda_Tech_Admin = lambdaTechAdminFunction.node.defaultChild as lambda.CfnFunction;
+    cfnLambda_Tech_Admin.overrideLogicalId("techadminFunction");
 
     /**
      *
@@ -621,10 +637,10 @@ export class ApiGatewayStack extends cdk.Stack {
     );
 
     // Change Logical ID to match the one decleared in YAML file of Open API
-    const apiGW_authorizationFunction_instructor = authorizationFunction_student.node
+    const apiGW_authorizationFunction_instructor = authorizationFunction_instructor.node
       .defaultChild as lambda.CfnFunction;
     apiGW_authorizationFunction_instructor.overrideLogicalId(
-      "studentLambdaAuthorizer"
+      "instructorLambdaAuthorizer"
     );
   }
 }

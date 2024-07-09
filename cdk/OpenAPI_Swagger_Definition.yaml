@@ -1,0 +1,1106 @@
+openapi: 3.0.0
+servers: []
+info:
+  title: AI Learning Assistant API
+  description: This API intended to deploy on aws API Gateway
+  version: "1.0.0"
+tags:
+  - name: Student
+    description: endpoints accessible by students
+  - name: Instructor
+    description: endpoints accessible by instructors
+  - name: Admin
+    description: endpoints accessible by admins
+x-amazon-apigateway-request-validators:
+  all:
+    validateRequestParameters: true
+    validateRequestBody: true
+  params-only:
+    validateRequestParameters": true
+    validateRequestBody": false
+x-amazon-apigateway-request-validator: params-only
+x-common-options: &commonOptions
+  options:
+    summary: CORS support
+    description: |
+      Enable CORS by returning correct headers
+    responses:
+      200:
+        $ref: "#/components/responses/Success"
+    x-amazon-apigateway-integration:
+      type: mock
+      requestTemplates:
+        application/json: |
+          {
+            "statusCode" : 200
+          }
+      responses:
+        default:
+          statusCode: "200"
+          responseParameters:
+            method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+            method.response.header.Access-Control-Allow-Methods: "'*'"
+            method.response.header.Access-Control-Allow-Origin: "'*'"
+          responseTemplates:
+            application/json: |
+              {}
+paths:
+  paths:
+  /student/create_user:
+    <<: *commonOptions
+    post:
+      tags:
+        - Student
+      summary: Create a student
+      operationId: student_create_user_POST
+      parameters:
+        - in: query
+          name: user_email
+          required: false
+          description: email of the user
+          schema:
+            type: string
+        - in: query
+          name: username
+          required: false
+          description: username of the user
+          schema:
+            type: string
+        - in: query
+          name: first_name
+          required: false
+          description: first name of the user
+          schema:
+            type: string
+        - in: query
+          name: last_name
+          required: false
+          description: last name of the user
+          schema:
+            type: string
+        - in: query
+          name: preferred_name
+          required: false
+          description: preferred name of the user
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Student Created
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "429":
+          description: Too Many Requests
+        "500":
+          description: Internal Server Error
+      security:
+        - studentAuthorizer: []
+      x-amazon-apigateway-integration:
+        uri:
+          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${studentFunction.Arn}/invocations"
+        passthroughBehavior: "when_no_match"
+        httpMethod: "POST"
+        type: "aws_proxy"
+  /student/get_user_roles:
+    <<: *commonOptions
+    get:
+      tags:
+        - Student
+      summary: Get the list of available regions
+      operationId: student_get_user_roles_GET
+      parameters:
+        - in: query
+          name: user_email
+          required: false
+          description: email of the user
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Roles Available
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "429":
+          description: Too Many Requests
+        "500":
+          description: Internal Server Error
+      security:
+        - studentAuthorizer: []
+      x-amazon-apigateway-integration:
+        uri:
+          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${studentFunction.Arn}/invocations"
+        passthroughBehavior: "when_no_match"
+        httpMethod: "POST"
+        type: "aws_proxy"
+  /student/course:
+    <<: *commonOptions
+    get:
+      tags:
+        - Student
+      summary: Get courses enrolled by a student
+      operationId: student_get_courses_GET
+      parameters:
+        - in: query
+          name: email
+          required: true
+          description: Email of the student
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of courses
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Course"
+        "400":
+          description: Invalid value
+        "401":
+          description: Unauthorized
+        "429":
+          description: Too Many Requests
+        "500":
+          description: Internal Server Error
+      security:
+        - studentAuthorizer: []
+      x-amazon-apigateway-integration:
+        uri:
+          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${studentFunction.Arn}/invocations"
+        passthroughBehavior: "when_no_match"
+        httpMethod: "POST"
+        type: "aws_proxy"
+  /student/course_page:
+    <<: *commonOptions
+    get:
+      tags:
+        - Student
+      summary: Get course page details for a student
+      operationId: student_get_course_page_GET
+      parameters:
+        - in: query
+          name: email
+          required: true
+          description: Email of the student
+          schema:
+            type: string
+        - in: query
+          name: course_id
+          required: true
+          description: ID of the course
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Course page details
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CoursePageDetail"
+        "400":
+          description: Invalid value
+        "401":
+          description: Unauthorized
+        "429":
+          description: Too Many Requests
+        "500":
+          description: Internal Server Error
+      security:
+        - studentAuthorizer: []
+      x-amazon-apigateway-integration:
+        uri:
+          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${studentFunction.Arn}/invocations"
+        passthroughBehavior: "when_no_match"
+        httpMethod: "POST"
+        type: "aws_proxy"
+  /student/module:
+    <<: *commonOptions
+    get:
+      tags:
+        - Student
+      summary: Get sessions for a module accessed by a student
+      operationId: student_get_module_sessions_GET
+      parameters:
+        - in: query
+          name: email
+          required: true
+          description: Email of the student
+          schema:
+            type: string
+        - in: query
+          name: course_id
+          required: true
+          description: ID of the course
+          schema:
+            type: string
+        - in: query
+          name: module_id
+          required: true
+          description: ID of the module
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Sessions for the module
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Session"
+        "400":
+          description: Invalid value
+        "401":
+          description: Unauthorized
+        "429":
+          description: Too Many Requests
+        "500":
+          description: Internal Server Error
+      security:
+        - studentAuthorizer: []
+      x-amazon-apigateway-integration:
+        uri:
+          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${studentFunction.Arn}/invocations"
+        passthroughBehavior: "when_no_match"
+        httpMethod: "POST"
+        type: "aws_proxy"
+  /student/create_session:
+    <<: *commonOptions
+    post:
+      tags:
+        - Student
+      summary: Create a session for a student module
+      operationId: student_create_session_POST
+      parameters:
+        - in: query
+          name: module_id
+          required: true
+          description: ID of the module
+          schema:
+            type: string
+        - in: query
+          name: email
+          required: true
+          description: Email of the student
+          schema:
+            type: string
+        - in: query
+          name: course_id
+          required: true
+          description: ID of the course
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Session created
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Session"
+        "400":
+          description: Invalid value
+        "401":
+          description: Unauthorized
+        "429":
+          description: Too Many Requests
+        "500":
+          description: Internal Server Error
+      security:
+        - studentAuthorizer: []
+      x-amazon-apigateway-integration:
+        uri:
+          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${studentFunction.Arn}/invocations"
+        passthroughBehavior: "when_no_match"
+        httpMethod: "POST"
+        type: "aws_proxy"
+  /student/delete_session:
+    <<: *commonOptions
+    delete:
+      tags:
+        - Student
+      summary: Delete a session for a student module
+      operationId: student_delete_session_DELETE
+      parameters:
+        - in: query
+          name: session_id
+          required: true
+          description: ID of the session to delete
+          schema:
+            type: string
+        - in: query
+          name: email
+          required: true
+          description: Email of the student
+          schema:
+            type: string
+        - in: query
+          name: course_id
+          required: true
+          description: ID of the course
+          schema:
+            type: string
+        - in: query
+          name: module_id
+          required: true
+          description: ID of the module
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Session deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  session_id:
+                    type: string
+                    description: ID of the deleted session
+        "400":
+          description: Invalid value or missing parameter
+        "401":
+          description: Unauthorized
+        "429":
+          description: Too Many Requests
+        "500":
+          description: Internal Server Error
+      security:
+        - studentAuthorizer: []
+      x-amazon-apigateway-integration:
+        uri:
+          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${studentFunction.Arn}/invocations"
+        passthroughBehavior: "when_no_match"
+        httpMethod: "POST"
+        type: "aws_proxy"
+  /student/create_message:
+    <<: *commonOptions
+    post:
+      tags:
+        - Student
+      summary: Create a message for a session
+      operationId: student_create_message_POST
+      parameters:
+        - in: query
+          name: session_id
+          required: true
+          description: ID of the session where the message is sent
+          schema:
+            type: string
+        - in: query
+          name: email
+          required: true
+          description: Email of the student sending the message
+          schema:
+            type: string
+        - in: query
+          name: course_id
+          required: true
+          description: ID of the course related to the session
+          schema:
+            type: string
+        - in: query
+          name: module_id
+          required: true
+          description: ID of the module related to the session
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message_content:
+                  type: string
+                  description: Content of the message
+      responses:
+        "200":
+          description: Message created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  session_id:
+                    type: string
+                    description: ID of the session where the message was created
+                  message_content:
+                    type: string
+                    description: Content of the created message
+        "400":
+          description: Invalid value or missing parameter
+        "401":
+          description: Unauthorized
+        "429":
+          description: Too Many Requests
+        "500":
+          description: Internal Server Error
+      security:
+        - studentAuthorizer: []
+      x-amazon-apigateway-integration:
+        uri:
+          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${studentFunction.Arn}/invocations"
+        passthroughBehavior: "when_no_match"
+        httpMethod: "POST"
+        type: "aws_proxy"
+  /instructor/courses:
+    <<: *commonOptions
+    get:
+      tags:
+        - Instructor
+      summary: Get courses where the instructor is enrolled
+      operationId: instructor_get_courses_GET
+      parameters:
+        - in: query
+          name: email
+          required: true
+          description: Email of the instructor
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Courses retrieved successfully
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "429":
+          description: Too Many Requests
+        "500":
+          description: Internal Server Error
+      security:
+        - instructorAuthorizer: []
+      x-amazon-apigateway-integration:
+        uri:
+          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${instructorFunction.Arn}/invocations"
+        passthroughBehavior: "when_no_match"
+        httpMethod: "GET"
+        type: "aws_proxy"
+  /instructor/analytics:
+    <<: *commonOptions
+    get:
+      tags:
+        - Instructor
+      summary: Get analytics data for a specific course
+      operationId: instructor_get_analytics_GET
+      parameters:
+        - in: query
+          name: course_id
+          required: true
+          description: ID of the course for which analytics are requested
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Analytics data retrieved successfully
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "429":
+          description: Too Many Requests
+        "500":
+          description: Internal Server Error
+      security:
+        - instructorAuthorizer: []
+      x-amazon-apigateway-integration:
+        uri:
+          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${instructorFunction.Arn}/invocations"
+        passthroughBehavior: "when_no_match"
+        httpMethod: "GET"
+        type: "aws_proxy"
+  /instructor/create_concept:
+    <<: *commonOptions
+    post:
+      tags:
+        - Instructor
+      summary: Create a new concept for a course
+      operationId: instructor_create_concept_POST
+      parameters:
+        - in: query
+          name: course_id
+          required: true
+          description: ID of the course where the concept will be created
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                concept_name:
+                  type: string
+                  description: Name of the new concept
+      responses:
+        "200":
+          description: Concept created successfully
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "429":
+          description: Too Many Requests
+        "500":
+          description: Internal Server Error
+      security:
+        - instructorAuthorizer: []
+      x-amazon-apigateway-integration:
+        uri:
+          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${instructorFunction.Arn}/invocations"
+        passthroughBehavior: "when_no_match"
+        httpMethod: "POST"
+        type: "aws_proxy"
+  /instructor/edit_concept:
+    <<: *commonOptions
+    put:
+      tags:
+        - Instructor
+      summary: Edit an existing concept in a course
+      operationId: instructor_edit_concept_PUT
+      parameters:
+        - in: query
+          name: concept_id
+          required: true
+          description: ID of the concept to be edited
+          schema:
+            type: string
+        - in: query
+          name: instructor_email
+          required: true
+          description: Email of the instructor editing the concept
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                concept_name:
+                  type: string
+                  description: New name for the concept
+      responses:
+        "200":
+          description: Concept updated successfully
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "429":
+          description: Too Many Requests
+        "500":
+          description: Internal Server Error
+      security:
+        - instructorAuthorizer: []
+      x-amazon-apigateway-integration:
+        uri:
+          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${instructorFunction.Arn}/invocations"
+        passthroughBehavior: "when_no_match"
+        httpMethod: "PUT"
+        type: "aws_proxy"
+  /instructor/create_module:
+    <<: *commonOptions
+    post:
+      tags:
+        - Instructor
+      summary: Create a new module within a course
+      operationId: instructor_create_module_POST
+      parameters:
+        - in: query
+          name: course_id
+          required: true
+          description: ID of the course where the module will be created
+          schema:
+            type: string
+        - in: query
+          name: concept_id
+          required: true
+          description: ID of the concept associated with the module
+          schema:
+            type: string
+        - in: query
+          name: module_name
+          required: true
+          description: Name of the new module
+          schema:
+            type: string
+        - in: query
+          name: module_number
+          required: true
+          description: Number of the new module
+          schema:
+            type: integer
+        - in: query
+          name: instructor_email
+          required: true
+          description: Email of the instructor creating the module
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Module created successfully
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "429":
+          description: Too Many Requests
+        "500":
+          description: Internal Server Error
+      requestBody:
+        required: false
+        content: {}
+      security:
+        - instructorAuthorizer: []
+      x-amazon-apigateway-integration:
+        uri:
+          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${instructorFunction.Arn}/invocations"
+        passthroughBehavior: "when_no_match"
+        httpMethod: "POST"
+        type: "aws_proxy"
+  /instructor/edit_module:
+    <<: *commonOptions
+    put:
+      tags:
+        - Instructor
+      summary: Update details of a module within a course
+      operationId: instructor_edit_module_PUT
+      parameters:
+        - in: query
+          name: module_id
+          required: true
+          description: ID of the module to be updated
+          schema:
+            type: string
+        - in: query
+          name: instructor_email
+          required: true
+          description: Email of the instructor updating the module
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                module_name:
+                  type: string
+                module_number:
+                  type: integer
+              required:
+                - module_name
+                - module_number
+      responses:
+        "200":
+          description: Module updated successfully
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "429":
+          description: Too Many Requests
+        "500":
+          description: Internal Server Error
+      security:
+        - instructorAuthorizer: []
+      x-amazon-apigateway-integration:
+        uri:
+          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${instructorFunction.Arn}/invocations"
+        passthroughBehavior: "when_no_match"
+        httpMethod: "PUT"
+        type: "aws_proxy"
+  /instructor/prompt:
+    <<: *commonOptions
+    put:
+      tags:
+        - Instructor
+      summary: Update system prompt for a course
+      operationId: instructor_update_prompt_PUT
+      parameters:
+        - in: query
+          name: course_id
+          required: true
+          description: ID of the course to update the prompt
+          schema:
+            type: string
+        - in: query
+          name: instructor_email
+          required: true
+          description: Email of the instructor updating the prompt
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                prompt:
+                  type: string
+              required:
+                - prompt
+      responses:
+        "200":
+          description: System prompt updated successfully
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "429":
+          description: Too Many Requests
+        "500":
+          description: Internal Server Error
+      security:
+        - instructorAuthorizer: []
+      x-amazon-apigateway-integration:
+        uri:
+          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${instructorFunction.Arn}/invocations"
+        passthroughBehavior: "when_no_match"
+        httpMethod: "PUT"
+        type: "aws_proxy"
+  /instructor/view_students:
+    <<: *commonOptions
+    get:
+      tags:
+        - Instructor
+      summary: View students enrolled in a course
+      operationId: instructor_view_students_GET
+      parameters:
+        - in: query
+          name: course_id
+          required: true
+          description: ID of the course to view enrolled students
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Students retrieved successfully
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "429":
+          description: Too Many Requests
+        "500":
+          description: Internal Server Error
+      security:
+        - instructorAuthorizer: []
+      x-amazon-apigateway-integration:
+        uri:
+          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${instructorFunction.Arn}/invocations"
+        passthroughBehavior: "when_no_match"
+        httpMethod: "GET"
+        type: "aws_proxy"
+  /instructor/delete_student:
+    <<: *commonOptions
+    delete:
+      tags:
+        - Instructor
+      summary: Delete a student from a course
+      operationId: instructor_delete_student_DELETE
+      parameters:
+        - in: query
+          name: course_id
+          required: true
+          description: ID of the course from which the student will be deleted
+          schema:
+            type: string
+        - in: query
+          name: user_email
+          required: true
+          description: Email of the student to be deleted
+          schema:
+            type: string
+        - in: query
+          name: instructor_email
+          required: true
+          description: Email of the instructor performing the deletion
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Student deleted successfully
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "404":
+          description: Student not found in the course
+        "429":
+          description: Too Many Requests
+        "500":
+          description: Internal Server Error
+      security:
+        - instructorAuthorizer: []
+      x-amazon-apigateway-integration:
+        uri:
+          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${instructorFunction.Arn}/invocations"
+        passthroughBehavior: "when_no_match"
+        httpMethod: "DELETE"
+        type: "aws_proxy"
+  /admin/instructors:
+    <<: *commonOptions
+    get:
+      tags:
+        - Admin
+      summary: Get all instructors
+      operationId: admin_get_instructors_GET
+      parameters:
+        - in: query
+          name: instructor_email
+          required: true
+          description: Email of the admin accessing the list of instructors
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of instructors retrieved successfully
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "429":
+          description: Too Many Requests
+        "500":
+          description: Internal Server Error
+      security:
+        - adminAuthorizer: []
+      x-amazon-apigateway-integration:
+        uri:
+          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${adminFunction.Arn}/invocations"
+        passthroughBehavior: "when_no_match"
+        httpMethod: "GET"
+        type: "aws_proxy"
+  /admin/courses:
+    <<: *commonOptions
+    get:
+      tags:
+        - Admin
+      summary: Get all courses
+      operationId: admin_get_courses_GET
+      responses:
+        "200":
+          description: List of courses retrieved successfully
+        "500":
+          description: Internal Server Error
+      security:
+        - adminAuthorizer: []
+      x-amazon-apigateway-integration:
+        uri:
+          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${adminFunction.Arn}/invocations"
+        passthroughBehavior: "when_no_match"
+        httpMethod: "GET"
+        type: "aws_proxy"
+  /admin/enroll_instructor:
+    <<: *commonOptions
+    post:
+      tags:
+        - Admin
+      summary: Enroll an instructor in a course
+      operationId: admin_enroll_instructor_POST
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                course_id:
+                  type: string
+                  description: ID of the course to enroll the instructor in
+                instructor_email:
+                  type: string
+                  description: Email of the instructor to enroll
+      responses:
+        "200":
+          description: Enrollment created successfully
+        "400":
+          description: Bad Request
+        "500":
+          description: Internal Server Error
+      security:
+        - adminAuthorizer: []
+      x-amazon-apigateway-integration:
+        uri:
+          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${adminFunction.Arn}/invocations"
+        passthroughBehavior: "when_no_match"
+        httpMethod: "POST"
+        type: "aws_proxy"
+  /admin/create_course:
+    <<: *commonOptions
+    post:
+      tags:
+        - Admin
+      summary: Create a new course
+      operationId: admin_create_course_POST
+      parameters:
+        - in: query
+          name: course_name
+          required: true
+          schema:
+            type: string
+          description: Name of the course
+        - in: query
+          name: course_department
+          required: true
+          schema:
+            type: string
+          description: Department of the course
+        - in: query
+          name: course_number
+          required: true
+          schema:
+            type: string
+          description: Number of the course
+        - in: query
+          name: course_access_code
+          required: true
+          schema:
+            type: string
+          description: Access code for the course
+        - in: query
+          name: course_student_access
+          required: true
+          schema:
+            type: string
+          description: Student access details for the course
+        - in: query
+          name: system_prompt
+          required: true
+          schema:
+            type: string
+          description: System prompt for the course
+        - in: query
+          name: llm_tone
+          required: true
+          schema:
+            type: string
+          description: Tone for the course
+      responses:
+        "200":
+          description: Course created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  course_id:
+                    type: string
+                    description: ID of the newly created course
+        "400":
+          description: Bad Request
+        "500":
+          description: Internal Server Error
+      security:
+        - adminAuthorizer: []
+      x-amazon-apigateway-integration:
+        uri:
+          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${adminFunction.Arn}/invocations"
+        passthroughBehavior: "when_no_match"
+        httpMethod: "POST"
+        type: "aws_proxy"
+
+components:
+  securitySchemes:
+    adminAuthorizer:
+      type: "apiKey"
+      name: "Authorization" # The header name where the token is provided
+      in: "header"
+      x-amazon-apigateway-authtype: "custom"
+      x-amazon-apigateway-authorizer:
+        type: token
+        authorizerUri:
+          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${adminLambdaAuthorizer.Arn}/invocations"
+        identitySource: method.request.header.Authorization
+    studentAuthorizer:
+      type: "apiKey"
+      name: "Authorization" # The header name where the token is provided
+      in: "header"
+      x-amazon-apigateway-authtype: "custom"
+      x-amazon-apigateway-authorizer:
+        type: token
+        authorizerUri:
+          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${studentLambdaAuthorizer.Arn}/invocations"
+        identitySource: method.request.header.Authorization
+    instructorAuthorizer:
+      type: "apiKey"
+      name: "Authorization" # The header name where the token is provided
+      in: "header"
+      x-amazon-apigateway-authtype: "custom"
+      x-amazon-apigateway-authorizer:
+        type: token
+        authorizerUri:
+          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${instructorLambdaAuthorizer.Arn}/invocations"
+        identitySource: method.request.header.Authorization
+    # cognitoAuthorizer: 
+    #   type: "apiKey"
+    #   name: "Authorization"
+    #   in: "header"
+    #   x-amazon-apigateway-authtype: "cognito_user_pools"
+    #   x-amazon-apigateway-authorizer:
+    #     type: cognito_user_pools
+    #     providerARNs:
+    #       - "dummyUserPoolARN" # will be replaced in api-stack
+    iamAuthorizer: # for authenticated and unauthenticated users
+      type: "apiKey"
+      name: "Authorization"
+      in: "header"
+      x-amazon-apigateway-authtype: "awsSigv4"
+    # ApiKeyAuth:
+    #   type: apiKey
+    #   in: header
+    #   name: x-api-key
+  responses:
+    Success:
+      description: Request success
+      headers:
+        Access-Control-Allow-Origin:
+          schema:
+            type: string
+        Access-Control-Allow-Methods:
+          schema:
+            type: string
+        Access-Control-Allow-Headers:
+          schema:
+            type: string
+      content: {}
+  # uncomment and do docs later :D
+  # schemas:
+  #   Region:
+  #     type: object
+  #     required:
+  #       - region_code_name
+  #       - region_fullname
+  #       - country_fullname
+  #     properties:
+  #       region_code_name:
+  #         type: string
+  #         description: Region code should be all upper case
+  #       region_fullname:
+  #         type: string
+  #         description: Region fullname all lower case
+  #       country_fullname:
+  #         type: string
+  #         description: Country fullname of the region all lower case
+  #       geographic_coordinate:
+  #         type: string
+  #         description: Geographic coordinate of the region following (latitude, longitude)
+  #         items:
+  #           type: string
+    

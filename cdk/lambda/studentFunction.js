@@ -41,14 +41,13 @@ exports.handler = async (event) => {
             first_name,
             last_name,
             preferred_name,
-            roles,
           } = event.queryStringParameters;
 
           try {
             // Insert the new user into Users table
             const userData = await sqlConnection`
               INSERT INTO "Users" (user_email, username, first_name, last_name, preferred_name, time_account_created, roles, last_sign_in)
-              VALUES (${user_email}, ${username}, ${first_name}, ${last_name}, ${preferred_name}, CURRENT_TIMESTAMP, ${roles}, CURRENT_TIMESTAMP)
+              VALUES (${user_email}, ${username}, ${first_name}, ${last_name}, ${preferred_name}, CURRENT_TIMESTAMP, ARRAY['student'], CURRENT_TIMESTAMP)
               RETURNING *;
             `;
             response.body = JSON.stringify(userData[0]);

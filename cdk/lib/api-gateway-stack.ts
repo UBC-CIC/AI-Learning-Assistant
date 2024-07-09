@@ -1,4 +1,3 @@
-
 import * as cdk from "aws-cdk-lib";
 import * as apigateway from "aws-cdk-lib/aws-apigateway";
 import * as lambda from "aws-cdk-lib/aws-lambda";
@@ -16,11 +15,12 @@ import {
 import * as cognito from "aws-cdk-lib/aws-cognito";
 import { CfnJson } from "aws-cdk-lib";
 import { VpcStack } from "./vpc-stack";
-import  {DatabaseStack} from "./database-stack"
+import { DatabaseStack } from "./database-stack";
 import { parse, stringify } from "yaml";
 import { Fn } from "aws-cdk-lib";
 import { Asset } from "aws-cdk-lib/aws-s3-assets";
 import * as s3 from "aws-cdk-lib/aws-s3";
+import * as secretsmanager from "aws-cdk-lib/aws-secretsmanager";
 
 export class ApiGatewayStack extends cdk.Stack {
   private readonly api: apigateway.SpecRestApi;
@@ -30,10 +30,11 @@ export class ApiGatewayStack extends cdk.Stack {
   private readonly layerList: { [key: string]: LayerVersion };
   public readonly stageARN_APIGW: string;
   public readonly apiGW_basedURL: string;
+  public readonly secret: secretsmanager.ISecret;
   public getEndpointUrl = () => this.api.url;
   public getUserPoolId = () => this.userPool.userPoolId;
   public getUserPoolClientId = () => this.appClient.userPoolClientId;
-  public getIdentityPoolId = () => this.identityPool.ref
+  public getIdentityPoolId = () => this.identityPool.ref;
   public addLayer = (name: string, layer: LayerVersion) =>
     (this.layerList[name] = layer);
   public getLayers = () => this.layerList;
@@ -46,7 +47,6 @@ export class ApiGatewayStack extends cdk.Stack {
   ) {
     super(scope, id, props);
 
-    
     this.layerList = {};
 
     /**
@@ -58,7 +58,6 @@ export class ApiGatewayStack extends cdk.Stack {
       compatibleRuntimes: [lambda.Runtime.NODEJS_16_X],
       description: "Contains the postgres library for JS",
     });
-
 
     //create psycopglayer
     const psycopgLayer = new LayerVersion(this, "psycopgLambdaLayer", {
@@ -82,7 +81,9 @@ export class ApiGatewayStack extends cdk.Stack {
 
     // Create the API Gateway REST API
     this.api = new apigateway.SpecRestApi(this, "APIGateway", {
-      apiDefinition: apigateway.AssetApiDefinition.fromAsset('OpenAPI_Swagger_Definition.yaml'),
+      apiDefinition: apigateway.AssetApiDefinition.fromAsset(
+        "OpenAPI_Swagger_Definition.yaml"
+      ),
       endpointTypes: [apigateway.EndpointType.REGIONAL],
       restApiName: "ailaAPI",
       deploy: true,
@@ -189,6 +190,26 @@ export class ApiGatewayStack extends cdk.Stack {
         userPoolId: this.userPool.userPoolId,
       }
     );
+
+    const secretsName = "AILA_Cognito_Secrets";
+
+    this.secret = new secretsmanager.Secret(this, secretsName, {
+      secretName: secretsName,
+      description: "Cognito Secrets for authentication",
+      secretObjectValue: {
+        VITE_COGNITO_USER_POOL_ID: cdk.SecretValue.unsafePlainText(
+          this.userPool.userPoolId
+        ),
+        VITE_COGNITO_USER_POOL_CLIENT_ID: cdk.SecretValue.unsafePlainText(
+          this.appClient.userPoolClientId
+        ),
+        VITE_AWS_REGION: cdk.SecretValue.unsafePlainText(this.region),
+        VITE_IDENTITY_POOL_ID: cdk.SecretValue.unsafePlainText(
+          this.identityPool.ref
+        ),
+      },
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
 
     // Create roles and policies
     const createPolicyStatement = (actions: string[], resources: string[]) => {
@@ -386,23 +407,25 @@ export class ApiGatewayStack extends cdk.Stack {
       },
     });
 
-
-    const lambdaStudentFunction = new lambda.Function(this, "lambdaStudentFunction", {
-      runtime: lambda.Runtime.NODEJS_16_X, // Execution environment
-      code: lambda.Code.fromAsset("lambda"), // Code loaded from "lambda" directory
-      handler: "studentFunction.handler", // Code handler
-      timeout: Duration.seconds(300),
-      vpc: vpcStack.vpc,
-      environment: {
-        SM_DB_CREDENTIALS: db.secretPathUser.secretName,
-        RDS_PROXY_ENDPOINT: db.rdsProxyEndpoint,
-      },
-      functionName: "lambdaStudentFunction",
-      memorySize: 512,
-      layers: [postgres],
-      role: lambdaRole,
-    });
-
+    const lambdaStudentFunction = new lambda.Function(
+      this,
+      "lambdaStudentFunction",
+      {
+        runtime: lambda.Runtime.NODEJS_16_X, // Execution environment
+        code: lambda.Code.fromAsset("lambda"), // Code loaded from "lambda" directory
+        handler: "studentFunction.handler", // Code handler
+        timeout: Duration.seconds(300),
+        vpc: vpcStack.vpc,
+        environment: {
+          SM_DB_CREDENTIALS: db.secretPathUser.secretName,
+          RDS_PROXY_ENDPOINT: db.rdsProxyEndpoint,
+        },
+        functionName: "lambdaStudentFunction",
+        memorySize: 512,
+        layers: [postgres],
+        role: lambdaRole,
+      }
+    );
 
     // Add the permission to the Lambda function's policy to allow API Gateway access
     lambdaStudentFunction.addPermission("AllowApiGatewayInvoke", {
@@ -411,22 +434,25 @@ export class ApiGatewayStack extends cdk.Stack {
       sourceArn: `arn:aws:execute-api:${this.region}:${this.account}:${this.api.restApiId}/*/*/student*`,
     });
 
-    const lambdaInstructorFunction = new lambda.Function(this, "lambdaInstructorFunction", {
-      runtime: lambda.Runtime.NODEJS_16_X, // Execution environment
-      code: lambda.Code.fromAsset("lambda"), // Code loaded from "lambda" directory
-      handler: "instructorFunction.handler", // Code handler
-      timeout: Duration.seconds(300),
-      vpc: vpcStack.vpc,
-      environment: {
-        SM_DB_CREDENTIALS: db.secretPathUser.secretName,
-        RDS_PROXY_ENDPOINT: db.rdsProxyEndpoint,
-      },
-      functionName: "lambdaInstructorFunction",
-      memorySize: 512,
-      layers: [postgres],
-      role: lambdaRole,
-    });
-
+    const lambdaInstructorFunction = new lambda.Function(
+      this,
+      "lambdaInstructorFunction",
+      {
+        runtime: lambda.Runtime.NODEJS_16_X, // Execution environment
+        code: lambda.Code.fromAsset("lambda"), // Code loaded from "lambda" directory
+        handler: "instructorFunction.handler", // Code handler
+        timeout: Duration.seconds(300),
+        vpc: vpcStack.vpc,
+        environment: {
+          SM_DB_CREDENTIALS: db.secretPathUser.secretName,
+          RDS_PROXY_ENDPOINT: db.rdsProxyEndpoint,
+        },
+        functionName: "lambdaInstructorFunction",
+        memorySize: 512,
+        layers: [postgres],
+        role: lambdaRole,
+      }
+    );
 
     // Add the permission to the Lambda function's policy to allow API Gateway access
     lambdaInstructorFunction.addPermission("AllowApiGatewayInvoke", {
@@ -441,23 +467,25 @@ export class ApiGatewayStack extends cdk.Stack {
       sourceArn: `arn:aws:execute-api:${this.region}:${this.account}:${this.api.restApiId}/*/*/student*`,
     });
 
-
-    const lambdaAdminFunction = new lambda.Function(this, "lambdaAdminFunction", {
-      runtime: lambda.Runtime.NODEJS_16_X, // Execution environment
-      code: lambda.Code.fromAsset("lambda"), // Code loaded from "lambda" directory
-      handler: "adminFunction.handler", // Code handler
-      timeout: Duration.seconds(300),
-      vpc: vpcStack.vpc,
-      environment: {
-        SM_DB_CREDENTIALS: db.secretPathUser.secretName,
-        RDS_PROXY_ENDPOINT: db.rdsProxyEndpoint,
-      },
-      functionName: "lambdaAdminFunction",
-      memorySize: 512,
-      layers: [postgres],
-      role: lambdaRole,
-    });
-
+    const lambdaAdminFunction = new lambda.Function(
+      this,
+      "lambdaAdminFunction",
+      {
+        runtime: lambda.Runtime.NODEJS_16_X, // Execution environment
+        code: lambda.Code.fromAsset("lambda"), // Code loaded from "lambda" directory
+        handler: "adminFunction.handler", // Code handler
+        timeout: Duration.seconds(300),
+        vpc: vpcStack.vpc,
+        environment: {
+          SM_DB_CREDENTIALS: db.secretPathUser.secretName,
+          RDS_PROXY_ENDPOINT: db.rdsProxyEndpoint,
+        },
+        functionName: "lambdaAdminFunction",
+        memorySize: 512,
+        layers: [postgres],
+        role: lambdaRole,
+      }
+    );
 
     // Add the permission to the Lambda function's policy to allow API Gateway access
     lambdaAdminFunction.addPermission("AllowApiGatewayInvoke", {
@@ -466,22 +494,25 @@ export class ApiGatewayStack extends cdk.Stack {
       sourceArn: `arn:aws:execute-api:${this.region}:${this.account}:${this.api.restApiId}/*/*/admin*`,
     });
 
-    const lambdaTechAdminFunction = new lambda.Function(this, "lambdaTechAdminFunction", {
-      runtime: lambda.Runtime.NODEJS_16_X, // Execution environment
-      code: lambda.Code.fromAsset("lambda"), // Code loaded from "lambda" directory
-      handler: "techadminFunction.handler", // Code handler
-      timeout: Duration.seconds(300),
-      vpc: vpcStack.vpc,
-      environment: {
-        SM_DB_CREDENTIALS: db.secretPathUser.secretName,
-        RDS_PROXY_ENDPOINT: db.rdsProxyEndpoint,
-      },
-      functionName: "lambdaTechAdminFunction",
-      memorySize: 512,
-      layers: [postgres],
-      role: lambdaRole,
-    });
-
+    const lambdaTechAdminFunction = new lambda.Function(
+      this,
+      "lambdaTechAdminFunction",
+      {
+        runtime: lambda.Runtime.NODEJS_16_X, // Execution environment
+        code: lambda.Code.fromAsset("lambda"), // Code loaded from "lambda" directory
+        handler: "techadminFunction.handler", // Code handler
+        timeout: Duration.seconds(300),
+        vpc: vpcStack.vpc,
+        environment: {
+          SM_DB_CREDENTIALS: db.secretPathUser.secretName,
+          RDS_PROXY_ENDPOINT: db.rdsProxyEndpoint,
+        },
+        functionName: "lambdaTechAdminFunction",
+        memorySize: 512,
+        layers: [postgres],
+        role: lambdaRole,
+      }
+    );
 
     // Add the permission to the Lambda function's policy to allow API Gateway access
     lambdaTechAdminFunction.addPermission("AllowApiGatewayInvoke", {
@@ -489,6 +520,118 @@ export class ApiGatewayStack extends cdk.Stack {
       action: "lambda:InvokeFunction",
       sourceArn: `arn:aws:execute-api:${this.region}:${this.account}:${this.api.restApiId}/*/*/admin*`,
     });
-    
+
+    /**
+     *
+     * Create Integration Lambda layer for aws-jwt-verify
+     */
+    const jwt = new lambda.LayerVersion(this, "aws-jwt-verify", {
+      code: lambda.Code.fromAsset("./layers/aws-jwt-verify.zip"),
+      compatibleRuntimes: [lambda.Runtime.NODEJS_16_X],
+      description: "Contains the aws-jwt-verify library for JS",
+    });
+
+    /**
+     *
+     * Create Lambda for Admin Authorization endpoints
+     */
+    const authorizationFunction = new lambda.Function(
+      this,
+      "admin-authorization-api-gateway",
+      {
+        runtime: lambda.Runtime.NODEJS_16_X, // Execution environment
+        code: lambda.Code.fromAsset("lambda"), // Code loaded from "lambda" directory
+        handler: "adminAuthorizerFunction.handler", // Code handler
+        timeout: Duration.seconds(300),
+        vpc: vpcStack.vpc,
+        environment: {
+          SM_COGNITO_CREDENTIALS: this.secret.secretName,
+        },
+        functionName: "adminLambdaAuthorizer",
+        memorySize: 512,
+        layers: [jwt],
+        role: lambdaRole,
+      }
+    );
+
+    // Add the permission to the Lambda function's policy to allow API Gateway access
+    authorizationFunction.grantInvoke(
+      new iam.ServicePrincipal("apigateway.amazonaws.com")
+    );
+
+    // Change Logical ID to match the one decleared in YAML file of Open API
+    const apiGW_authorizationFunction = authorizationFunction.node
+      .defaultChild as lambda.CfnFunction;
+    apiGW_authorizationFunction.overrideLogicalId("adminLambdaAuthorizer");
+
+    /**
+     *
+     * Create Lambda for User Authorization endpoints
+     */
+    const authorizationFunction_student = new lambda.Function(
+      this,
+      "student-authorization-api-gateway",
+      {
+        runtime: lambda.Runtime.NODEJS_16_X, // Execution environment
+        code: lambda.Code.fromAsset("lambda"), // Code loaded from "lambda" directory
+        handler: "studentAuthorizerFunction.handler", // Code handler
+        timeout: Duration.seconds(300),
+        vpc: vpcStack.vpc,
+        environment: {
+          SM_COGNITO_CREDENTIALS: this.secret.secretName,
+        },
+        functionName: "studentLambdaAuthorizer",
+        memorySize: 512,
+        layers: [jwt],
+        role: lambdaRole,
+      }
+    );
+
+    // Add the permission to the Lambda function's policy to allow API Gateway access
+    authorizationFunction_student.grantInvoke(
+      new iam.ServicePrincipal("apigateway.amazonaws.com")
+    );
+
+    // Change Logical ID to match the one decleared in YAML file of Open API
+    const apiGW_authorizationFunction_student = authorizationFunction_student.node
+      .defaultChild as lambda.CfnFunction;
+    apiGW_authorizationFunction_student.overrideLogicalId(
+      "studentLambdaAuthorizer"
+    );
+
+    /**
+     *
+     * Create Lambda for User Authorization endpoints
+     */
+    const authorizationFunction_instructor = new lambda.Function(
+      this,
+      "instructor-authorization-api-gateway",
+      {
+        runtime: lambda.Runtime.NODEJS_16_X, // Execution environment
+        code: lambda.Code.fromAsset("lambda"), // Code loaded from "lambda" directory
+        handler: "instructorAuthorizerFunction.handler", // Code handler
+        timeout: Duration.seconds(300),
+        vpc: vpcStack.vpc,
+        environment: {
+          SM_COGNITO_CREDENTIALS: this.secret.secretName,
+        },
+        functionName: "instructorLambdaAuthorizer",
+        memorySize: 512,
+        layers: [jwt],
+        role: lambdaRole,
+      }
+    );
+
+    // Add the permission to the Lambda function's policy to allow API Gateway access
+    authorizationFunction_instructor.grantInvoke(
+      new iam.ServicePrincipal("apigateway.amazonaws.com")
+    );
+
+    // Change Logical ID to match the one decleared in YAML file of Open API
+    const apiGW_authorizationFunction_instructor = authorizationFunction_student.node
+      .defaultChild as lambda.CfnFunction;
+    apiGW_authorizationFunction_instructor.overrideLogicalId(
+      "studentLambdaAuthorizer"
+    );
   }
 }

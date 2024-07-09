@@ -458,15 +458,8 @@ export class ApiGatewayStack extends cdk.Stack {
     lambdaInstructorFunction.addPermission("AllowApiGatewayInvoke", {
       principal: new iam.ServicePrincipal("apigateway.amazonaws.com"),
       action: "lambda:InvokeFunction",
-      sourceArn: `arn:aws:execute-api:${this.region}:${this.account}:${this.api.restApiId}/*/*/instructor*`,
+      sourceArn: `arn:aws:execute-api:${this.region}:${this.account}:${this.api.restApiId}/*/*/{instructor,student}*`,
     });
-    // Add the permission to the Lambda function's policy to allow API Gateway access
-    lambdaInstructorFunction.addPermission("AllowApiGatewayInvoke", {
-      principal: new iam.ServicePrincipal("apigateway.amazonaws.com"),
-      action: "lambda:InvokeFunction",
-      sourceArn: `arn:aws:execute-api:${this.region}:${this.account}:${this.api.restApiId}/*/*/student*`,
-    });
-
     const lambdaAdminFunction = new lambda.Function(
       this,
       "lambdaAdminFunction",
@@ -491,7 +484,7 @@ export class ApiGatewayStack extends cdk.Stack {
     lambdaAdminFunction.addPermission("AllowApiGatewayInvoke", {
       principal: new iam.ServicePrincipal("apigateway.amazonaws.com"),
       action: "lambda:InvokeFunction",
-      sourceArn: `arn:aws:execute-api:${this.region}:${this.account}:${this.api.restApiId}/*/*/admin*`,
+      sourceArn: `arn:aws:execute-api:${this.region}:${this.account}:${this.api.restApiId}/*/*/{instructor,student, admin}*`,
     });
 
     const lambdaTechAdminFunction = new lambda.Function(
@@ -518,7 +511,7 @@ export class ApiGatewayStack extends cdk.Stack {
     lambdaTechAdminFunction.addPermission("AllowApiGatewayInvoke", {
       principal: new iam.ServicePrincipal("apigateway.amazonaws.com"),
       action: "lambda:InvokeFunction",
-      sourceArn: `arn:aws:execute-api:${this.region}:${this.account}:${this.api.restApiId}/*/*/admin*`,
+      sourceArn: `arn:aws:execute-api:${this.region}:${this.account}:${this.api.restApiId}/*/*/*`,
     });
 
     /**

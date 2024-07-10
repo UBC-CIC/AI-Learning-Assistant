@@ -24,7 +24,7 @@ import {
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 // login assets
 import loginframe from "../assets/loginframe.png";
-import PageContainer from "./container";
+import PageContainer from "./Container";
 
 // MUI theming
 const { palette } = createTheme();

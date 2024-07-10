@@ -16,10 +16,9 @@ const StudentChat = () => {
           </div>
         </button>
         <div className="">
-        <hr className="border-t border-black my-4" />
-
+          <hr className="border-t border-black my-4" />
         </div>
-        <div>History</div>
+        <div className="font-roboto font-bold">History</div>
         <div>session</div>
       </div>
       <div className="flex flex-col w-3/4 h-screen">

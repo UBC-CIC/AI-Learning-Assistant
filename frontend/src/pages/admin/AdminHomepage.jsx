@@ -1,5 +1,5 @@
 import React from "react";
-import PageContainer from "../container";
+import PageContainer from "../Container";
 import AdminHeader from "../../components/AdminHeader";
 
 export const AdminHomepage = () => {

@@ -6,6 +6,9 @@ import {
   confirmSignIn,
   confirmSignUp,
   resendSignUpCode,
+  resetPassword,
+  confirmResetPassword,
+  updatePassword,
 } from "aws-amplify/auth";
 // MUI
 import {
@@ -30,6 +33,7 @@ const createColor = (mainColor) => augmentColor({ color: { main: mainColor } });
 const theme = createTheme({
   palette: {
     primary: createColor("#5536DA"),
+    bg: createColor("#F8F9FD"),
   },
 });
 
@@ -42,6 +46,7 @@ export const Login = () => {
   const [lastName, setLastName] = useState("");
   const [role, setRole] = useState("");
   const [newPassword, setNewPassword] = useState(false);
+  const [newResetPassword, setNewResetPassword] = useState("");
   const [newUserPassword, setNewUserPassword] = useState(false);
   // auth status variables
   const [signUpConfirmation, setSignUpConfirmation] = useState(false);
@@ -49,6 +54,10 @@ export const Login = () => {
   const [loading, setLoading] = useState(false);
   const [passwordError, setPasswordError] = useState("");
   const [confirmationError, setConfirmationError] = useState("");
+  const [confirmationCode, setConfirmationCode] = useState("");
+  const [step, setStep] = useState("requestReset");
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
 
   // existing user sign in
   const handleSignIn = async (event) => {
@@ -59,7 +68,11 @@ export const Login = () => {
         username: username,
         password: password,
       });
-      console.log("User logged in:", user.isSignedIn, user.nextStep.signInStep);
+      console.log(
+        "USER SUCCESSFULLY LOGGED IN:",
+        user.isSignedIn,
+        user.nextStep.signInStep
+      );
       if (!user.isSignedIn) {
         if (
           user.nextStep.signInStep ===
@@ -188,22 +201,89 @@ export const Login = () => {
     }
   };
 
-  const storeUser = async (first_name, last_name, email, role) => {
-    setLoading(true);
-
-    //sign in user
+  // user reset password
+  async function handleResetPassword(username) {
     try {
-      const user = await signIn({
-        username: username,
-        password: password,
-      });
-      console.log("User logged in:", user.isSignedIn, user.nextStep.signInStep);
+      const output = await resetPassword({ username });
+      handleResetPasswordNextSteps(output);
+      console.log("username", username);
     } catch (error) {
-      console.log("Error getting user:", error);
-      setLoading(false);
-      return;
+      console.log(error);
+      setError(error.message);
+      setMessage("");
     }
-  };
+  }
+
+  function handleResetPasswordNextSteps(output) {
+    const { nextStep } = output;
+    switch (nextStep.resetPasswordStep) {
+      case "CONFIRM_RESET_PASSWORD_WITH_CODE":
+        const codeDeliveryDetails = nextStep.codeDeliveryDetails;
+        console.log(
+          `Confirmation code was sent to ${codeDeliveryDetails.deliveryMedium}`
+        );
+        setMessage(
+          `Confirmation code was sent to ${codeDeliveryDetails.deliveryMedium}`
+        );
+        setStep("confirmReset");
+        break;
+      case "DONE":
+        setMessage("Successfully reset password.");
+        setStep("done");
+        console.log("Successfully reset password.");
+        break;
+    }
+  }
+
+  async function handleConfirmResetPassword({
+    username,
+    confirmationCode,
+    newResetPassword,
+  }) {
+    try {
+      await confirmResetPassword({
+        username,
+        confirmationCode,
+        newResetPassword,
+      });
+      console.log("username", username);
+      setMessage("Password successfully reset.");
+      setStep("done");
+      setError("");
+    } catch (error) {
+      console.log(error);
+      console.log(username);
+      console.log(confirmationCode);
+      setError(error.message);
+    }
+  }
+
+  async function handleUpdatePassword(oldPassword, newPassword) {
+    try {
+      await updatePassword({ oldPassword, newPassword });
+    } catch (err) {
+      console.log(err);
+      setError(error.message);
+    }
+  }
+
+  //TODO: STORE USER INFO IN DATABASE
+  // const storeUser = async (first_name, last_name, email, role) => {
+  //   setLoading(true);
+
+  //   //sign in user
+  //   try {
+  //     const user = await signIn({
+  //       username: username,
+  //       password: password,
+  //     });
+  //     console.log("User logged in:", user.isSignedIn, user.nextStep.signInStep);
+  //   } catch (error) {
+  //     console.log("Error getting user:", error);
+  //     setLoading(false);
+  //     return;
+  //   }
+  // };
 
   return (
     <ThemeProvider theme={theme}>
@@ -229,7 +309,8 @@ export const Login = () => {
           {!loading &&
             !newUserPassword &&
             !newSignUp &&
-            !signUpConfirmation && (
+            !signUpConfirmation &&
+            !forgotPassword && (
               <Grid item xs={12} sm={8} md={5} component={Paper} square>
                 <Box
                   sx={{
@@ -258,6 +339,7 @@ export const Login = () => {
                       name="email"
                       autoComplete="email"
                       autoFocus
+                      value={username}
                       onChange={(e) => setUsername(e.target.value)}
                     />
                     <TextField
@@ -269,6 +351,7 @@ export const Login = () => {
                       type="password"
                       id="password"
                       autoComplete="current-password"
+                      value={password}
                       onChange={(e) => setPassword(e.target.value)}
                     />
                     <Button
@@ -336,6 +419,7 @@ export const Login = () => {
                         id="firstName"
                         label="First Name"
                         autoFocus
+                        value={firstName}
                         onChange={(e) => setFirstName(e.target.value)}
                       />
                     </Grid>
@@ -347,6 +431,7 @@ export const Login = () => {
                         label="Last Name"
                         name="lastName"
                         autoComplete="family-name"
+                        value={lastName}
                         onChange={(e) => setLastName(e.target.value)}
                       />
                     </Grid>
@@ -358,6 +443,7 @@ export const Login = () => {
                         label="Email Address"
                         name="email"
                         autoComplete="email"
+                        value={username}
                         onChange={(e) => setUsername(e.target.value)}
                       />
                     </Grid>
@@ -370,6 +456,7 @@ export const Login = () => {
                         type="password"
                         id="password"
                         autoComplete="new-password"
+                        value={password}
                         onChange={(e) => setPassword(e.target.value)}
                       />
                     </Grid>
@@ -412,15 +499,23 @@ export const Login = () => {
           )}
           {/* new user change password  */}
           {!loading && newUserPassword && (
-            <div>
-              <h1 className="text-3xl font-bold my-3 text-zinc-600">
+            <Box
+              sx={{
+                my: 8,
+                mx: 4,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+              }}
+            >
+              <Typography component="h1" variant="h5" paddingBottom={3}>
                 New User
-              </h1>
+              </Typography>
               <p className="text-sm">
                 Please enter a new password for your account.
               </p>
               <div className="flex flex-col items-center justify-center">
-                <form onSubmit={handleNewPasswordUser}>
+                <form onSubmit={handleNewUserPassword}>
                   <input
                     className="input input-bordered mt-1 h-10 w-full text-xs"
                     name="newPassword"
@@ -440,22 +535,33 @@ export const Login = () => {
                       {passwordError}
                     </div>
                   )}
-                  <button
-                    className="btn btn-neutral mt-4 min-h-5 h-8 w-full"
+                  <Button
                     type="submit"
+                    fullWidth
+                    variant="contained"
+                    color="primary"
+                    sx={{ mt: 3, mb: 2 }}
                   >
                     Submit New Password
-                  </button>
+                  </Button>
                 </form>
               </div>
-            </div>
+            </Box>
           )}
           {/* new user confirm signup  */}
           {!loading && signUpConfirmation && (
-            <div>
-              <h1 className="text-3xl font-bold my-3 text-zinc-600">
-                Account not confirmed
-              </h1>
+            <Box
+              sx={{
+                my: 8,
+                mx: 2,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+              }}
+            >
+              <Typography component="h1" variant="h5" paddingBottom={3}>
+                Account not verified
+              </Typography>
               <p className="text-sm">
                 Please enter the confirmation code sent to your email.
               </p>
@@ -473,21 +579,124 @@ export const Login = () => {
                       {confirmationError}
                     </div>
                   )}
-                  <button
-                    className="btn btn-neutral mt-4 min-h-5 h-8 w-full"
+                  <Button
                     type="submit"
+                    fullWidth
+                    variant="contained"
+                    color="primary"
+                    sx={{ mt: 3, mb: 2 }}
                   >
                     Submit
-                  </button>
-                  <button
-                    className="btn btn-secondary mt-4 min-h-5 h-8 w-full"
+                  </Button>
+                  <Button
                     type="button"
+                    fullWidth
+                    variant="contained"
+                    color="primary"
+                    sx={{ mt: 3, mb: 2 }}
                     onClick={resendConfirmationCode}
                   >
                     Resend Code
-                  </button>
+                  </Button>
                 </form>
               </div>
+            </Box>
+          )}
+          {/* forgot password?  */}
+          {!loading && forgotPassword && (
+            <div>
+              <Box
+                sx={{
+                  my: 10,
+                  mx: 10,
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: "100%",
+                }}
+              >
+                <Typography variant="h5">Reset Password</Typography>
+                {step === "requestReset" && (
+                  <>
+                    <TextField
+                      label="Username"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      fullWidth
+                      margin="normal"
+                    />
+                    <Button
+                      variant="contained"
+                      color="primary"
+                      onClick={() => handleResetPassword(username)}
+                      sx={{ mt: 2 }}
+                    >
+                      Send Reset Code
+                    </Button>
+                  </>
+                )}
+                {step === "confirmReset" && (
+                  <>
+                    <Box
+                      component="form"
+                      noValidate
+                      onSubmit={handleConfirmResetPassword}
+                      sx={{ mt: 1 }}
+                    >
+                      <TextField
+                        required
+                        fullWidth
+                        id="email"
+                        label="Email Address"
+                        name="email"
+                        autoComplete="email"
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
+                      />
+                      <TextField
+                        label="Confirmation Code"
+                        value={confirmationCode}
+                        onChange={(e) => setConfirmationCode(e.target.value)}
+                        fullWidth
+                        margin="normal"
+                      />
+                      <TextField
+                        label="New Password"
+                        type="password"
+                        value={newResetPassword}
+                        onChange={(e) => setNewResetPassword(e.target.value)}
+                        fullWidth
+                        margin="normal"
+                      />
+                      <Button
+                        type="submit"
+                        fullWidth
+                        variant="contained"
+                        color="primary"
+                        sx={{ mt: 3, mb: 2 }}
+                      >
+                        Reset Password
+                      </Button>
+                    </Box>
+                  </>
+                )}
+                {step === "done" && (
+                  <Typography color="primary" sx={{ mt: 2 }}>
+                    Password has been successfully reset.
+                  </Typography>
+                )}
+                {error && (
+                  <Typography color="error" sx={{ mt: 2 }}>
+                    {error}
+                  </Typography>
+                )}
+                {message && (
+                  <Typography color="primary" sx={{ mt: 2 }}>
+                    {message}
+                  </Typography>
+                )}
+              </Box>
             </div>
           )}
         </Grid>

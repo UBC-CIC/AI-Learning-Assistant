@@ -1,6 +1,6 @@
 import React from "react";
-import StudentHeader from "../../components/studentHeader";
-import Container from "../container";
+import StudentHeader from "../../components/StudentHeader";
+import Container from "../Container";
 
 export const CourseView = () => {
   return (

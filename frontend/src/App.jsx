@@ -12,8 +12,9 @@ import {
 } from "react-router-dom";
 import React, { useEffect, useState } from "react";
 // pages
-import Login from "./pages/login";
-import StudentHomepage from "./pages/student/studentHomepage";
+import Login from "./pages/Login";
+import StudentHomepage from "./pages/student/StudentHomepage";
+import StudentChat from "./pages/student/StudentChat";
 
 Amplify.configure({
   API: {
@@ -76,6 +77,7 @@ function App() {
       <Routes>
         <Route path="/" element={user ? <Navigate to="/home" /> : <Login />} />
         <Route path="/home" element={<StudentHomepage />} />
+        <Route path="/chat" element={<StudentChat />} />
       </Routes>
     </Router>
   );

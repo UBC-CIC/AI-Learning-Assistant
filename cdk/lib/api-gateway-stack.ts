@@ -34,7 +34,6 @@ export class ApiGatewayStack extends cdk.Stack {
   ) {
     super(scope, id, props);
 
-    
     this.layerList = {};
 
     //create psycopglayer
@@ -45,7 +44,6 @@ export class ApiGatewayStack extends cdk.Stack {
     });
 
     this.layerList["psycopg2"] = psycopgLayer;
-
 
     // Create the API Gateway REST API
     this.api = new apigateway.RestApi(this, "MyApi", {
@@ -104,7 +102,7 @@ export class ApiGatewayStack extends cdk.Stack {
       this,
       "aila-identity-pool",
       {
-        allowUnauthenticatedIdentities: false, // don't allow unauthenticated users
+        allowUnauthenticatedIdentities: true, // don't allow unauthenticated users
         identityPoolName: "ailaIdentityPool",
         cognitoIdentityProviders: [
           {
@@ -289,7 +287,6 @@ export class ApiGatewayStack extends cdk.Stack {
       },
     });
 
-   
     // Create the Lambda function for RDS
     const lambdaFunctionRDS = new lambda.Function(this, "LambdaFunctionRDS", {
       runtime: lambda.Runtime.NODEJS_16_X,

@@ -1,7 +1,7 @@
 import "./App.css";
 // amplify
 import { Amplify } from "aws-amplify";
-import { getCurrentUser } from "aws-amplify/auth";
+import { getCurrentUser, fetchAuthSession } from "aws-amplify/auth";
 import "@aws-amplify/ui-react/styles.css";
 // react-router
 import {
@@ -13,7 +13,7 @@ import {
 import React, { useEffect, useState } from "react";
 // pages
 import Login from "./pages/login";
-import StudentHomepage from "./pages/studentHomepage";
+import StudentHomepage from "./pages/student/studentHomepage";
 
 Amplify.configure({
   API: {
@@ -33,7 +33,10 @@ Amplify.configure({
   },
 });
 
-console.log("config:", Amplify.getConfig());
+// view cognito groups
+// const user = await fetchAuthSession();
+// const roles = user.signInUserSession.accessToken.payload["cognito:groups"];
+// console.log(roles);
 
 function App() {
   const [user, setUser] = useState(null);
@@ -45,7 +48,7 @@ function App() {
       try {
         const userInformation = await getUser(email);
         setUserInfo(userInformation);
-        console.log("user email", userInformation);
+        console.log("user info", userInformation);
       } catch (error) {
         console.log("Error getting user:", error);
       }

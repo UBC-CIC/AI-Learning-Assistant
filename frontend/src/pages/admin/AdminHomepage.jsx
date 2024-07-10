@@ -1,13 +1,21 @@
 import React from "react";
 import PageContainer from "../Container";
 import AdminHeader from "../../components/AdminHeader";
+import { Typography } from "@mui/material";
 
 export const AdminHomepage = () => {
   return (
     <div>
       <AdminHeader />
       <PageContainer>
-        <h1 color="black"> admin homepage </h1>
+        <Typography
+          color="black"
+          textAlign="center"
+          justifyContent="center"
+          paddingLeft={5}
+        >
+          admin homepage
+        </Typography>
       </PageContainer>
     </div>
   );

@@ -377,7 +377,6 @@ export const Login = () => {
                         <Link
                           href="#"
                           variant="body2"
-                          onSubmit
                           onClick={() => setNewSignUp(true)}
                         >
                           {"Create your account"}
@@ -604,28 +603,30 @@ export const Login = () => {
           )}
           {/* forgot password?  */}
           {!loading && forgotPassword && (
-            <div>
-              <Box
-                sx={{
-                  my: 10,
-                  mx: 10,
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  width: "100%",
-                }}
-              >
-                <Typography variant="h5">Reset Password</Typography>
-                {step === "requestReset" && (
-                  <>
-                    <TextField
-                      label="Username"
-                      value={username}
-                      onChange={(e) => setUsername(e.target.value)}
-                      fullWidth
-                      margin="normal"
-                    />
+            <Box
+              sx={{
+                my: 10,
+                mx: 10,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                width: "100%",
+              }}
+            >
+              <Typography variant="h5">Reset Password</Typography>
+              {step === "requestReset" && (
+                <>
+                  <Grid item xs={12} sm={8} md={5} component={Paper} square>
+                    <Grid item xs={12}>
+                      <TextField
+                        label="Username"
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
+                        fullWidth
+                        margin="normal"
+                      />
+                    </Grid>
                     <Button
                       variant="contained"
                       color="primary"
@@ -634,16 +635,18 @@ export const Login = () => {
                     >
                       Send Reset Code
                     </Button>
-                  </>
-                )}
-                {step === "confirmReset" && (
-                  <>
-                    <Box
-                      component="form"
-                      noValidate
-                      onSubmit={handleConfirmResetPassword}
-                      sx={{ mt: 1 }}
-                    >
+                  </Grid>
+                </>
+              )}
+              {step === "confirmReset" && (
+                <Grid item xs={12} sm={8} md={5} component={Paper} square>
+                  <Box
+                    component="form"
+                    noValidate
+                    onSubmit={handleConfirmResetPassword}
+                    sx={{ mt: 1 }}
+                  >
+                    <Grid item xs={12}>
                       <TextField
                         required
                         fullWidth
@@ -654,6 +657,8 @@ export const Login = () => {
                         value={username}
                         onChange={(e) => setUsername(e.target.value)}
                       />
+                    </Grid>
+                    <Grid item xs={12}>
                       <TextField
                         label="Confirmation Code"
                         value={confirmationCode}
@@ -661,6 +666,8 @@ export const Login = () => {
                         fullWidth
                         margin="normal"
                       />
+                    </Grid>
+                    <Grid item xs={12}>
                       <TextField
                         label="New Password"
                         type="password"
@@ -669,35 +676,35 @@ export const Login = () => {
                         fullWidth
                         margin="normal"
                       />
-                      <Button
-                        type="submit"
-                        fullWidth
-                        variant="contained"
-                        color="primary"
-                        sx={{ mt: 3, mb: 2 }}
-                      >
-                        Reset Password
-                      </Button>
-                    </Box>
-                  </>
-                )}
-                {step === "done" && (
-                  <Typography color="primary" sx={{ mt: 2 }}>
-                    Password has been successfully reset.
-                  </Typography>
-                )}
-                {error && (
-                  <Typography color="error" sx={{ mt: 2 }}>
-                    {error}
-                  </Typography>
-                )}
-                {message && (
-                  <Typography color="primary" sx={{ mt: 2 }}>
-                    {message}
-                  </Typography>
-                )}
-              </Box>
-            </div>
+                    </Grid>
+                    <Button
+                      type="submit"
+                      fullWidth
+                      variant="contained"
+                      color="primary"
+                      sx={{ mt: 3, mb: 2 }}
+                    >
+                      Reset Password
+                    </Button>
+                  </Box>
+                </Grid>
+              )}
+              {step === "done" && (
+                <Typography color="primary" sx={{ mt: 2 }}>
+                  Password has been successfully reset.
+                </Typography>
+              )}
+              {error && (
+                <Typography color="error" sx={{ mt: 2 }}>
+                  {error}
+                </Typography>
+              )}
+              {message && (
+                <Typography color="primary" sx={{ mt: 2 }}>
+                  {message}
+                </Typography>
+              )}
+            </Box>
           )}
         </Grid>
       </PageContainer>

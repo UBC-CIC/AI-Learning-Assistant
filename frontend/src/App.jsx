@@ -14,6 +14,8 @@ import React, { useEffect, useState } from "react";
 // pages
 import Login from "./pages/login";
 import StudentHomepage from "./pages/student/studentHomepage";
+import AdminHomepage from "./pages/admin/AdminHomepage";
+import InstructorHomepage from "./pages/instructor/InstructorHomepage";
 
 Amplify.configure({
   API: {
@@ -33,49 +35,77 @@ Amplify.configure({
   },
 });
 
-// view cognito groups
-// const user = await fetchAuthSession();
-// const roles = user.signInUserSession.accessToken.payload["cognito:groups"];
-// console.log(roles);
-
 function App() {
   const [user, setUser] = useState(null);
+  const [userGroup, setUserGroup] = useState(null);
   const [userInfo, setUserInfo] = useState({});
   //get user info and render page based on role
 
+  // useEffect(() => {
+  //   async function getUserInfo(email) {
+  //     try {
+  //       const userInformation = await getUser(email);
+  //       setUserInfo(userInformation);
+  //       console.log("user info", userInformation);
+  //     } catch (error) {
+  //       console.log("Error getting user:", error);
+  //     }
+  //   }
+
+  //   async function getCognitoUser() {
+  //     try {
+  //       const currentUser = await getCurrentUser();
+  //       setUser(currentUser);
+  //       console.log(currentUser.signInDetails.loginId, "is signed in");
+  //       getUserInfo(currentUser.signInDetails.loginId);
+  //       <Navigate to="/home" />;
+  //     } catch (error) {
+  //       setUser(null);
+  //       console.log("Error getting user:", error);
+  //       <Navigate to="/" />;
+  //     }
+  //   }
+
+  //   getCognitoUser();
+  // }, []);
+
   useEffect(() => {
-    async function getUserInfo(email) {
+    const fetchAuthData = async () => {
       try {
-        const userInformation = await getUser(email);
-        setUserInfo(userInformation);
-        console.log("user info", userInformation);
+        const { tokens } = await fetchAuthSession();
+        if (tokens && tokens.accessToken) {
+          const group = tokens.accessToken.payload["cognito:groups"];
+          setUser(tokens.accessToken.payload);
+          setUserGroup(group || []);
+          console.log("User belongs to following groups: " + group);
+          // console.log("user", user);
+          console.log(userGroup);
+        }
       } catch (error) {
-        console.log("Error getting user:", error);
+        console.log(error);
       }
-    }
+    };
 
-    async function getCognitoUser() {
-      try {
-        const currentUser = await getCurrentUser();
-        setUser(currentUser);
-        console.log(currentUser.signInDetails.loginId, "is signed in");
-        getUserInfo(currentUser.signInDetails.loginId);
-        <Navigate to="/home" />;
-      } catch (error) {
-        setUser(null);
-        console.log("Error getting user:", error);
-        <Navigate to="/" />;
-      }
-    }
-
-    getCognitoUser();
+    fetchAuthData();
   }, []);
+
+  const getHomePage = () => {
+    if (userGroup && userGroup.includes("admin")) {
+      return <AdminHomepage />;
+    } else if (userGroup && userGroup.includes("instructor")) {
+      return <InstructorHomepage />;
+    } else if (userGroup && userGroup.includes("student")) {
+      return <StudentHomepage />;
+    } else {
+      return <Login />;
+    }
+  };
 
   return (
     <Router>
       <Routes>
         <Route path="/" element={user ? <Navigate to="/home" /> : <Login />} />
-        <Route path="/home" element={<StudentHomepage />} />
+        <Route path="/home" element={getHomePage()} />
       </Routes>
     </Router>
   );

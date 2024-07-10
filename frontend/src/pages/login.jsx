@@ -235,16 +235,13 @@ export const Login = () => {
     }
   }
 
-  async function handleConfirmResetPassword({
-    username,
-    confirmationCode,
-    newResetPassword,
-  }) {
+  async function handleConfirmResetPassword(event) {
+    event.preventDefault();
     try {
       await confirmResetPassword({
         username,
         confirmationCode,
-        newResetPassword,
+        newPassword,
       });
       console.log("username", username);
       setMessage("Password successfully reset.");
@@ -603,21 +600,22 @@ export const Login = () => {
           )}
           {/* forgot password?  */}
           {!loading && forgotPassword && (
-            <Box
-              sx={{
-                my: 10,
-                mx: 10,
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-                width: "100%",
-              }}
-            >
-              <Typography variant="h5">Reset Password</Typography>
-              {step === "requestReset" && (
-                <>
-                  <Grid item xs={12} sm={8} md={5} component={Paper} square>
+            <Grid item xs={12} sm={8} md={5} component={Paper} square>
+              <Box
+                sx={{
+                  my: 10,
+                  mx: 10,
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: "100%",
+                  paddingRight: 15,
+                }}
+              >
+                <Typography variant="h5">Reset Password</Typography>
+                {step === "requestReset" && (
+                  <>
                     <Grid item xs={12}>
                       <TextField
                         label="Username"
@@ -635,76 +633,81 @@ export const Login = () => {
                     >
                       Send Reset Code
                     </Button>
-                  </Grid>
-                </>
-              )}
-              {step === "confirmReset" && (
-                <Grid item xs={12} sm={8} md={5} component={Paper} square>
-                  <Box
-                    component="form"
-                    noValidate
-                    onSubmit={handleConfirmResetPassword}
-                    sx={{ mt: 1 }}
-                  >
-                    <Grid item xs={12}>
-                      <TextField
-                        required
-                        fullWidth
-                        id="email"
-                        label="Email Address"
-                        name="email"
-                        autoComplete="email"
-                        value={username}
-                        onChange={(e) => setUsername(e.target.value)}
-                      />
-                    </Grid>
-                    <Grid item xs={12}>
-                      <TextField
-                        label="Confirmation Code"
-                        value={confirmationCode}
-                        onChange={(e) => setConfirmationCode(e.target.value)}
-                        fullWidth
-                        margin="normal"
-                      />
-                    </Grid>
-                    <Grid item xs={12}>
-                      <TextField
-                        label="New Password"
-                        type="password"
-                        value={newResetPassword}
-                        onChange={(e) => setNewResetPassword(e.target.value)}
-                        fullWidth
-                        margin="normal"
-                      />
-                    </Grid>
-                    <Button
-                      type="submit"
-                      fullWidth
-                      variant="contained"
-                      color="primary"
-                      sx={{ mt: 3, mb: 2 }}
+                  </>
+                )}
+                {step === "confirmReset" && (
+                  <Grid item xs={12} sm={8} md={5} component={Paper} square>
+                    <Box
+                      component="form"
+                      noValidate
+                      onSubmit={handleConfirmResetPassword}
+                      sx={{ mt: 1 }}
                     >
-                      Reset Password
-                    </Button>
-                  </Box>
-                </Grid>
-              )}
-              {step === "done" && (
-                <Typography color="primary" sx={{ mt: 2 }}>
-                  Password has been successfully reset.
-                </Typography>
-              )}
-              {error && (
-                <Typography color="error" sx={{ mt: 2 }}>
-                  {error}
-                </Typography>
-              )}
-              {message && (
-                <Typography color="primary" sx={{ mt: 2 }}>
-                  {message}
-                </Typography>
-              )}
-            </Box>
+                      <Grid item xs={12}>
+                        <TextField
+                          required
+                          fullWidth
+                          id="email"
+                          label="Email Address"
+                          name="email"
+                          autoComplete="email"
+                          value={username}
+                          onChange={(e) => setUsername(e.target.value)}
+                        />
+                      </Grid>
+                      <Grid item xs={12}>
+                        <TextField
+                          label="Confirmation Code"
+                          value={confirmationCode}
+                          onChange={(e) => setConfirmationCode(e.target.value)}
+                          fullWidth
+                          margin="normal"
+                        />
+                      </Grid>
+                      <Grid item xs={12}>
+                        <TextField
+                          label="New Password"
+                          type="password"
+                          value={newPassword}
+                          onChange={(e) => setNewPassword(e.target.value)}
+                          fullWidth
+                          margin="normal"
+                        />
+                      </Grid>
+                      <Button
+                        type="submit"
+                        fullWidth
+                        variant="contained"
+                        color="primary"
+                        sx={{ mt: 3, mb: 2 }}
+                      >
+                        Reset Password
+                      </Button>
+                    </Box>
+                  </Grid>
+                )}
+                {step === "done" && (
+                  <Typography color="primary" sx={{ mt: 2 }}>
+                    Password has been successfully reset.
+                  </Typography>
+                )}
+                {error && (
+                  <Typography color="error" sx={{ mt: 2 }}>
+                    {error}
+                  </Typography>
+                )}
+                {message && (
+                  <Link
+                    href="#"
+                    variant="body2"
+                    onSubmit
+                    onClick={() => setForgotPassword(false)}
+                  >
+                    Sign in
+                  </Link>
+                )}
+              </Box>
+            </Grid>
           )}
         </Grid>
       </PageContainer>

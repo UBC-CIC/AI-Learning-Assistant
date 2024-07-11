@@ -8,7 +8,8 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        roboto: ['Roboto','ui-sans-serif', 'system-ui']
+        roboto: ['Roboto','ui-sans-serif', 'system-ui'],
+        inter: ['Inter','ui-sans-serif', 'system-ui']
       },
     },
   },

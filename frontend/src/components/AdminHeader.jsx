@@ -7,10 +7,12 @@ import { signOut } from "aws-amplify/auth";
 
 const AdminHeader = () => {
   const navigate = useNavigate();
-  const handleSignOut = async () => {
+  const handleSignOut = async (event) => {
+    event.preventDefault();
     try {
       await signOut();
-      navigate("/"); // Redirect to the login page
+      window.location.href = "/";
+      // navigate("/"); // Redirect to the login page
     } catch (error) {
       console.error("Error signing out: ", error);
     }
@@ -23,6 +25,7 @@ const AdminHeader = () => {
         <SettingsIcon size={35} />
       </button> */}
       <button
+        type="button"
         variant="contained"
         color="secondary"
         onClick={handleSignOut}

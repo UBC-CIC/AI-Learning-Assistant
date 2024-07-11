@@ -19,7 +19,7 @@ const StudentHeader = () => {
   };
 
   return (
-    <header className="bg-[#F8F9FD] p-4 flex justify-between items-center">
+    <header className="bg-[#F8F9FD] p-4 flex justify-between items-center max-h-20">
       <div className="text-black text-3xl font-roboto font-semibold p-4">
         Hi User!👋
       </div>

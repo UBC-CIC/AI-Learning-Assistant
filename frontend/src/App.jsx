@@ -91,7 +91,10 @@ function App() {
   }, []);
 
   const getHomePage = () => {
-    if (userGroup && userGroup.includes("admin")) {
+    if (
+      userGroup &&
+      (userGroup.includes("admin") || userGroup.includes("techadmin"))
+    ) {
       return <AdminHomepage />;
     } else if (userGroup && userGroup.includes("instructor")) {
       return <InstructorHomepage />;

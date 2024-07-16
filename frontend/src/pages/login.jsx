@@ -96,9 +96,9 @@ export const Login = () => {
         const apiData = {
           user_email: username,
           username: username,
-          first_name: firstName,
-          last_name: lastName,
-          preferred_name: firstName,
+          first_name: username,
+          last_name: username,
+          preferred_name: username,
         };
         // Send data to your API using getSignedRequest function
         const { responseData, formattedData } = await getSignedRequest(

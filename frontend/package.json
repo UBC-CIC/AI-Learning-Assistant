@@ -11,9 +11,16 @@
   },
   "dependencies": {
     "@aws-amplify/ui-react": "^6.1.12",
+    "@emotion/react": "^11.11.4",
+    "@emotion/styled": "^11.11.5",
+    "@mui/icons-material": "^5.16.0",
+    "@mui/material": "^5.15.21",
     "aws-amplify": "^6.3.8",
+    "crypto-js": "^4.2.0",
+    "prop-types": "^15.8.1",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.24.1"
   },
   "devDependencies": {
     "@types/react": "^18.3.3",
@@ -28,5 +35,5 @@
     "tailwindcss": "^3.4.4",
     "vite": "^5.3.1"
   },
-  "homepage": "https://main.d35ufva5r2ltvd.amplifyapp.com/#/"
+  "homepage": "https://frontend.d35ufva5r2ltvd.amplifyapp.com/#/"
 }

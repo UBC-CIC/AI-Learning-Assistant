@@ -156,6 +156,8 @@ export class ApiGatewayStack extends cdk.Stack {
       userPoolClientName: userPoolName,
       authFlows: {
         userPassword: true,
+        custom: true,
+        userSrp: true,
       },
     });
 
@@ -641,6 +643,82 @@ export class ApiGatewayStack extends cdk.Stack {
       .defaultChild as lambda.CfnFunction;
     apiGW_authorizationFunction_instructor.overrideLogicalId(
       "instructorLambdaAuthorizer"
+    );
+
+    const coglambdaRole = new iam.Role(this, "cognitoLambdaRole", {
+      roleName: "cognitoLambdaRole",
+      assumedBy: new iam.ServicePrincipal("lambda.amazonaws.com"),
+    });
+
+    // Grant access to Secret Manager
+    coglambdaRole.addToPolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: [
+          //Secrets Manager
+          "secretsmanager:GetSecretValue",
+        ],
+        resources: [
+          `arn:aws:secretsmanager:${this.region}:${this.account}:secret:*`,
+        ],
+      })
+    );
+
+    // Grant access to EC2
+    coglambdaRole.addToPolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: [
+          "ec2:CreateNetworkInterface",
+          "ec2:DescribeNetworkInterfaces",
+          "ec2:DeleteNetworkInterface",
+          "ec2:AssignPrivateIpAddresses",
+          "ec2:UnassignPrivateIpAddresses",
+        ],
+        resources: ["*"], // must be *
+      })
+    );
+
+    // Grant access to log
+    coglambdaRole.addToPolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: [
+          //Logs
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents",
+        ],
+        resources: ["arn:aws:logs:*:*:*"],
+      })
+    );
+
+    // Grant permission to add users to an IAM group
+    coglambdaRole.addToPolicy(new iam.PolicyStatement({
+      effect: iam.Effect.ALLOW,
+      actions: [
+          "iam:AddUserToGroup",
+      ],
+      resources: [
+          `arn:aws:iam::${this.account}:user/*`,
+          `arn:aws:iam::${this.account}:group/*`,
+      ],
+  }));
+
+    //cognito auto assign authenticated users to the student group
+    const addUserGroupOnSignUp = new lambda.Function(
+      this,
+      "addUserGroupOnSignUp",
+      {
+        runtime: lambda.Runtime.NODEJS_16_X, // Execution environment
+        code: lambda.Code.fromAsset("lambda"), // Code loaded from "lambda" directory
+        handler: "addUserGroupOnSignUp.handler", // Code handler
+        timeout: Duration.seconds(300),
+        vpc: vpcStack.vpc,
+        functionName: "addUserGroupOnSignUp",
+        memorySize: 128,
+        role: coglambdaRole,
+      }
     );
   }
 }

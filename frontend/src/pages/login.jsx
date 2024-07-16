@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 // amplify
 import {
   signIn,
@@ -25,7 +25,9 @@ import { createTheme, ThemeProvider } from "@mui/material/styles";
 // login assets
 import loginframe from "../assets/loginframe.png";
 import PageContainer from "./Container";
-
+//functions
+import { getSignedRequest } from "../functions/getSignedRequest";
+import { AuthContext } from "../App";
 // MUI theming
 const { palette } = createTheme();
 const { augmentColor } = palette;
@@ -58,6 +60,8 @@ export const Login = () => {
   const [step, setStep] = useState("requestReset");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  // api
+  const { user, credentials } = useContext(AuthContext);
 
   // existing user sign in
   const handleSignIn = async (event) => {
@@ -85,10 +89,33 @@ export const Login = () => {
           setLoading(false);
         }
       } else {
+        // User is confirmed, proceed to send data to your API
+        const apiPath = "/student/create_user";
+
+        // Example data to send to your API, adjust as per your API requirements
+        const apiData = {
+          user_email: username,
+          username: username,
+          first_name: firstName,
+          last_name: lastName,
+          preferred_name: firstName,
+        };
+        // Send data to your API using getSignedRequest function
+        const { responseData, formattedData } = await getSignedRequest(
+          apiPath,
+          {},
+          credentials,
+          "POST",
+          apiData
+        );
+        console.log("Data sent to API successfully:", responseData);
+
+        // Proceed with further steps after sending data to API (if any)
+        setNewSignUp(false);
         window.location.reload();
       }
     } catch (error) {
-      console.log("Error logging in:", error);
+      console.log("Error logging in or sending data to API:", error);
       setLoading(false);
     }
   };
@@ -180,10 +207,34 @@ export const Login = () => {
         user.nextStep.signInStep
       );
       if (user.isSignUpComplete) {
+        // User is confirmed, proceed to send data to your API
+        const apiPath = "/student/create_user";
+
+        // Example data to send to your API, adjust as per your API requirements
+        const apiData = {
+          user_email: username,
+          username: username,
+          first_name: firstName,
+          last_name: lastName,
+          preferred_name: firstName,
+        };
+        // Send data to your API using getSignedRequest function
+        const { responseData, formattedData } = await getSignedRequest(
+          apiPath,
+          {},
+          credentials,
+          "POST",
+          apiData
+        );
+        console.log("Data sent to API successfully:", responseData);
+
+        // Proceed with further steps after sending data to API (if any)
+        setNewSignUp(false);
         window.location.reload();
       }
     } catch (error) {
       console.log("Error setting new password:", error);
+      console.log(credentials);
       setConfirmationError("Invalid confirmation code");
       setLoading(false);
     }
@@ -265,7 +316,7 @@ export const Login = () => {
   }
 
   //TODO: STORE USER INFO IN DATABASE
-  // const storeUser = async (first_name, last_name, email, role) => {
+  // const storeUser = async (first_name, last_name, email) => {
   //   setLoading(true);
 
   //   //sign in user

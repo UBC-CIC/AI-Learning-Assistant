@@ -1,9 +1,9 @@
-import { Auth } from "aws-amplify";
+import { fetchAuthSession, getCurrentUser } from "aws-amplify/auth";
 
 // Gets current authorized user
 export async function retrieveUser(setUser) {
   try {
-    const returnedUser = await Auth.currentAuthenticatedUser();
+    const returnedUser = await getCurrentUser();
     setUser(returnedUser);
   } catch (e) {
     console.log("error getting user: ", e);
@@ -13,9 +13,11 @@ export async function retrieveUser(setUser) {
 // Gets jwtToken for current session
 export async function retrieveJwtToken(setJwtToken) {
   try {
-    var session = await Auth.currentSession();
-    var idToken = await session.getIdToken();
+    var session = await fetchAuthSession();
+    console.log(session);
+    var idToken = await session.getidToken();
     var token = await idToken.getJwtToken();
+    console.lof("id token", idToken);
     setJwtToken(token);
     // Check if the token is close to expiration
     const expirationTime = idToken.getExpiration() * 1000; // Milliseconds
@@ -23,7 +25,7 @@ export async function retrieveJwtToken(setJwtToken) {
 
     if (expirationTime - currentTime < 2700000) {
       // 45 minutes
-      await Auth.currentSession();
+      await fetchAuthSession();
       idToken = await session.getIdToken();
       token = await idToken.getJwtToken();
       setJwtToken(token);

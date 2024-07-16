@@ -10,13 +10,17 @@ import {
   Routes,
   Navigate,
 } from "react-router-dom";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, createContext } from "react";
 // pages
 import Login from "./pages/Login";
 import StudentHomepage from "./pages/student/StudentHomepage";
 import StudentChat from "./pages/student/StudentChat";
 import AdminHomepage from "./pages/admin/AdminHomepage";
 import InstructorHomepage from "./pages/instructor/InstructorHomepage";
+// functions
+import { useAuthentication } from "./functions/useAuth";
+
+export const AuthContext = createContext("user");
 
 Amplify.configure({
   API: {
@@ -40,6 +44,8 @@ function App() {
   const [user, setUser] = useState(null);
   const [userGroup, setUserGroup] = useState(null);
   const [userInfo, setUserInfo] = useState({});
+
+  const { authuser, credentials } = useAuthentication();
   //get user info and render page based on role
 
   // useEffect(() => {
@@ -107,11 +113,16 @@ function App() {
 
   return (
     <Router>
-      <Routes>
-        <Route path="/" element={user ? <Navigate to="/home" /> : <Login />} />
-        <Route path="/chat" element={<StudentChat />} />
-        <Route path="/home" element={getHomePage()} />
-      </Routes>
+      <AuthContext.Provider value={{ authuser, credentials }}>
+        <Routes>
+          <Route
+            path="/"
+            element={user ? <Navigate to="/home" /> : <Login />}
+          />
+          <Route path="/chat" element={<StudentChat />} />
+          <Route path="/home" element={getHomePage()} />
+        </Routes>
+      </AuthContext.Provider>
     </Router>
   );
 }

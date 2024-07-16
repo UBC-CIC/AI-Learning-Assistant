@@ -1,4 +1,5 @@
 import { fetchAuthSession, getCurrentUser } from "aws-amplify/auth";
+import AWS from "aws-sdk";
 
 // Gets current authorized user
 export async function retrieveUser(setUser) {
@@ -14,22 +15,22 @@ export async function retrieveUser(setUser) {
 export async function retrieveJwtToken(setJwtToken) {
   try {
     var session = await fetchAuthSession();
-    console.log(session);
-    var idToken = await session.getidToken();
-    var token = await idToken.getJwtToken();
-    console.lof("id token", idToken);
+    var idToken = session.tokens.idToken;
+    var token = session.tokens.accessToken;
     setJwtToken(token);
     // Check if the token is close to expiration
-    const expirationTime = idToken.getExpiration() * 1000; // Milliseconds
-    const currentTime = new Date().getTime();
+    console.log("session");
+    console.log(session);
+    // const expirationTime = session.credentials.expiration * 1000; // Milliseconds
+    // const currentTime = new Date().getTime();
 
-    if (expirationTime - currentTime < 2700000) {
-      // 45 minutes
-      await fetchAuthSession();
-      idToken = await session.getIdToken();
-      token = await idToken.getJwtToken();
-      setJwtToken(token);
-    }
+    // if (expirationTime - currentTime < 2700000) {
+    //   // 45 minutes
+    //   await fetchAuthSession();
+    //   idToken = await session.getIdToken();
+    //   token = await idToken.getJwtToken();
+    //   setJwtToken(token);
+    // }
   } catch (e) {
     console.log("error getting token: ", e);
   }
@@ -37,7 +38,6 @@ export async function retrieveJwtToken(setJwtToken) {
 
 // get temp AWS credentials
 export function getIdentityCredentials(jwtToken, setCredentials) {
-  const AWS = require("aws-sdk");
   const USER_POOL_ID = import.meta.env.VITE_COGNITO_USER_POOL_ID;
   const IDENTITY_POOL_ID = import.meta.env.VITE_IDENTITY_POOL_ID;
   const REGION = import.meta.env.VITE_AWS_REGION;

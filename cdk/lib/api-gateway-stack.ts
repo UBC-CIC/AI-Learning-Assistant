@@ -80,42 +80,6 @@ export class ApiGatewayStack extends cdk.Stack {
     this.layerList["postgres"] = postgres;
     this.layerList["jwt"] = jwt;
 
-    /**
-     *
-     * Load OpenAPI file into API Gateway using REST API
-     */
-
-    // Read OpenAPI file and load file to S3
-    const asset = new Asset(this, "SampleAsset", {
-      path: "OpenAPI_Swagger_Definition.yaml",
-    });
-
-    const data = Fn.transform("AWS::Include", { Location: asset.s3ObjectUrl });
-
-    // Create the API Gateway REST API
-    this.api = new apigateway.SpecRestApi(this, "APIGateway", {
-      apiDefinition: apigateway.AssetApiDefinition.fromInline(data),
-      endpointTypes: [apigateway.EndpointType.REGIONAL],
-      restApiName: "ailaAPI",
-      deploy: true,
-      cloudWatchRole: true,
-      deployOptions: {
-        metricsEnabled: true,
-        loggingLevel: apigateway.MethodLoggingLevel.ERROR,
-        dataTraceEnabled: true,
-        stageName: "prod",
-        methodOptions: {
-          "/*/*": {
-            throttlingRateLimit: 100,
-            throttlingBurstLimit: 200,
-          },
-        },
-      },
-    });
-
-    this.stageARN_APIGW = this.api.deploymentStage.stageArn;
-    this.apiGW_basedURL = this.api.urlForPath();
-
     // Create Cognito user pool
 
     /**
@@ -175,34 +139,6 @@ export class ApiGatewayStack extends cdk.Stack {
         ],
       }
     );
-    // Create Cognito user pool groups
-    const studentGroup = new cognito.CfnUserPoolGroup(this, "StudentGroup", {
-      groupName: "student",
-      userPoolId: this.userPool.userPoolId,
-    });
-
-    const instructorGroup = new cognito.CfnUserPoolGroup(
-      this,
-      "InstructorGroup",
-      {
-        groupName: "instructor",
-        userPoolId: this.userPool.userPoolId,
-      }
-    );
-
-    const adminGroup = new cognito.CfnUserPoolGroup(this, "AdminGroup", {
-      groupName: "admin",
-      userPoolId: this.userPool.userPoolId,
-    });
-
-    const techAdminGroup = new cognito.CfnUserPoolGroup(
-      this,
-      "TechAdminGroup",
-      {
-        groupName: "techadmin",
-        userPoolId: this.userPool.userPoolId,
-      }
-    );
 
     const secretsName = "AILA_Cognito_Secrets";
 
@@ -232,6 +168,42 @@ export class ApiGatewayStack extends cdk.Stack {
         resources: resources,
       });
     };
+
+    /**
+     *
+     * Load OpenAPI file into API Gateway using REST API
+     */
+
+    // Read OpenAPI file and load file to S3
+    const asset = new Asset(this, "SampleAsset", {
+      path: "OpenAPI_Swagger_Definition.yaml",
+    });
+
+    const data = Fn.transform("AWS::Include", { Location: asset.s3ObjectUrl });
+
+    // Create the API Gateway REST API
+    this.api = new apigateway.SpecRestApi(this, "APIGateway", {
+      apiDefinition: apigateway.AssetApiDefinition.fromInline(data),
+      endpointTypes: [apigateway.EndpointType.REGIONAL],
+      restApiName: "ailaAPI",
+      deploy: true,
+      cloudWatchRole: true,
+      deployOptions: {
+        metricsEnabled: true,
+        loggingLevel: apigateway.MethodLoggingLevel.ERROR,
+        dataTraceEnabled: true,
+        stageName: "prod",
+        methodOptions: {
+          "/*/*": {
+            throttlingRateLimit: 100,
+            throttlingBurstLimit: 200,
+          },
+        },
+      },
+    });
+
+    this.stageARN_APIGW = this.api.deploymentStage.stageArn;
+    this.apiGW_basedURL = this.api.urlForPath();
 
     const studentRole = new iam.Role(this, "StudentRole", {
       assumedBy: new iam.FederatedPrincipal(
@@ -345,6 +317,40 @@ export class ApiGatewayStack extends cdk.Stack {
           ),
         ],
       })
+    );
+
+
+    // Create Cognito user pool groups
+    const studentGroup = new cognito.CfnUserPoolGroup(this, "StudentGroup", {
+      groupName: "student",
+      userPoolId: this.userPool.userPoolId,
+      roleArn: studentRole.roleArn,
+    });
+
+    const instructorGroup = new cognito.CfnUserPoolGroup(
+      this,
+      "InstructorGroup",
+      {
+        groupName: "instructor",
+        userPoolId: this.userPool.userPoolId,
+        roleArn: instructorRole.roleArn,
+      }
+    );
+
+    const adminGroup = new cognito.CfnUserPoolGroup(this, "AdminGroup", {
+      groupName: "admin",
+      userPoolId: this.userPool.userPoolId,
+      roleArn: adminRole.roleArn,
+    });
+
+    const techAdminGroup = new cognito.CfnUserPoolGroup(
+      this,
+      "TechAdminGroup",
+      {
+        groupName: "techadmin",
+        userPoolId: this.userPool.userPoolId,
+        roleArn: techAdminRole.roleArn,
+      }
     );
 
     // Create unauthenticated role with no permissions
@@ -474,7 +480,7 @@ export class ApiGatewayStack extends cdk.Stack {
     lambdaInstructorFunction.addPermission("AllowApiGatewayInvoke", {
       principal: new iam.ServicePrincipal("apigateway.amazonaws.com"),
       action: "lambda:InvokeFunction",
-      sourceArn: `arn:aws:execute-api:${this.region}:${this.account}:${this.api.restApiId}/*/*/{instructor,student}*`,
+      sourceArn: `arn:aws:execute-api:${this.region}:${this.account}:${this.api.restApiId}/*/*/instructor*`,
     });
 
 
@@ -506,7 +512,7 @@ export class ApiGatewayStack extends cdk.Stack {
     lambdaAdminFunction.addPermission("AllowApiGatewayInvoke", {
       principal: new iam.ServicePrincipal("apigateway.amazonaws.com"),
       action: "lambda:InvokeFunction",
-      sourceArn: `arn:aws:execute-api:${this.region}:${this.account}:${this.api.restApiId}/*/*/{instructor,student, admin}*`,
+      sourceArn: `arn:aws:execute-api:${this.region}:${this.account}:${this.api.restApiId}/*/*/admin*`,
     });
 
     const cfnLambda_Admin = lambdaAdminFunction.node.defaultChild as lambda.CfnFunction;
@@ -542,108 +548,6 @@ export class ApiGatewayStack extends cdk.Stack {
     const cfnLambda_Tech_Admin = lambdaTechAdminFunction.node.defaultChild as lambda.CfnFunction;
     cfnLambda_Tech_Admin.overrideLogicalId("techadminFunction");
 
-    /**
-     *
-     * Create Lambda for Admin Authorization endpoints
-     */
-    const authorizationFunction = new lambda.Function(
-      this,
-      "admin-authorization-api-gateway",
-      {
-        runtime: lambda.Runtime.NODEJS_16_X, // Execution environment
-        code: lambda.Code.fromAsset("lambda"), // Code loaded from "lambda" directory
-        handler: "adminAuthorizerFunction.handler", // Code handler
-        timeout: Duration.seconds(300),
-        vpc: vpcStack.vpc,
-        environment: {
-          SM_COGNITO_CREDENTIALS: this.secret.secretName,
-        },
-        functionName: "adminLambdaAuthorizer",
-        memorySize: 512,
-        layers: [jwt],
-        role: lambdaRole,
-      }
-    );
-
-    // Add the permission to the Lambda function's policy to allow API Gateway access
-    authorizationFunction.grantInvoke(
-      new iam.ServicePrincipal("apigateway.amazonaws.com")
-    );
-
-    // Change Logical ID to match the one decleared in YAML file of Open API
-    const apiGW_authorizationFunction = authorizationFunction.node
-      .defaultChild as lambda.CfnFunction;
-    apiGW_authorizationFunction.overrideLogicalId("adminLambdaAuthorizer");
-
-    /**
-     *
-     * Create Lambda for User Authorization endpoints
-     */
-    const authorizationFunction_student = new lambda.Function(
-      this,
-      "student-authorization-api-gateway",
-      {
-        runtime: lambda.Runtime.NODEJS_16_X, // Execution environment
-        code: lambda.Code.fromAsset("lambda"), // Code loaded from "lambda" directory
-        handler: "studentAuthorizerFunction.handler", // Code handler
-        timeout: Duration.seconds(300),
-        vpc: vpcStack.vpc,
-        environment: {
-          SM_COGNITO_CREDENTIALS: this.secret.secretName,
-        },
-        functionName: "studentLambdaAuthorizer",
-        memorySize: 512,
-        layers: [jwt],
-        role: lambdaRole,
-      }
-    );
-
-    // Add the permission to the Lambda function's policy to allow API Gateway access
-    authorizationFunction_student.grantInvoke(
-      new iam.ServicePrincipal("apigateway.amazonaws.com")
-    );
-
-    // Change Logical ID to match the one decleared in YAML file of Open API
-    const apiGW_authorizationFunction_student = authorizationFunction_student.node
-      .defaultChild as lambda.CfnFunction;
-    apiGW_authorizationFunction_student.overrideLogicalId(
-      "studentLambdaAuthorizer"
-    );
-
-    /**
-     *
-     * Create Lambda for User Authorization endpoints
-     */
-    const authorizationFunction_instructor = new lambda.Function(
-      this,
-      "instructor-authorization-api-gateway",
-      {
-        runtime: lambda.Runtime.NODEJS_16_X, // Execution environment
-        code: lambda.Code.fromAsset("lambda"), // Code loaded from "lambda" directory
-        handler: "instructorAuthorizerFunction.handler", // Code handler
-        timeout: Duration.seconds(300),
-        vpc: vpcStack.vpc,
-        environment: {
-          SM_COGNITO_CREDENTIALS: this.secret.secretName,
-        },
-        functionName: "instructorLambdaAuthorizer",
-        memorySize: 512,
-        layers: [jwt],
-        role: lambdaRole,
-      }
-    );
-
-    // Add the permission to the Lambda function's policy to allow API Gateway access
-    authorizationFunction_instructor.grantInvoke(
-      new iam.ServicePrincipal("apigateway.amazonaws.com")
-    );
-
-    // Change Logical ID to match the one decleared in YAML file of Open API
-    const apiGW_authorizationFunction_instructor = authorizationFunction_instructor.node
-      .defaultChild as lambda.CfnFunction;
-    apiGW_authorizationFunction_instructor.overrideLogicalId(
-      "instructorLambdaAuthorizer"
-    );
 
     const coglambdaRole = new iam.Role(this, "cognitoLambdaRole", {
       roleName: "cognitoLambdaRole",
@@ -720,5 +624,12 @@ export class ApiGatewayStack extends cdk.Stack {
         role: coglambdaRole,
       }
     );
+    // const authorizer = new apigateway.CognitoUserPoolsAuthorizer(this, 'ailaAuthorizer', {
+    //   cognitoUserPools: [this.userPool],
+    // });
+    new cdk.CfnOutput(this, 'UserPoolIdOutput', {
+      value: this.userPool.userPoolId,
+      description: 'The ID of the Cognito User Pool',
+    });
   }
 }

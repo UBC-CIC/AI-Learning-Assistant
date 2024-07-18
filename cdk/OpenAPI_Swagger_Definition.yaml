@@ -95,7 +95,7 @@ paths:
         "500":
           description: Internal Server Error
       security:
-        - studentAuthorizer: []
+        - cognito-pool: []
       x-amazon-apigateway-integration:
         uri:
           Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${studentFunction.Arn}/invocations"
@@ -128,7 +128,7 @@ paths:
         "500":
           description: Internal Server Error
       security:
-        - studentAuthorizer: []
+        - cognito-pool: []
       x-amazon-apigateway-integration:
         uri:
           Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${studentFunction.Arn}/invocations"
@@ -167,7 +167,7 @@ paths:
         "500":
           description: Internal Server Error
       security:
-        - studentAuthorizer: []
+        - cognito-pool: []
       x-amazon-apigateway-integration:
         uri:
           Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${studentFunction.Arn}/invocations"
@@ -212,7 +212,7 @@ paths:
         "500":
           description: Internal Server Error
       security:
-        - studentAuthorizer: []
+        - cognito-pool: []
       x-amazon-apigateway-integration:
         uri:
           Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${studentFunction.Arn}/invocations"
@@ -263,7 +263,7 @@ paths:
         "500":
           description: Internal Server Error
       security:
-        - studentAuthorizer: []
+        - cognito-pool: []
       x-amazon-apigateway-integration:
         uri:
           Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${studentFunction.Arn}/invocations"
@@ -314,7 +314,7 @@ paths:
         "500":
           description: Internal Server Error
       security:
-        - studentAuthorizer: []
+        - cognito-pool: []
       x-amazon-apigateway-integration:
         uri:
           Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${studentFunction.Arn}/invocations"
@@ -373,7 +373,7 @@ paths:
         "500":
           description: Internal Server Error
       security:
-        - studentAuthorizer: []
+        - cognito-pool: []
       x-amazon-apigateway-integration:
         uri:
           Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${studentFunction.Arn}/invocations"
@@ -445,7 +445,7 @@ paths:
         "500":
           description: Internal Server Error
       security:
-        - studentAuthorizer: []
+        - cognito-pool: []
       x-amazon-apigateway-integration:
         uri:
           Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${studentFunction.Arn}/invocations"
@@ -478,12 +478,12 @@ paths:
         "500":
           description: Internal Server Error
       security:
-        - instructorAuthorizer: []
+        - cognito-pool: []
       x-amazon-apigateway-integration:
         uri:
           Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${instructorFunction.Arn}/invocations"
         passthroughBehavior: "when_no_match"
-        httpMethod: "GET"
+        httpMethod: "POST"
         type: "aws_proxy"
   /instructor/analytics:
     <<: *commonOptions
@@ -511,12 +511,12 @@ paths:
         "500":
           description: Internal Server Error
       security:
-        - instructorAuthorizer: []
+        - cognito-pool: []
       x-amazon-apigateway-integration:
         uri:
           Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${instructorFunction.Arn}/invocations"
         passthroughBehavior: "when_no_match"
-        httpMethod: "GET"
+        httpMethod: "POST"
         type: "aws_proxy"
   /instructor/create_concept:
     <<: *commonOptions
@@ -554,7 +554,7 @@ paths:
         "500":
           description: Internal Server Error
       security:
-        - instructorAuthorizer: []
+        - cognito-pool: []
       x-amazon-apigateway-integration:
         uri:
           Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${instructorFunction.Arn}/invocations"
@@ -603,12 +603,12 @@ paths:
         "500":
           description: Internal Server Error
       security:
-        - instructorAuthorizer: []
+        - cognito-pool: []
       x-amazon-apigateway-integration:
         uri:
           Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${instructorFunction.Arn}/invocations"
         passthroughBehavior: "when_no_match"
-        httpMethod: "PUT"
+        httpMethod: "POST"
         type: "aws_proxy"
   /instructor/create_module:
     <<: *commonOptions
@@ -663,7 +663,7 @@ paths:
         required: false
         content: {}
       security:
-        - instructorAuthorizer: []
+        - cognito-pool: []
       x-amazon-apigateway-integration:
         uri:
           Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${instructorFunction.Arn}/invocations"
@@ -716,12 +716,12 @@ paths:
         "500":
           description: Internal Server Error
       security:
-        - instructorAuthorizer: []
+        - cognito-pool: []
       x-amazon-apigateway-integration:
         uri:
           Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${instructorFunction.Arn}/invocations"
         passthroughBehavior: "when_no_match"
-        httpMethod: "PUT"
+        httpMethod: "POST"
         type: "aws_proxy"
   /instructor/prompt:
     <<: *commonOptions
@@ -766,12 +766,12 @@ paths:
         "500":
           description: Internal Server Error
       security:
-        - instructorAuthorizer: []
+        - cognito-pool: []
       x-amazon-apigateway-integration:
         uri:
           Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${instructorFunction.Arn}/invocations"
         passthroughBehavior: "when_no_match"
-        httpMethod: "PUT"
+        httpMethod: "POST"
         type: "aws_proxy"
   /instructor/view_students:
     <<: *commonOptions
@@ -799,12 +799,12 @@ paths:
         "500":
           description: Internal Server Error
       security:
-        - instructorAuthorizer: []
+        - cognito-pool: []
       x-amazon-apigateway-integration:
         uri:
           Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${instructorFunction.Arn}/invocations"
         passthroughBehavior: "when_no_match"
-        httpMethod: "GET"
+        httpMethod: "POST"
         type: "aws_proxy"
   /instructor/delete_student:
     <<: *commonOptions
@@ -846,12 +846,12 @@ paths:
         "500":
           description: Internal Server Error
       security:
-        - instructorAuthorizer: []
+        - cognito-pool: []
       x-amazon-apigateway-integration:
         uri:
           Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${instructorFunction.Arn}/invocations"
         passthroughBehavior: "when_no_match"
-        httpMethod: "DELETE"
+        httpMethod: "POST"
         type: "aws_proxy"
   /admin/instructors:
     <<: *commonOptions
@@ -879,12 +879,12 @@ paths:
         "500":
           description: Internal Server Error
       security:
-        - adminAuthorizer: []
+        - cognito-pool: []
       x-amazon-apigateway-integration:
         uri:
           Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${adminFunction.Arn}/invocations"
         passthroughBehavior: "when_no_match"
-        httpMethod: "GET"
+        httpMethod: "POST"
         type: "aws_proxy"
   /admin/courses:
     <<: *commonOptions
@@ -899,12 +899,12 @@ paths:
         "500":
           description: Internal Server Error
       security:
-        - adminAuthorizer: []
+        - cognito-pool: []
       x-amazon-apigateway-integration:
         uri:
           Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${adminFunction.Arn}/invocations"
         passthroughBehavior: "when_no_match"
-        httpMethod: "GET"
+        httpMethod: "POST"
         type: "aws_proxy"
   /admin/enroll_instructor:
     <<: *commonOptions
@@ -934,7 +934,7 @@ paths:
         "500":
           description: Internal Server Error
       security:
-        - adminAuthorizer: []
+        - cognito-pool: []
       x-amazon-apigateway-integration:
         uri:
           Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${adminFunction.Arn}/invocations"
@@ -1007,7 +1007,7 @@ paths:
         "500":
           description: Internal Server Error
       security:
-        - adminAuthorizer: []
+        - cognito-pool: []
       x-amazon-apigateway-integration:
         uri:
           Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${adminFunction.Arn}/invocations"
@@ -1017,54 +1017,18 @@ paths:
 
 components:
   securitySchemes:
-    adminAuthorizer:
-      type: "apiKey"
-      name: "Authorization" # The header name where the token is provided
-      in: "header"
-      x-amazon-apigateway-authtype: "custom"
-      x-amazon-apigateway-authorizer:
-        type: token
-        authorizerUri:
-          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${adminLambdaAuthorizer.Arn}/invocations"
-        identitySource: method.request.header.Authorization
-    studentAuthorizer:
-      type: "apiKey"
-      name: "Authorization" # The header name where the token is provided
-      in: "header"
-      x-amazon-apigateway-authtype: "custom"
-      x-amazon-apigateway-authorizer:
-        type: token
-        authorizerUri:
-          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${studentLambdaAuthorizer.Arn}/invocations"
-        identitySource: method.request.header.Authorization
-    instructorAuthorizer:
-      type: "apiKey"
-      name: "Authorization" # The header name where the token is provided
-      in: "header"
-      x-amazon-apigateway-authtype: "custom"
-      x-amazon-apigateway-authorizer:
-        type: token
-        authorizerUri:
-          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${instructorLambdaAuthorizer.Arn}/invocations"
-        identitySource: method.request.header.Authorization
-    # cognitoAuthorizer: 
-    #   type: "apiKey"
-    #   name: "Authorization"
-    #   in: "header"
-    #   x-amazon-apigateway-authtype: "cognito_user_pools"
-    #   x-amazon-apigateway-authorizer:
-    #     type: cognito_user_pools
-    #     providerARNs:
-    #       - "dummyUserPoolARN" # will be replaced in api-stack
-    iamAuthorizer: # for authenticated and unauthenticated users
-      type: "apiKey"
-      name: "Authorization"
-      in: "header"
-      x-amazon-apigateway-authtype: "awsSigv4"
-    # ApiKeyAuth:
-    #   type: apiKey
-    #   in: header
-    #   name: x-api-key
+    cognito-pool: {
+      type: "apiKey",
+      name: "Authorization",
+      in: "header",
+      x-amazon-apigateway-authtype: "cognito_user_pools",
+      x-amazon-apigateway-authorizer: {
+        type: "cognito_user_pools",
+        providerARNs: [
+          "arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/ca-central-1_kXBL7VfCy"
+        ]
+      }
+    }
   responses:
     Success:
       description: Request success
@@ -1079,27 +1043,4 @@ components:
           schema:
             type: string
       content: {}
-  # uncomment and do docs later :D
-  # schemas:
-  #   Region:
-  #     type: object
-  #     required:
-  #       - region_code_name
-  #       - region_fullname
-  #       - country_fullname
-  #     properties:
-  #       region_code_name:
-  #         type: string
-  #         description: Region code should be all upper case
-  #       region_fullname:
-  #         type: string
-  #         description: Region fullname all lower case
-  #       country_fullname:
-  #         type: string
-  #         description: Country fullname of the region all lower case
-  #       geographic_coordinate:
-  #         type: string
-  #         description: Geographic coordinate of the region following (latitude, longitude)
-  #         items:
-  #           type: string
-    
+

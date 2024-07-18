@@ -1,11 +1,14 @@
 import { fetchAuthSession, getCurrentUser } from "aws-amplify/auth";
 import AWS from "aws-sdk";
 
+AWS.config.update({ logger: console });
+
 // Gets current authorized user
 export async function retrieveUser(setUser) {
   try {
     const returnedUser = await getCurrentUser();
     setUser(returnedUser);
+    console.log("user", returnedUser);
   } catch (e) {
     console.log("error getting user: ", e);
   }
@@ -15,22 +18,23 @@ export async function retrieveUser(setUser) {
 export async function retrieveJwtToken(setJwtToken) {
   try {
     var session = await fetchAuthSession();
-    var idToken = session.tokens.idToken;
-    var token = session.tokens.accessToken;
+    var idToken = await session.tokens.idToken.toString();
+    var token = await session.tokens.accessToken.toString();
     setJwtToken(token);
-    // Check if the token is close to expiration
-    console.log("session");
-    console.log(session);
-    // const expirationTime = session.credentials.expiration * 1000; // Milliseconds
-    // const currentTime = new Date().getTime();
+    console.log("jwt token", token);
+    console.log("session", session);
 
-    // if (expirationTime - currentTime < 2700000) {
-    //   // 45 minutes
-    //   await fetchAuthSession();
-    //   idToken = await session.getIdToken();
-    //   token = await idToken.getJwtToken();
-    //   setJwtToken(token);
-    // }
+    // Check if the token is close to expiration
+    const expirationTime = session.credentials.expiration * 1000; // Milliseconds
+    const currentTime = new Date().getTime();
+
+    if (expirationTime - currentTime < 2700000) {
+      // 45 minutes
+      await fetchAuthSession();
+      idToken = await session.tokens.idToken.toString();
+      token = await session.tokens.accessToken.toString();
+      setJwtToken(token);
+    }
   } catch (e) {
     console.log("error getting token: ", e);
   }
@@ -57,4 +61,5 @@ export function getIdentityCredentials(jwtToken, setCredentials) {
   AWS.config.credentials.get(function () {
     setCredentials(creds);
   });
+  console.log(creds);
 }

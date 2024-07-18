@@ -62,6 +62,7 @@ export const Login = () => {
   const [error, setError] = useState("");
   // api
   const { user, credentials } = useContext(AuthContext);
+  console.log(credentials);
 
   // existing user sign in
   const handleSignIn = async (event) => {

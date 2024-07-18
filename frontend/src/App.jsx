@@ -46,6 +46,8 @@ function App() {
   const [userInfo, setUserInfo] = useState({});
 
   const { authuser, credentials } = useAuthentication();
+  console.log("test useAuth credentials", credentials);
+  console.log("test useAuth user", authuser);
   //get user info and render page based on role
 
   // useEffect(() => {

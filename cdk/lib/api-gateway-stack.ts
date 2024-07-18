@@ -129,7 +129,7 @@ export class ApiGatewayStack extends cdk.Stack {
       this,
       "aila-identity-pool",
       {
-        allowUnauthenticatedIdentities: false, // don't allow unauthenticated users
+        allowUnauthenticatedIdentities: true, // don't allow unauthenticated users
         identityPoolName: "ailaIdentityPool",
         cognitoIdentityProviders: [
           {
@@ -451,6 +451,7 @@ export class ApiGatewayStack extends cdk.Stack {
       principal: new iam.ServicePrincipal("apigateway.amazonaws.com"),
       action: "lambda:InvokeFunction",
       sourceArn: `arn:aws:execute-api:${this.region}:${this.account}:${this.api.restApiId}/*/*/student*`,
+
     });
 
     const cfnLambda_student = lambdaStudentFunction.node.defaultChild as lambda.CfnFunction;

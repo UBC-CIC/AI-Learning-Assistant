@@ -25,7 +25,7 @@ const InstructorSidebar = ({ setSelectedComponent }) => {
         width: 220,
         flexShrink: 0,
         [`& .MuiDrawer-paper`]: { width: 220, boxSizing: "border-box" },
-        bgcolor: "#F8F9FD",
+        bgcolor: "background",
       }}
     >
       <Box sx={{ overflow: "auto", paddingTop: 10 }}>

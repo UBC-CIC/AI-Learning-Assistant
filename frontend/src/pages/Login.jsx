@@ -21,7 +21,6 @@ import {
   Box,
   Typography,
 } from "@mui/material";
-import { createTheme, ThemeProvider } from "@mui/material/styles";
 // login assets
 import loginframe from "../assets/loginframe.png";
 import PageContainer from "./Container";
@@ -29,6 +28,7 @@ import PageContainer from "./Container";
 import { getSignedRequest } from "../functions/getSignedRequest";
 import { AuthContext } from "../App";
 // MUI theming
+import { createTheme, ThemeProvider } from "@mui/material/styles";
 const { palette } = createTheme();
 const { augmentColor } = palette;
 const createColor = (mainColor) => augmentColor({ color: { main: mainColor } });
@@ -62,7 +62,6 @@ export const Login = () => {
   const [error, setError] = useState("");
   // api
   const { user, credentials } = useContext(AuthContext);
-  console.log(credentials);
 
   // existing user sign in
   const handleSignIn = async (event) => {

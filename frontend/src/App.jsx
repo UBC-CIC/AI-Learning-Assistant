@@ -115,16 +115,16 @@ function App() {
 
   return (
     <Router>
-      <AuthContext.Provider value={{ authuser, credentials }}>
-        <Routes>
-          <Route
-            path="/"
-            element={user ? <Navigate to="/home" /> : <Login />}
-          />
-          <Route path="/chat" element={<StudentChat />} />
-          <Route path="/home" element={getHomePage()} />
-        </Routes>
-      </AuthContext.Provider>
+        <AuthContext.Provider value={{ authuser, credentials }}>
+          <Routes>
+            <Route
+              path="/"
+              element={user ? <Navigate to="/home" /> : <Login />}
+            />
+            <Route path="/chat" element={<StudentChat />} />
+            <Route path="/home" element={getHomePage()} />
+          </Routes>
+        </AuthContext.Provider>
     </Router>
   );
 }

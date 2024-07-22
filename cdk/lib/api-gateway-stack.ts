@@ -632,5 +632,108 @@ export class ApiGatewayStack extends cdk.Stack {
       value: this.userPool.userPoolId,
       description: 'The ID of the Cognito User Pool',
     });
+
+    // **
+    //  *
+    //  * Create Lambda for Admin Authorization endpoints
+    //  */
+    const authorizationFunction = new lambda.Function(
+      this,
+      "admin-authorization-api-gateway",
+      {
+        runtime: lambda.Runtime.NODEJS_16_X, // Execution environment
+        code: lambda.Code.fromAsset("lambda"), // Code loaded from "lambda" directory
+        handler: "adminAuthorizerFunction.handler", // Code handler
+        timeout: Duration.seconds(300),
+        vpc: vpcStack.vpc,
+        environment: {
+          SM_COGNITO_CREDENTIALS: this.secret.secretName,
+        },
+        functionName: "adminLambdaAuthorizer",
+        memorySize: 512,
+        layers: [jwt],
+        role: lambdaRole,
+      }
+    );
+
+    // Add the permission to the Lambda function's policy to allow API Gateway access
+    authorizationFunction.grantInvoke(
+      new iam.ServicePrincipal("apigateway.amazonaws.com")
+    );
+
+    // Change Logical ID to match the one decleared in YAML file of Open API
+    const apiGW_authorizationFunction = authorizationFunction.node
+      .defaultChild as lambda.CfnFunction;
+    apiGW_authorizationFunction.overrideLogicalId("adminLambdaAuthorizer");
+
+    /**
+     *
+     * Create Lambda for User Authorization endpoints
+     */
+    const authorizationFunction_student = new lambda.Function(
+      this,
+      "student-authorization-api-gateway",
+      {
+        runtime: lambda.Runtime.NODEJS_16_X, // Execution environment
+        code: lambda.Code.fromAsset("lambda"), // Code loaded from "lambda" directory
+        handler: "studentAuthorizerFunction.handler", // Code handler
+        timeout: Duration.seconds(300),
+        vpc: vpcStack.vpc,
+        environment: {
+          SM_COGNITO_CREDENTIALS: this.secret.secretName,
+        },
+        functionName: "studentLambdaAuthorizer",
+        memorySize: 512,
+        layers: [jwt],
+        role: lambdaRole,
+      }
+    );
+
+    // Add the permission to the Lambda function's policy to allow API Gateway access
+    authorizationFunction_student.grantInvoke(
+      new iam.ServicePrincipal("apigateway.amazonaws.com")
+    );
+
+    // Change Logical ID to match the one decleared in YAML file of Open API
+    const apiGW_authorizationFunction_student = authorizationFunction_student.node
+      .defaultChild as lambda.CfnFunction;
+    apiGW_authorizationFunction_student.overrideLogicalId(
+      "studentLambdaAuthorizer"
+    );
+
+    /**
+     *
+     * Create Lambda for User Authorization endpoints
+     */
+    const authorizationFunction_instructor = new lambda.Function(
+      this,
+      "instructor-authorization-api-gateway",
+      {
+        runtime: lambda.Runtime.NODEJS_16_X, // Execution environment
+        code: lambda.Code.fromAsset("lambda"), // Code loaded from "lambda" directory
+        handler: "instructorAuthorizerFunction.handler", // Code handler
+        timeout: Duration.seconds(300),
+        vpc: vpcStack.vpc,
+        environment: {
+          SM_COGNITO_CREDENTIALS: this.secret.secretName,
+        },
+        functionName: "instructorLambdaAuthorizer",
+        memorySize: 512,
+        layers: [jwt],
+        role: lambdaRole,
+      }
+    );
+
+    // Add the permission to the Lambda function's policy to allow API Gateway access
+    authorizationFunction_instructor.grantInvoke(
+      new iam.ServicePrincipal("apigateway.amazonaws.com")
+    );
+
+    // Change Logical ID to match the one decleared in YAML file of Open API
+    const apiGW_authorizationFunction_instructor = authorizationFunction_instructor.node
+      .defaultChild as lambda.CfnFunction;
+    apiGW_authorizationFunction_instructor.overrideLogicalId(
+      "instructorLambdaAuthorizer"
+    );
   }
 }

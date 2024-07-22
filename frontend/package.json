@@ -15,6 +15,7 @@
     "@emotion/styled": "^11.11.5",
     "@mui/icons-material": "^5.16.0",
     "@mui/material": "^5.15.21",
+    "amazon-cognito-identity-js": "^6.3.12",
     "aws-amplify": "^6.3.8",
     "aws-sdk": "^2.1659.0",
     "crypto-js": "^4.2.0",

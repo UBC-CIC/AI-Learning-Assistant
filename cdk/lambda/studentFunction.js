@@ -94,10 +94,10 @@ exports.handler = async (event) => {
           event.queryStringParameters.email
         ) {
           data = await sqlConnection`SELECT Courses.*
-					FROM Enrolments
-					JOIN Courses ON Enrolments.course_id = Courses.course_id
-					WHERE Enrolments.user_email = '${event.queryStringParameters.student_id}'
-					ORDER BY Courses.course_name, Courses.course_id;`;
+					FROM "Enrolments"
+					JOIN "Courses" ON "Enrolments".course_id = "Courses".course_id
+					WHERE "Enrolments".user_email = '${event.queryStringParameters.student_id}'
+					ORDER BY "Courses".course_name, "Courses".course_id;`;
           response.body = JSON.stringify(data);
         } else {
           response.statusCode = 400;
@@ -116,36 +116,36 @@ exports.handler = async (event) => {
           data = await sqlConnection`
             WITH EnrolmentData AS (
                 SELECT 
-                    Enrolments.enrolment_id
+                    "Enrolments".enrolment_id
                 FROM 
-                    Enrolments
+                    "Enrolments"
                 JOIN 
-                    Users ON Enrolments.user_email = Users.user_email
+                    "Users" ON "Enrolments".user_email = "Users".user_email
                 JOIN 
-                    Courses ON Enrolments.course_id = Courses.course_id
+                    "Courses" ON "Enrolments".course_id = "Courses".course_id
                 WHERE 
-                    Users.user_email = ${studentEmail}
-                    AND Courses.course_id = ${courseId}
+                    "Users".user_email = ${studentEmail}
+                    AND "Courses".course_id = ${courseId}
             )
             SELECT
-                Enrolments.enrolment_id,
-                Course_Modules.module_id,
-                Course_Modules.module_name,
-                Course_Modules.module_number,
-                Course_Concepts.concept_id,
-                Course_Concepts.concept_name,
-                Student_Modules.student_module_id,
-                Student_Modules.module_score,
-                Student_Modules.last_accessed,
-                Student_Modules.module_context_embedding
+                "Enrolments".enrolment_id,
+                "Course_Modules".module_id,
+                "Course_Modules".module_name,
+                "Course_Modules".module_number,
+                "Course_Concepts".concept_id,
+                "Course_Concepts".concept_name,
+                "Student_Modules".student_module_id,
+                "Student_Modules".module_score,
+                "Student_Modules".last_accessed,
+                "Student_Modules".module_context_embedding
             FROM
-                EnrolmentData
+                "EnrolmentData"
             JOIN
-                Course_Modules ON Course_Modules.course_id = ${courseId}
+                "Course_Modules" ON "Course_Modules".course_id = ${courseId}
             JOIN
-                Course_Concepts ON Course_Modules.concept_id = Course_Concepts.concept_id
+                "Course_Concepts" ON "Course_Modules".concept_id = "Course_Concepts".concept_id
             LEFT JOIN
-                Student_Modules ON Course_Modules.module_id = Student_Modules.course_module_id AND Student_Modules.enrolment_id = EnrolmentData.enrolment_id;
+                "Student_Modules" ON "Course_Modules".module_id = "Student_Modules".course_module_id AND "Student_Modules".enrolment_id = "EnrolmentData".enrolment_id;
         `;
 
           const enrolmentId = data[0]?.enrolment_id;
@@ -230,8 +230,8 @@ exports.handler = async (event) => {
             `;
 
             const enrolmentData = await sqlConnection`
-              SELECT Enrolments.enrolment_id
-              FROM Enrolments
+              SELECT "Enrolments".enrolment_id
+              FROM "Enrolments"
               WHERE user_email = ${studentEmail} AND course_id = ${courseId};
             `;
 
@@ -281,8 +281,8 @@ exports.handler = async (event) => {
               RETURNING *;
             `;
           const enrolmentData = await sqlConnection`
-            SELECT Enrolments.enrolment_id
-            FROM Enrolments
+            SELECT "Enrolments".enrolment_id
+            FROM "Enrolments"
             WHERE user_email = ${studentEmail} AND course_id = ${courseId};
           `;
 
@@ -332,8 +332,8 @@ exports.handler = async (event) => {
                 WHERE session_id = ${sessionId};
               `;
             const enrolmentData = await sqlConnection`
-              SELECT Enrolments.enrolment_id
-              FROM Enrolments
+              SELECT "Enrolments".enrolment_id
+              FROM "Enrolments"
               WHERE user_email = ${studentEmail} AND course_id = ${courseId};
             `;
 

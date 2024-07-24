@@ -11,6 +11,8 @@ const StudentChat = () => {
       try {
         const session = await fetchAuthSession();
         var token = session.tokens.idToken.toString()
+        print("token student chat")
+        print(token)
         const response = await fetch(`${import.meta.env.VITE_API_ENDPOINT}student/create_user?user_email=a&username=a&first_name=a&last_name=a&preferred_name=a`, {
           method: 'POST',
           headers: {

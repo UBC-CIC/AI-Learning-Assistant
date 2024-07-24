@@ -32,8 +32,8 @@ async function initializeConnection() {
 
     jwtVerifier = CognitoJwtVerifier.create({
         userPoolId: credentials.VITE_COGNITO_USER_POOL_ID,
-        tokenUse: "access",
-        groups: "admin",
+        tokenUse: "id",
+        groups: 'admin',
         clientId: credentials.VITE_COGNITO_USER_POOL_CLIENT_ID,
     });
 }
@@ -42,8 +42,9 @@ exports.handler = async (event) => {
     if (!jwtVerifier) {
         await initializeConnection();
     }
-    const accessToken = event.authorizationToken;
+    const accessToken = event.authorizationToken
     let payload;
+
     try {
         // If the token is not valid, an error is thrown:
         payload = await jwtVerifier.verify(accessToken);

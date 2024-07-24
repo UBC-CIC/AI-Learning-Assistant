@@ -19,6 +19,16 @@ x-amazon-apigateway-request-validators:
     validateRequestParameters": true
     validateRequestBody": false
 x-amazon-apigateway-request-validator: params-only
+x-amazon-apigateway-gateway-responses:
+  UNAUTHORIZED:
+    statusCode: "401"
+    responseParameters:
+      gatewayresponse.header.Access-Control-Allow-Headers: "'*'"
+      gatewayresponse.header.Access-Control-Allow-Methods: "'*'"
+      gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+    responseTemplates:
+      application/json: |
+        {"message":$context.error.messageString}
 x-common-options: &commonOptions
   options:
     summary: CORS support

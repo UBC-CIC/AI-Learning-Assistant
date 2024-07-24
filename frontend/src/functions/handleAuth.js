@@ -18,10 +18,12 @@ export async function retrieveUser(setUser) {
 export async function retrieveJwtToken(setJwtToken) {
   try {
     var session = await fetchAuthSession();
-    var idToken = await session.tokens.idToken.toString();
+    var idToken = await session.tokens.idToken;
+    console.log(idToken)
     var token = await session.tokens.accessToken.toString();
-    setJwtToken(token);
-    console.log("jwt token", token);
+    idToken = idToken.toString()
+    setJwtToken(idToken);
+    console.log("jwt token", idToken);
     console.log("session", session);
 
     // Check if the token is close to expiration

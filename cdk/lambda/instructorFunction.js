@@ -43,12 +43,12 @@ exports.handler = async (event) => {
           try {
             // Query to get courses where the instructor is enrolled
             data = await sqlConnection`
-              SELECT Courses.*
-              FROM Enrolments
-              JOIN Courses ON Enrolments.course_id = Courses.course_id
-              WHERE Enrolments.user_email = ${instructorEmail}
-              AND Enrolments.enrolment_type = 'instructor'
-              ORDER BY Courses.course_name, Courses.course_id;
+              SELECT "Courses".*
+              FROM "Enrolments"
+              JOIN "Courses" ON "Enrolments".course_id = "Courses".course_id
+              WHERE "Enrolments".user_email = ${instructorEmail}
+              AND "Enrolments".enrolment_type = 'instructor'
+              ORDER BY "Courses".course_name, "Courses".course_id;
             `;
 
             response.body = JSON.stringify(data);
@@ -72,55 +72,55 @@ exports.handler = async (event) => {
             // Query to get the number of message creations per course module
             const messageCreations = await sqlConnection`
         SELECT
-          Course_Modules.module_id,
-          Course_Modules.module_name,
-          COUNT(User_Engagement_Log.log_id) AS message_count
+          "Course_Modules".module_id,
+          "Course_Modules".module_name,
+          COUNT("User_Engagement_Log".log_id) AS message_count
         FROM
-          User_Engagement_Log
+          "User_Engagement_Log"
         JOIN
-          Enrolments ON User_Engagement_Log.enrolment_id = Enrolments.enrolment_id
+          "Enrolments" ON "User_Engagement_Log".enrolment_id = "Enrolments".enrolment_id
         JOIN
-          Course_Modules ON User_Engagement_Log.module_id = Course_Modules.module_id
+          "Course_Modules" ON "User_Engagement_Log".module_id = "Course_Modules".module_id
         WHERE
-          User_Engagement_Log.engagement_type = 'message_creation'
-          AND Enrolments.course_id = ${courseId}
+          "User_Engagement_Log".engagement_type = 'message_creation'
+          AND "Enrolments".course_id = ${courseId}
         GROUP BY
-          Course_Modules.module_id, Course_Modules.module_name;
+          "Course_Modules".module_id, "Course_Modules".module_name;
       `;
 
             // Query to get the number of module accesses per module
             const moduleAccesses = await sqlConnection`
         SELECT
-          Course_Modules.module_id,
-          Course_Modules.module_name,
-          COUNT(User_Engagement_Log.log_id) AS access_count
+          "Course_Modules".module_id,
+          "Course_Modules".module_name,
+          COUNT("User_Engagement_Log".log_id) AS access_count
         FROM
-          User_Engagement_Log
+          "User_Engagement_Log"
         JOIN
-          Enrolments ON User_Engagement_Log.enrolment_id = Enrolments.enrolment_id
+          "Enrolments" ON "User_Engagement_Log".enrolment_id = "Enrolments".enrolment_id
         JOIN
-          Course_Modules ON User_Engagement_Log.module_id = Course_Modules.module_id
+          "Course_Modules" ON "User_Engagement_Log".module_id = "Course_Modules".module_id
         WHERE
-          User_Engagement_Log.engagement_type = 'module_access'
-          AND Enrolments.course_id = ${courseId}
+          "User_Engagement_Log".engagement_type = 'module_access'
+          AND "Enrolments".course_id = ${courseId}
         GROUP BY
-          Course_Modules.module_id, Course_Modules.module_name;
+          "Course_Modules".module_id, "Course_Modules".module_name;
       `;
 
             // Query to get the average score for each course module over all student modules
             const averageScores = await sqlConnection`
         SELECT
-          Course_Modules.module_id,
-          Course_Modules.module_name,
-          AVG(Student_Modules.module_score) AS average_score
+          "Course_Modules".module_id,
+          "Course_Modules".module_name,
+          AVG("Student_Modules".module_score) AS average_score
         FROM
-          Student_Modules
+          "Student_Modules"
         JOIN
-          Course_Modules ON Student_Modules.course_module_id = Course_Modules.module_id
+          "Course_Modules" ON "Student_Modules".course_module_id = "Course_Modules".module_id
         WHERE
-          Course_Modules.course_id = ${courseId}
+          "Course_Modules".course_id = ${courseId}
         GROUP BY
-          Course_Modules.module_id, Course_Modules.module_name;
+          "Course_Modules".module_id, "Course_Modules".module_name;
       `;
 
             response.body = JSON.stringify({
@@ -330,11 +330,11 @@ exports.handler = async (event) => {
 
             // Fetch student , username, and user_email enrolled in the course
             const studentsData = await sqlConnection`
-                SELECT Users.username, Users.user_email
-                FROM Users
-                JOIN Enrolments ON Users.user_email = Enrolments.user_email
-                WHERE Enrolments.course_id = ${course_id}
-                  AND Enrolments.enrolment_type = 'student';
+                SELECT "Users".username, Users.user_email
+                FROM "Users"
+                JOIN "Enrolments" ON "Users".user_email = "Enrolments".user_email
+                WHERE "Enrolments".course_id = ${course_id}
+                  AND "Enrolments".enrolment_type = 'student';
               `;
 
             response.body = JSON.stringify(studentsData);
@@ -360,11 +360,11 @@ exports.handler = async (event) => {
 
             // Delete the student from the course enrolments
             const deleteResult = await sqlConnection`
-                  DELETE FROM Enrolments
+                  DELETE FROM "Enrolments"
                   WHERE course_id = ${course_id}
                     AND user_email = (
                       SELECT user_email
-                      FROM Users
+                      FROM "Users"
                       WHERE user_email = ${user_email}
                     )
                     AND enrolment_type = 'student'

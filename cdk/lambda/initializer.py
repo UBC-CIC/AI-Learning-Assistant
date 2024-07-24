@@ -7,6 +7,7 @@ import secrets
 
 DB_SECRET_NAME = os.environ["DB_SECRET_NAME"]
 DB_USER_SECRET_NAME = os.environ["DB_USER_SECRET_NAME"]
+print(psycopg2.__version__)
 
 
 def getDbSecret():
@@ -16,27 +17,29 @@ def getDbSecret():
     secret = json.loads(response)
     return secret
 
+def createConnection():
+
+    connection = psycopg2.connect(
+        user=dbSecret["username"],
+        password=dbSecret["password"],
+        host=dbSecret["host"],
+        dbname=dbSecret["dbname"],
+        # sslmode="require"
+    )
+    return connection
+
 
 dbSecret = getDbSecret()
-
-connection = psycopg2.connect(
-    user=dbSecret["username"],
-    password=dbSecret["password"],
-    host=dbSecret["host"],
-    dbname=dbSecret["dbname"],
-)
-
-cursor = connection.cursor()
-
-
-def readJSONFile(filepath):
-    with open(filepath, "r") as file:
-        data = json.load(file)
-
-    return data
+connection = createConnection()
 
 
 def handler(event, context):
+    global connection
+    print(connection)
+    if connection.closed:
+        connection = createConnection()
+    
+    cursor = connection.cursor()
     try:
 
         #
@@ -45,8 +48,9 @@ def handler(event, context):
 
         # Create tables based on the schema
         sqlTableCreation = """
+            CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
             CREATE TABLE IF NOT EXISTS "Users" (
-            "user_email" varchar2 PRIMARY KEY,
+            "user_email" varchar PRIMARY KEY,
             "username" varchar,
             "first_name" varchar,
             "last_name" varchar,
@@ -57,7 +61,7 @@ def handler(event, context):
             );
 
             CREATE TABLE IF NOT EXISTS "LLM_Vectors" (
-            "enrolment_id" uuid,
+            "enrolment_id" uuid UNIQUE,
             "student_strengths_embeddings" float[],
             "student_weaknesses_embeddings" float[]
             );
@@ -132,7 +136,7 @@ def handler(event, context):
 
             CREATE TABLE IF NOT EXISTS "User_Engagement_Log" (
             "log_id" uuid PRIMARY KEY DEFAULT (uuid_generate_v4()),
-            "user_email" uuid,
+            "user_email" varchar,
             "course_id" uuid,
             "module_id" uuid,
             "enrolment_id" uuid,
@@ -281,6 +285,72 @@ def handler(event, context):
         sm_client.put_secret_value(
             SecretId=DB_USER_SECRET_NAME, SecretString=json.dumps(dbSecret)
         )
+        sql = """
+            SELECT * FROM "Users";
+        """
+        
+        cursor.execute(sql)
+        print(cursor.fetchall())
+        
+        sql = """
+            SELECT * FROM "LLM_Vectors";
+        """
+        cursor.execute(sql)
+        print(cursor.fetchall())
+        
+        sql = """
+            SELECT * FROM "Courses";
+        """
+        cursor.execute(sql)
+        print(cursor.fetchall())
+
+        sql = """
+            SELECT * FROM "Course_Modules";
+        """
+        cursor.execute(sql)
+        print(cursor.fetchall())
+
+        sql = """
+            SELECT * FROM "Enrolments";
+        """
+        cursor.execute(sql)
+        print(cursor.fetchall())
+
+        sql = """
+            SELECT * FROM "Module_Files";
+        """
+        cursor.execute(sql)
+        print(cursor.fetchall())
+
+        sql = """
+            SELECT * FROM "Student_Modules";
+        """
+        cursor.execute(sql)
+        print(cursor.fetchall())
+
+        sql = """
+            SELECT * FROM "Sessions";
+        """
+        cursor.execute(sql)
+        print(cursor.fetchall())
+
+        sql = """
+            SELECT * FROM "Messages";
+        """
+        cursor.execute(sql)
+        print(cursor.fetchall())
+
+        sql = """
+            SELECT * FROM "Course_Concepts";
+        """
+        cursor.execute(sql)
+        print(cursor.fetchall())
+
+        sql = """
+            SELECT * FROM "User_Engagement_Log";
+        """
+        cursor.execute(sql)
+        print(cursor.fetchall())
 
 
         # Close cursor and connection

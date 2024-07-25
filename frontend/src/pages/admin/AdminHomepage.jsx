@@ -1,8 +1,11 @@
 import React from "react";
 // components
-import PageContainer from "../Container";
-import AdminHeader from "../../components/AdminHeader";
 import AdminSidebar from "./AdminSidebar";
+import AdminHeader from "../../components/AdminHeader";
+import AdminInstructors from "./AdminInstructors";
+import AdminCourses from "./AdminCourses";
+import AdminCreateCourse from "./AdminCreateCourse";
+import PageContainer from "../Container";
 // MUI
 import {
   Typography,
@@ -39,23 +42,22 @@ export const AdminHomepage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
+  const [selectedComponent, setSelectedComponent] =
+    useState("AdminInstructors");
 
-  const handleSearchChange = (event) => {
-    setSearchQuery(event.target.value);
+  // sidebar routing
+  const renderComponent = () => {
+    switch (selectedComponent) {
+      case "AdminInstructors":
+        return <AdminInstructors />;
+      case "AdminCourses":
+        return <AdminCourses />;
+      case "AdminCreateCourse":
+        return <AdminCreateCourse />;
+      default:
+        return <AdminInstructors />;
+    }
   };
-
-  const handleChangePage = (event, newPage) => {
-    setPage(newPage);
-  };
-
-  const handleChangeRowsPerPage = (event) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
-    setPage(0);
-  };
-
-  const filteredRows = rows.filter((row) =>
-    row.user.toLowerCase().includes(searchQuery.toLowerCase())
-  );
 
   return (
     <div>
@@ -67,71 +69,8 @@ export const AdminHomepage = () => {
         >
           <AdminHeader />
         </AppBar>
-        <AdminSidebar />
-        <Box component="main" sx={{ flexGrow: 1, p: 3, marginTop: 1 }}>
-          <Toolbar />
-          <Typography
-            color="black"
-            fontStyle="semibold"
-            textAlign="left"
-            variant="h6"
-          >
-            Manage Instructors
-          </Typography>
-          <Paper sx={{ width: "100%", overflow: "hidden", marginTop: 2 }}>
-            <TableContainer>
-              <TextField
-                label="Search by User"
-                variant="outlined"
-                value={searchQuery}
-                onChange={handleSearchChange}
-                sx={{ margin: 2, width: "100%", alignContent: "left" }}
-              />
-              <Table aria-label="user table">
-                <TableHead>
-                  <TableRow>
-                    <TableCell sx={{ width: "35%" }}>User</TableCell>
-                    <TableCell>Email</TableCell>
-                    <TableCell>Status</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {filteredRows
-                    .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                    .map((row, index) => (
-                      <TableRow key={index}>
-                        <TableCell>{row.user}</TableCell>
-                        <TableCell>{row.email}</TableCell>
-                        <TableCell>
-                          <Button
-                            variant="contained"
-                            color={
-                              row.status === "Active" ? "primary" : "secondary"
-                            }
-                          >
-                            {row.status}
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                </TableBody>
-                <TableFooter>
-                  <TableRow>
-                    <TablePagination
-                      rowsPerPageOptions={[5, 10, 25]}
-                      component="div"
-                      count={filteredRows.length}
-                      rowsPerPage={rowsPerPage}
-                      page={page}
-                      onPageChange={handleChangePage}
-                      onRowsPerPageChange={handleChangeRowsPerPage}
-                    />
-                  </TableRow>
-                </TableFooter>
-              </Table>
-            </TableContainer>
-          </Paper>
-        </Box>
+        <AdminSidebar setSelectedComponent={setSelectedComponent} />
+        {renderComponent()}
       </PageContainer>
     </div>
   );

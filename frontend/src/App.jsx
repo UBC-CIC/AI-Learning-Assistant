@@ -18,9 +18,6 @@ import StudentChat from "./pages/student/StudentChat";
 import AdminHomepage from "./pages/admin/AdminHomepage";
 import InstructorHomepage from "./pages/instructor/InstructorHomepage";
 // functions
-import { useAuthentication } from "./functions/useAuth";
-
-export const AuthContext = createContext("user");
 
 Amplify.configure({
   API: {
@@ -45,9 +42,6 @@ function App() {
   const [userGroup, setUserGroup] = useState(null);
   const [userInfo, setUserInfo] = useState({});
 
-  const { authuser, credentials } = useAuthentication();
-  console.log("test useAuth credentials", credentials);
-  console.log("test useAuth user", authuser);
   //get user info and render page based on role
 
   // useEffect(() => {
@@ -87,6 +81,10 @@ function App() {
           setUser(tokens.accessToken.payload);
           setUserGroup(group || []);
           console.log("User belongs to following groups: " + group);
+          console.log(
+            "auth token payload",
+            tokens.accessToken.payload["cognito:groups"]
+          );
           // console.log("user", user);
           console.log(userGroup);
         }
@@ -115,16 +113,11 @@ function App() {
 
   return (
     <Router>
-        <AuthContext.Provider value={{ authuser, credentials }}>
-          <Routes>
-            <Route
-              path="/"
-              element={user ? <Navigate to="/home" /> : <Login />}
-            />
-            <Route path="/chat" element={<StudentChat />} />
-            <Route path="/home" element={getHomePage()} />
-          </Routes>
-        </AuthContext.Provider>
+      <Routes>
+        <Route path="/" element={user ? <Navigate to="/home" /> : <Login />} />
+        <Route path="/chat" element={<StudentChat />} />
+        <Route path="/home" element={getHomePage()} />
+      </Routes>
     </Router>
   );
 }

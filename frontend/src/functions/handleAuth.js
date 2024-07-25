@@ -21,8 +21,8 @@ export async function retrieveJwtToken(setJwtToken) {
     var idToken = await session.tokens.idToken.toString();
     var token = await session.tokens.accessToken.toString();
     setJwtToken(token);
-    console.log("jwt token", token);
-    console.log("session", session);
+    // console.log("jwt token", token);
+    // console.log("session", session);
 
     // Check if the token is close to expiration
     const expirationTime = session.credentials.expiration * 1000; // Milliseconds
@@ -61,5 +61,5 @@ export function getIdentityCredentials(jwtToken, setCredentials) {
   AWS.config.credentials.get(function () {
     setCredentials(creds);
   });
-  console.log(creds);
+  // console.log(creds);
 }

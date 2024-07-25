@@ -90,7 +90,13 @@ const FileUpload = () => {
             sx={{ textAlign: "center", p: 0, cursor: "pointer" }}
           >
             <CardContent>
-              <input type="file" multiple hidden onChange={handleFileChange} />
+              <input
+                accept="application/pdf"
+                type="file"
+                multiple
+                hidden
+                onChange={handleFileChange}
+              />
               <IconButton
                 color="primary"
                 aria-label="upload files"

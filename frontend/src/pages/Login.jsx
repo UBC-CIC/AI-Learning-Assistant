@@ -9,6 +9,7 @@ import {
   resetPassword,
   confirmResetPassword,
   updatePassword,
+  fetchAuthSession,
 } from "aws-amplify/auth";
 // MUI
 import {
@@ -24,9 +25,8 @@ import {
 // login assets
 import loginframe from "../assets/loginframe.png";
 import PageContainer from "./Container";
-//functions
-import { getSignedRequest } from "../functions/getSignedRequest";
-import { AuthContext } from "../App";
+// cognito verifier
+import { CognitoJwtVerifier } from "aws-jwt-verify";
 // MUI theming
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 const { palette } = createTheme();
@@ -60,8 +60,64 @@ export const Login = () => {
   const [step, setStep] = useState("requestReset");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
-  // api
-  const { user, credentials } = useContext(AuthContext);
+
+  const verifyJwtToken = async (token) => {
+    try {
+      const verifier = CognitoJwtVerifier.create({
+        userPoolId: import.meta.env.VITE_COGNITO_USER_POOL_ID,
+        tokenUse: "id", // Can be either 'id' or 'access'
+        clientId: import.meta.env.VITE_COGNITO_USER_POOL_CLIENT_ID,
+      });
+      // Verify the token
+      const payload = await verifier.verify(token);
+
+      // Check if 'groups' property is present
+      if (payload["cognito:groups"]) {
+        console.log("Groups:", payload["cognito:groups"]);
+      } else {
+        console.log("No groups found in the token.");
+      }
+
+      return payload;
+    } catch (error) {
+      console.error("Token verification failed:", error);
+      throw new Error("Unauthorized jwt token");
+    }
+  };
+
+  // send user data to api
+  const sendUserDataToBackend = async () => {
+    try {
+      const session = await fetchAuthSession();
+      const token = session.tokens.idToken.toString();
+      console.log("id token", token);
+
+      const response = await fetch(
+        `${
+          import.meta.env.VITE_API_ENDPOINT
+        }student/create_user?user_email=${encodeURIComponent(
+          username
+        )}&username=${encodeURIComponent(
+          username
+        )}&first_name=${encodeURIComponent(
+          firstName
+        )}&last_name=${encodeURIComponent(
+          lastName
+        )}&preferred_name=${encodeURIComponent(firstName)}`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: token,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      const data = await response.json();
+      console.log("Response from backend:", data);
+    } catch (error) {
+      console.log("Error sending user data to backend:", error);
+    }
+  };
 
   // existing user sign in
   const handleSignIn = async (event) => {
@@ -89,33 +145,11 @@ export const Login = () => {
           setLoading(false);
         }
       } else {
-        // User is confirmed, proceed to send data to your API
-        const apiPath = "/student/create_user";
-
-        // Example data to send to your API, adjust as per your API requirements
-        const apiData = {
-          user_email: username,
-          username: username,
-          first_name: username,
-          last_name: username,
-          preferred_name: username,
-        };
-        // Send data to your API using getSignedRequest function
-        const { responseData, formattedData } = await getSignedRequest(
-          apiPath,
-          {},
-          credentials,
-          "POST",
-          apiData
-        );
-        console.log("Data sent to API successfully:", responseData);
-
-        // Proceed with further steps after sending data to API (if any)
         setNewSignUp(false);
         window.location.reload();
       }
     } catch (error) {
-      console.log("Error logging in or sending data to API:", error);
+      console.log("Error logging in:", error);
       setLoading(false);
     }
   };
@@ -143,17 +177,18 @@ export const Login = () => {
           email: username,
         },
       });
-      setLoading(false);
       setNewSignUp(false);
       console.log("User signed up:", isSignUpComplete, userId, nextStep);
       if (!isSignUpComplete) {
         if (nextStep.signUpStep === "CONFIRM_SIGN_UP") {
           setSignUpConfirmation(true);
+          setLoading(false);
         }
       }
     } catch (error) {
       console.log("Error signing up:", error);
       setLoading(false);
+      setError(error.message);
     }
   };
 
@@ -194,49 +229,86 @@ export const Login = () => {
     event.preventDefault();
     const confirmationCode = event.target.confirmationCode.value;
 
+    // try {
+    //   setLoading(true);
+    //   const user = await confirmSignUp({
+    //     username: username,
+    //     confirmationCode: confirmationCode,
+    //   });
+
+    //   setLoading(false);
+    //   console.log(
+    //     "User logged in:",
+    //     user.isSignUpComplete,
+    //     user.nextStep.signInStep
+    //   );
+    //   if (user.isSignUpComplete) {
+    //     setNewSignUp(false);
+    //     window.location.reload();
+    //   }
+    // } catch (error) {
+    //   console.log("Error setting new password:", error);
+    //   console.log(credentials);
+    //   setConfirmationError("Invalid confirmation code");
+    //   setLoading(false);
+    // }
+
     try {
       setLoading(true);
-      const user = await confirmSignUp({
+      await confirmSignUp({
         username: username,
         confirmationCode: confirmationCode,
       });
-      setLoading(false);
-      console.log(
-        "User logged in:",
-        user.isSignUpComplete,
-        user.nextStep.signInStep
-      );
-      if (user.isSignUpComplete) {
-        // User is confirmed, proceed to send data to your API
-        const apiPath = "/student/create_user";
 
-        // Example data to send to your API, adjust as per your API requirements
-        const apiData = {
-          user_email: username,
-          username: username,
-          first_name: firstName,
-          last_name: lastName,
-          preferred_name: firstName,
-        };
-        // Send data to your API using getSignedRequest function
-        const { responseData, formattedData } = await getSignedRequest(
-          apiPath,
-          {},
-          credentials,
-          "POST",
-          apiData
+      console.log("code", confirmationCode);
+
+      // Automatically log in the user
+      const user = await signIn({
+        username: username,
+        password: password,
+      });
+
+      console.log("handle auto sign in", user.isSignedIn);
+
+      if (user.isSignedIn) {
+        // Send user data to backend
+        const session = await fetchAuthSession();
+        const token = session.tokens.idToken.toString();
+
+        const response = await fetch(
+          `${
+            import.meta.env.VITE_API_ENDPOINT
+          }student/create_user?user_email=${encodeURIComponent(
+            username
+          )}&username=${encodeURIComponent(
+            username
+          )}&first_name=${encodeURIComponent(
+            firstName
+          )}&last_name=${encodeURIComponent(
+            lastName
+          )}&preferred_name=${encodeURIComponent(firstName)}`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: token,
+              "Content-Type": "application/json",
+            },
+          }
         );
-        console.log("Data sent to API successfully:", responseData);
+        const data = await response.json();
+        console.log("Response from backend:", data);
 
-        // Proceed with further steps after sending data to API (if any)
+        setLoading(false);
         setNewSignUp(false);
         window.location.reload();
+      } else {
+        setLoading(false);
+        setError("Automatic login failed. Please try signing in manually.");
       }
     } catch (error) {
-      console.log("Error setting new password:", error);
-      console.log(credentials);
-      setConfirmationError("Invalid confirmation code");
+      console.log("Error confirming sign-up:", error);
       setLoading(false);
+      setConfirmationError(error.message);
     }
   };
 
@@ -314,24 +386,6 @@ export const Login = () => {
       setError(error.message);
     }
   }
-
-  //TODO: STORE USER INFO IN DATABASE
-  // const storeUser = async (first_name, last_name, email) => {
-  //   setLoading(true);
-
-  //   //sign in user
-  //   try {
-  //     const user = await signIn({
-  //       username: username,
-  //       password: password,
-  //     });
-  //     console.log("User logged in:", user.isSignedIn, user.nextStep.signInStep);
-  //   } catch (error) {
-  //     console.log("Error getting user:", error);
-  //     setLoading(false);
-  //     return;
-  //   }
-  // };
 
   return (
     <ThemeProvider theme={theme}>

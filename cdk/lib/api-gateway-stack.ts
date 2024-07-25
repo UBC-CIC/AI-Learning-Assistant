@@ -1,4 +1,6 @@
 import * as cdk from "aws-cdk-lib";
+import * as CustomResources from "@aws-cdk/custom-resources";
+
 import * as apigateway from "aws-cdk-lib/aws-apigateway";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as iam from "aws-cdk-lib/aws-iam";
@@ -319,7 +321,6 @@ export class ApiGatewayStack extends cdk.Stack {
       })
     );
 
-
     // Create Cognito user pool groups
     const studentGroup = new cognito.CfnUserPoolGroup(this, "StudentGroup", {
       groupName: "student",
@@ -426,35 +427,31 @@ export class ApiGatewayStack extends cdk.Stack {
       },
     });
 
-    const lambdaStudentFunction = new lambda.Function(
-      this,
-      "studentFunction",
-      {
-        runtime: lambda.Runtime.NODEJS_16_X, // Execution environment
-        code: lambda.Code.fromAsset("lambda"), // Code loaded from "lambda" directory
-        handler: "studentFunction.handler", // Code handler
-        timeout: Duration.seconds(300),
-        vpc: vpcStack.vpc,
-        environment: {
-          SM_DB_CREDENTIALS: db.secretPathUser.secretName,
-          RDS_PROXY_ENDPOINT: db.rdsProxyEndpoint,
-        },
-        functionName: "studentFunction",
-        memorySize: 512,
-        layers: [postgres],
-        role: lambdaRole,
-      }
-    );
+    const lambdaStudentFunction = new lambda.Function(this, "studentFunction", {
+      runtime: lambda.Runtime.NODEJS_16_X, // Execution environment
+      code: lambda.Code.fromAsset("lambda"), // Code loaded from "lambda" directory
+      handler: "studentFunction.handler", // Code handler
+      timeout: Duration.seconds(300),
+      vpc: vpcStack.vpc,
+      environment: {
+        SM_DB_CREDENTIALS: db.secretPathUser.secretName,
+        RDS_PROXY_ENDPOINT: db.rdsProxyEndpoint,
+      },
+      functionName: "studentFunction",
+      memorySize: 512,
+      layers: [postgres],
+      role: lambdaRole,
+    });
 
     // Add the permission to the Lambda function's policy to allow API Gateway access
     lambdaStudentFunction.addPermission("AllowApiGatewayInvoke", {
       principal: new iam.ServicePrincipal("apigateway.amazonaws.com"),
       action: "lambda:InvokeFunction",
       sourceArn: `arn:aws:execute-api:${this.region}:${this.account}:${this.api.restApiId}/*/*/student*`,
-
     });
 
-    const cfnLambda_student = lambdaStudentFunction.node.defaultChild as lambda.CfnFunction;
+    const cfnLambda_student = lambdaStudentFunction.node
+      .defaultChild as lambda.CfnFunction;
     cfnLambda_student.overrideLogicalId("studentFunction");
 
     const lambdaInstructorFunction = new lambda.Function(
@@ -484,30 +481,25 @@ export class ApiGatewayStack extends cdk.Stack {
       sourceArn: `arn:aws:execute-api:${this.region}:${this.account}:${this.api.restApiId}/*/*/instructor*`,
     });
 
-
-    const cfnLambda_Instructor = lambdaInstructorFunction.node.defaultChild as lambda.CfnFunction;
+    const cfnLambda_Instructor = lambdaInstructorFunction.node
+      .defaultChild as lambda.CfnFunction;
     cfnLambda_Instructor.overrideLogicalId("instructorFunction");
 
-    
-    const lambdaAdminFunction = new lambda.Function(
-      this,
-      "adminFunction",
-      {
-        runtime: lambda.Runtime.NODEJS_16_X, // Execution environment
-        code: lambda.Code.fromAsset("lambda"), // Code loaded from "lambda" directory
-        handler: "adminFunction.handler", // Code handler
-        timeout: Duration.seconds(300),
-        vpc: vpcStack.vpc,
-        environment: {
-          SM_DB_CREDENTIALS: db.secretPathUser.secretName,
-          RDS_PROXY_ENDPOINT: db.rdsProxyEndpoint,
-        },
-        functionName: "adminFunction",
-        memorySize: 512,
-        layers: [postgres],
-        role: lambdaRole,
-      }
-    );
+    const lambdaAdminFunction = new lambda.Function(this, "adminFunction", {
+      runtime: lambda.Runtime.NODEJS_16_X, // Execution environment
+      code: lambda.Code.fromAsset("lambda"), // Code loaded from "lambda" directory
+      handler: "adminFunction.handler", // Code handler
+      timeout: Duration.seconds(300),
+      vpc: vpcStack.vpc,
+      environment: {
+        SM_DB_CREDENTIALS: db.secretPathUser.secretName,
+        RDS_PROXY_ENDPOINT: db.rdsProxyEndpoint,
+      },
+      functionName: "adminFunction",
+      memorySize: 512,
+      layers: [postgres],
+      role: lambdaRole,
+    });
 
     // Add the permission to the Lambda function's policy to allow API Gateway access
     lambdaAdminFunction.addPermission("AllowApiGatewayInvoke", {
@@ -516,7 +508,8 @@ export class ApiGatewayStack extends cdk.Stack {
       sourceArn: `arn:aws:execute-api:${this.region}:${this.account}:${this.api.restApiId}/*/*/admin*`,
     });
 
-    const cfnLambda_Admin = lambdaAdminFunction.node.defaultChild as lambda.CfnFunction;
+    const cfnLambda_Admin = lambdaAdminFunction.node
+      .defaultChild as lambda.CfnFunction;
     cfnLambda_Admin.overrideLogicalId("adminFunction");
 
     const lambdaTechAdminFunction = new lambda.Function(
@@ -546,9 +539,9 @@ export class ApiGatewayStack extends cdk.Stack {
       sourceArn: `arn:aws:execute-api:${this.region}:${this.account}:${this.api.restApiId}/*/*/*`,
     });
 
-    const cfnLambda_Tech_Admin = lambdaTechAdminFunction.node.defaultChild as lambda.CfnFunction;
+    const cfnLambda_Tech_Admin = lambdaTechAdminFunction.node
+      .defaultChild as lambda.CfnFunction;
     cfnLambda_Tech_Admin.overrideLogicalId("techadminFunction");
-
 
     const coglambdaRole = new iam.Role(this, "cognitoLambdaRole", {
       roleName: "cognitoLambdaRole",
@@ -599,38 +592,61 @@ export class ApiGatewayStack extends cdk.Stack {
     );
 
     // Grant permission to add users to an IAM group
-    coglambdaRole.addToPolicy(new iam.PolicyStatement({
-      effect: iam.Effect.ALLOW,
-      actions: [
-          "iam:AddUserToGroup",
-      ],
-      resources: [
+    coglambdaRole.addToPolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: ["iam:AddUserToGroup"],
+        resources: [
           `arn:aws:iam::${this.account}:user/*`,
           `arn:aws:iam::${this.account}:group/*`,
-      ],
-  }));
+        ],
+      })
+    );
 
-    //cognito auto assign authenticated users to the student group
-    const addUserGroupOnSignUp = new lambda.Function(
+    // Inline policy to allow AdminAddUserToGroup action
+    const adminAddUserToGroupPolicy = new iam.Policy(
       this,
-      "addUserGroupOnSignUp",
+      "AdminAddUserToGroupPolicy",
       {
-        runtime: lambda.Runtime.NODEJS_16_X, // Execution environment
-        code: lambda.Code.fromAsset("lambda"), // Code loaded from "lambda" directory
-        handler: "addUserGroupOnSignUp.handler", // Code handler
-        timeout: Duration.seconds(300),
-        vpc: vpcStack.vpc,
-        functionName: "addUserGroupOnSignUp",
-        memorySize: 128,
-        role: coglambdaRole,
+        statements: [
+          new iam.PolicyStatement({
+            effect: iam.Effect.ALLOW,
+            actions: ["cognito-idp:AdminAddUserToGroup"],
+            resources: [
+              `arn:aws:cognito-idp:${this.region}:${this.account}:userpool/${this.userPool.userPoolId}`,
+            ],
+          }),
+        ],
       }
     );
+
+    // Attach the inline policy to the role
+    coglambdaRole.attachInlinePolicy(adminAddUserToGroupPolicy);
+
+    const AutoSignupLambda = new lambda.Function(this, "addStudentOnSignUp", {
+      runtime: lambda.Runtime.NODEJS_16_X, // Execution environment
+      code: lambda.Code.fromAsset("lambda"), // Code loaded from "lambda" directory
+      handler: "addStudentOnSignUp.handler", // Code handler
+      timeout: Duration.seconds(300),
+      vpc: vpcStack.vpc,
+      functionName: "addStudentOnSignUp",
+      memorySize: 128,
+      role: coglambdaRole,
+    })
+
+    //cognito auto assign authenticated users to the student group
+
+    this.userPool.addTrigger(
+      cognito.UserPoolOperation.POST_CONFIRMATION,
+      AutoSignupLambda
+    );
+
     // const authorizer = new apigateway.CognitoUserPoolsAuthorizer(this, 'ailaAuthorizer', {
     //   cognitoUserPools: [this.userPool],
     // });
-    new cdk.CfnOutput(this, 'UserPoolIdOutput', {
+    new cdk.CfnOutput(this, "UserPoolIdOutput", {
       value: this.userPool.userPoolId,
-      description: 'The ID of the Cognito User Pool',
+      description: "The ID of the Cognito User Pool",
     });
 
     // **
@@ -695,8 +711,8 @@ export class ApiGatewayStack extends cdk.Stack {
     );
 
     // Change Logical ID to match the one decleared in YAML file of Open API
-    const apiGW_authorizationFunction_student = authorizationFunction_student.node
-      .defaultChild as lambda.CfnFunction;
+    const apiGW_authorizationFunction_student = authorizationFunction_student
+      .node.defaultChild as lambda.CfnFunction;
     apiGW_authorizationFunction_student.overrideLogicalId(
       "studentLambdaAuthorizer"
     );
@@ -730,8 +746,8 @@ export class ApiGatewayStack extends cdk.Stack {
     );
 
     // Change Logical ID to match the one decleared in YAML file of Open API
-    const apiGW_authorizationFunction_instructor = authorizationFunction_instructor.node
-      .defaultChild as lambda.CfnFunction;
+    const apiGW_authorizationFunction_instructor =
+      authorizationFunction_instructor.node.defaultChild as lambda.CfnFunction;
     apiGW_authorizationFunction_instructor.overrideLogicalId(
       "instructorLambdaAuthorizer"
     );

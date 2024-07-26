@@ -11,12 +11,16 @@ const theme = createTheme({
       contrastText: "#ffffff",
     },
     background: {
-      default: "#F8F9FD",
+      main: "#F8F9FD",
+      default: "#00000",
     },
     // text: {
     //   primary: "#000000",
     //   secondary: "#ffffff",
     // },
+    default: {
+      main: "#fffff",
+    },
   },
   typography: {
     fontFamily: "Roboto, sans-serif",

@@ -16,6 +16,7 @@ import {
   Button,
   TableFooter,
   TablePagination,
+  OutlinedInput,
 } from "@mui/material";
 import { useState } from "react";
 
@@ -30,7 +31,7 @@ const initialRows = [
   createData("CPSC XXX", "bob.johnson@example.com", "Active"),
 ];
 
-export const AdminCourses = () => {
+export const AdminCourses = ({ setSelectedCourse }) => {
   const [rows, setRows] = useState(initialRows);
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(0);
@@ -53,6 +54,10 @@ export const AdminCourses = () => {
     row.course.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const handleCourseClick = (course) => {
+    setSelectedCourse(course);
+  };
+
   return (
     <div>
       <Box component="main" sx={{ flexGrow: 1, p: 3, marginTop: 1 }}>
@@ -65,7 +70,7 @@ export const AdminCourses = () => {
         >
           Courses
         </Typography>
-        <Paper sx={{ width: "180%", overflow: "hidden", marginTop: 2 }}>
+        <Paper sx={{ width: "170%", overflow: "hidden", marginTop: 2 }}>
           <TableContainer>
             <TextField
               label="Search by User"
@@ -86,7 +91,11 @@ export const AdminCourses = () => {
                 {filteredRows
                   .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                   .map((row, index) => (
-                    <TableRow key={index}>
+                    <TableRow
+                      key={index}
+                      onClick={() => handleCourseClick(row.course)}
+                      style={{ cursor: "pointer" }}
+                    >
                       <TableCell>{row.course}</TableCell>
                       <TableCell>{row.instructor}</TableCell>
                       <TableCell>

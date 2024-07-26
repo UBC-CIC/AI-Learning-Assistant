@@ -7,8 +7,9 @@ import {
   InputLabel,
   FormControl,
   Box,
-  OutlinedInput,
   Chip,
+  Typography,
+  OutlinedInput,
 } from "@mui/material";
 
 export const AdminCreateCourse = () => {
@@ -32,17 +33,38 @@ export const AdminCreateCourse = () => {
   };
 
   const handleChange = (event) => {
-    const {
-      target: { value },
-    } = event;
-    setSelectedInstructors(
-      // On autofill we get a stringified value.
-      typeof value === "string" ? value.split(",") : value
-    );
+    setSelectedInstructors(event.target.value);
   };
 
+  const inputStyles = {
+    width: "100%",
+    margin: "8px 0",
+    padding: "8px",
+    backgroundColor: "white",
+    border: "1px solid #ccc",
+    borderRadius: "4px",
+    color: "black",
+  };
+
+  const labelStyles = {
+    marginBottom: "3px",
+    display: "block",
+    textAlign: "left",
+    color: "#000",
+    mx: "left",
+  };
+
+  console.log(selectedInstructors);
   return (
-    <Box sx={{ maxWidth: 500, mx: "auto", mt: 10 }}>
+    <Box sx={{ maxWidth: 500, mx: "left", mt: 7, p: 4 }}>
+      <Typography
+        color="black"
+        fontStyle="semibold"
+        textAlign="left"
+        variant="h6"
+      >
+        Create a new course
+      </Typography>
       <form noValidate autoComplete="off">
         <TextField
           fullWidth
@@ -50,6 +72,7 @@ export const AdminCreateCourse = () => {
           value={courseName}
           onChange={(e) => setCourseName(e.target.value)}
           margin="normal"
+          backgroundColor="default"
         />
         <TextField
           fullWidth
@@ -60,18 +83,31 @@ export const AdminCreateCourse = () => {
           multiline
           rows={4}
         />
-        <FormControl fullWidth margin="normal">
-          <InputLabel id="instructor-select-label">Instructor</InputLabel>
+        <FormControl fullWidth sx={{ marginBottom: 2, marginTop: 2 }}>
+          <InputLabel id="select-instructors-label">
+            Assign Instructors
+          </InputLabel>
           <Select
-            labelId="instructor-select-label"
+            labelId="select-instructors-label"
             multiple
             value={selectedInstructors}
             onChange={handleChange}
             input={
-              <OutlinedInput id="select-multiple-chip" label="Instructors" />
+              <OutlinedInput
+                id="select-multiple-chip"
+                label="Assign Instructors"
+              />
             }
             renderValue={(selected) => (
-              <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
+              <Box
+                sx={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                  gap: 0.5,
+                  backgroundColor: "transparent",
+                  color: "black",
+                }}
+              >
                 {selected.map((value) => (
                   <Chip key={value} label={value} />
                 ))}
@@ -85,6 +121,50 @@ export const AdminCreateCourse = () => {
             ))}
           </Select>
         </FormControl>
+        <Box
+          sx={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: 0.5,
+            backgroundColor: "transparent",
+            color: "black",
+          }}
+        >
+          {selectedInstructors.map((value) => (
+            <Chip key={value} label={value} />
+          ))}
+        </Box>
+        {/* <div>
+          <label style={labelStyles}>
+            Assign Instructors:
+            <select
+              multiple
+              value={selectedInstructors}
+              onChange={handleChange}
+              style={inputStyles}
+            >
+              {instructors.map((instructor) => (
+                <option key={instructor.id} value={instructor.name}>
+                  {instructor.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+        <div
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: "0.5rem",
+            margin: "8px 0",
+            backgroundColor: "transparent",
+            color: "black",
+          }}
+        >
+          {selectedInstructors.map((value) => (
+            <Chip key={value} label={value} />
+          ))}
+        </div> */}
         <Button
           variant="contained"
           color="primary"

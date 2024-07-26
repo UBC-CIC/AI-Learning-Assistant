@@ -30,7 +30,7 @@ const initialRows = [
   createData("Bob Johnson", "bob.johnson@example.com", "Active"),
 ];
 
-export const AdminInstructors = () => {
+export const AdminInstructors = ({ setSelectedInstructor }) => {
   const [rows, setRows] = useState(initialRows);
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(0);
@@ -53,6 +53,10 @@ export const AdminInstructors = () => {
     row.user.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const handleRowClick = (user) => {
+    setSelectedInstructor(user);
+  };
+
   return (
     <div>
       <Box component="main" sx={{ flexGrow: 1, p: 3, marginTop: 1 }}>
@@ -65,7 +69,7 @@ export const AdminInstructors = () => {
         >
           Manage Instructors
         </Typography>
-        <Paper sx={{ width: "180%", overflow: "hidden", marginTop: 2 }}>
+        <Paper sx={{ width: "170%", overflow: "hidden", marginTop: 2 }}>
           <TableContainer>
             <TextField
               label="Search by User"
@@ -86,7 +90,11 @@ export const AdminInstructors = () => {
                 {filteredRows
                   .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                   .map((row, index) => (
-                    <TableRow key={index}>
+                    <TableRow
+                      key={index}
+                      onClick={() => handleRowClick(row.user)}
+                      style={{ cursor: "pointer" }}
+                    >
                       <TableCell>{row.user}</TableCell>
                       <TableCell>{row.email}</TableCell>
                       <TableCell>

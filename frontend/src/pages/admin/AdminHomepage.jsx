@@ -6,56 +6,51 @@ import AdminInstructors from "./AdminInstructors";
 import AdminCourses from "./AdminCourses";
 import AdminCreateCourse from "./AdminCreateCourse";
 import PageContainer from "../Container";
+import InstructorDetails from "./InstructorDetails";
+import CourseDetails from "./CourseDetails";
 // MUI
-import {
-  Typography,
-  Box,
-  AppBar,
-  Toolbar,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  TextField,
-  Button,
-  TableFooter,
-  TablePagination,
-} from "@mui/material";
+import { AppBar } from "@mui/material";
 import { useState } from "react";
 
-// populate with dummy data
-const createData = (user, email, status) => {
-  return { user, email, status };
-};
-
-const initialRows = [
-  createData("John Doe", "john.doe@example.com", "Active"),
-  createData("Jane Smith", "jane.smith@example.com", "Inactive"),
-  createData("Bob Johnson", "bob.johnson@example.com", "Active"),
-];
-
 export const AdminHomepage = () => {
-  const [rows, setRows] = useState(initialRows);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(5);
   const [selectedComponent, setSelectedComponent] =
     useState("AdminInstructors");
+  const [selectedInstructor, setSelectedInstructor] = useState(null);
+  const [selectedCourse, setSelectedCourse] = useState(null);
 
   // sidebar routing
   const renderComponent = () => {
+    if (selectedInstructor) {
+      return (
+        <InstructorDetails
+          instructorName={selectedInstructor}
+          onBack={() => setSelectedInstructor(null)}
+        />
+      );
+    }
+    if (selectedCourse) {
+      return (
+        <CourseDetails
+          courseName={selectedCourse}
+          onBack={() => setSelectedCourse(null)}
+        />
+      );
+    }
     switch (selectedComponent) {
       case "AdminInstructors":
-        return <AdminInstructors />;
+        return (
+          <AdminInstructors setSelectedInstructor={setSelectedInstructor} />
+        );
       case "AdminCourses":
-        return <AdminCourses />;
+        return (
+        <AdminCourses setSelectedCourse={setSelectedCourse} />
+        );
       case "AdminCreateCourse":
         return <AdminCreateCourse />;
       default:
-        return <AdminInstructors />;
+        return (
+          <AdminInstructors setSelectedInstructor={setSelectedInstructor} />
+        );
     }
   };
 

@@ -63,5 +63,5 @@ export function getIdentityCredentials(jwtToken, setCredentials) {
   AWS.config.credentials.get(function () {
     setCredentials(creds);
   });
-  console.log(creds);
+  // console.log(creds);
 }

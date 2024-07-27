@@ -7,6 +7,7 @@ import secrets
 
 DB_SECRET_NAME = os.environ["DB_SECRET_NAME"]
 DB_USER_SECRET_NAME = os.environ["DB_USER_SECRET_NAME"]
+print(psycopg2.__version__)
 
 
 def getDbSecret():
@@ -16,27 +17,29 @@ def getDbSecret():
     secret = json.loads(response)
     return secret
 
+def createConnection():
+
+    connection = psycopg2.connect(
+        user=dbSecret["username"],
+        password=dbSecret["password"],
+        host=dbSecret["host"],
+        dbname=dbSecret["dbname"],
+        # sslmode="require"
+    )
+    return connection
+
 
 dbSecret = getDbSecret()
-
-connection = psycopg2.connect(
-    user=dbSecret["username"],
-    password=dbSecret["password"],
-    host=dbSecret["host"],
-    dbname=dbSecret["dbname"],
-)
-
-cursor = connection.cursor()
-
-
-def readJSONFile(filepath):
-    with open(filepath, "r") as file:
-        data = json.load(file)
-
-    return data
+connection = createConnection()
 
 
 def handler(event, context):
+    global connection
+    print(connection)
+    if connection.closed:
+        connection = createConnection()
+    
+    cursor = connection.cursor()
     try:
 
         #
@@ -45,20 +48,20 @@ def handler(event, context):
 
         # Create tables based on the schema
         sqlTableCreation = """
+            CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
             CREATE TABLE IF NOT EXISTS "Users" (
-            "user_id" uuid PRIMARY KEY DEFAULT (uuid_generate_v4()),
+            "user_email" varchar PRIMARY KEY,
             "username" varchar,
             "first_name" varchar,
             "last_name" varchar,
             "preferred_name" varchar,
-            "email" varchar,
             "time_account_created" timestamp,
             "roles" varchar[],
             "last_sign_in" timestamp
             );
 
             CREATE TABLE IF NOT EXISTS "LLM_Vectors" (
-            "enrolment_id" uuid,
+            "enrolment_id" uuid UNIQUE,
             "student_strengths_embeddings" float[],
             "student_weaknesses_embeddings" float[]
             );
@@ -83,7 +86,7 @@ def handler(event, context):
 
             CREATE TABLE IF NOT EXISTS "Enrolments" (
             "enrolment_id" uuid PRIMARY KEY DEFAULT (uuid_generate_v4()),
-            "user_id" uuid,
+            "user_email" varchar,
             "course_id" uuid,
             "enrolment_type" varchar,
             "course_completion_percentage" integer,
@@ -99,12 +102,6 @@ def handler(event, context):
             "filepath" varchar,
             "filename" varchar,
             "time_uploaded" timestamp
-            );
-
-            CREATE TABLE IF NOT EXISTS "Chunks" (
-            "chunk_id" uuid PRIMARY KEY DEFAULT (uuid_generate_v4()),
-            "file_id" uuid,
-            "vectors" float[]
             );
 
             CREATE TABLE IF NOT EXISTS "Student_Modules" (
@@ -139,7 +136,7 @@ def handler(event, context):
 
             CREATE TABLE IF NOT EXISTS "User_Engagement_Log" (
             "log_id" uuid PRIMARY KEY DEFAULT (uuid_generate_v4()),
-            "user_id" uuid,
+            "user_email" varchar,
             "course_id" uuid,
             "module_id" uuid,
             "enrolment_id" uuid,
@@ -149,7 +146,7 @@ def handler(event, context):
 
             ALTER TABLE "User_Engagement_Log" ADD FOREIGN KEY ("enrolment_id") REFERENCES "Enrolments" ("enrolment_id");
 
-            ALTER TABLE "User_Engagement_Log" ADD FOREIGN KEY ("user_id") REFERENCES "Users" ("user_id");
+            ALTER TABLE "User_Engagement_Log" ADD FOREIGN KEY ("user_email") REFERENCES "Users" ("user_email");
 
             ALTER TABLE "User_Engagement_Log" ADD FOREIGN KEY ("course_id") REFERENCES "Courses" ("course_id") ON DELETE CASCADE ON UPDATE CASCADE;
 
@@ -161,7 +158,7 @@ def handler(event, context):
 
             ALTER TABLE "Enrolments" ADD FOREIGN KEY ("course_id") REFERENCES "Courses" ("course_id") ON DELETE CASCADE ON UPDATE CASCADE;
 
-            ALTER TABLE "Enrolments" ADD FOREIGN KEY ("user_id") REFERENCES "Users" ("user_id") ON DELETE CASCADE ON UPDATE CASCADE;
+            ALTER TABLE "Enrolments" ADD FOREIGN KEY ("user_email") REFERENCES "Users" ("user_email") ON DELETE CASCADE ON UPDATE CASCADE;
 
             ALTER TABLE "Module_Files" ADD FOREIGN KEY ("module_id") REFERENCES "Course_Modules" ("module_id") ON DELETE CASCADE ON UPDATE CASCADE;
 
@@ -175,7 +172,6 @@ def handler(event, context):
 
             ALTER TABLE "Messages" ADD FOREIGN KEY ("session_id") REFERENCES "Sessions" ("session_id");
 
-            ALTER TABLE "Chunks" ADD FOREIGN KEY ("file_id") REFERENCES "Module_Files" ("file_id") ON DELETE CASCADE ON UPDATE CASCADE;
         """
 
         #
@@ -189,6 +185,8 @@ def handler(event, context):
         # Generate 16 bytes username and password randomly
         username = secrets.token_hex(8)
         password = secrets.token_hex(16)
+        usernameTableCreator = secrets.token_hex(8)
+        passwordTableCreator = secrets.token_hex(16)
 
         # Based on the observation,
         #   - Database name: does not reflect from the CDK dbname read more from https://stackoverflow.com/questions/51014647/aws-postgres-db-does-not-exist-when-connecting-with-pg
@@ -213,7 +211,7 @@ def handler(event, context):
 
             GRANT CONNECT ON DATABASE postgres TO readwrite;
 
-            GRANT USAGE, CREATE ON SCHEMA public TO readwrite;
+            GRANT USAGE ON SCHEMA public TO readwrite;
             GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO readwrite;
             ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO readwrite;
             GRANT USAGE ON ALL SEQUENCES IN SCHEMA public TO readwrite;
@@ -222,6 +220,29 @@ def handler(event, context):
             CREATE USER "%s" WITH PASSWORD '%s';
             GRANT readwrite TO "%s";
         """
+        
+        sqlCreateTableCreator = """
+            DO $$
+            BEGIN
+                CREATE ROLE tablecreator;
+            EXCEPTION
+                WHEN duplicate_object THEN
+                    RAISE NOTICE 'Role already exists.';
+            END
+            $$;
+
+            GRANT CONNECT ON DATABASE postgres TO tablecreator;
+
+            GRANT USAGE, CREATE ON SCHEMA public TO tablecreator;
+            GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO tablecreator;
+            ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO tablecreator;
+            GRANT USAGE ON ALL SEQUENCES IN SCHEMA public TO tablecreator;
+            ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT USAGE ON SEQUENCES TO tablecreator;
+
+            CREATE USER "%s" WITH PASSWORD '%s';
+            GRANT tablecreator TO "%s";
+        """
+
 
         # Execute table creation
         cursor.execute(
@@ -230,6 +251,15 @@ def handler(event, context):
                 AsIs(username),
                 AsIs(password),
                 AsIs(username),
+            ),
+        )
+        connection.commit()
+        cursor.execute(
+            sqlCreateTableCreator,
+            (
+                AsIs(usernameTableCreator),
+                AsIs(passwordTableCreator),
+                AsIs(usernameTableCreator),
             ),
         )
         connection.commit()
@@ -245,6 +275,82 @@ def handler(event, context):
         sm_client.put_secret_value(
             SecretId=DB_USER_SECRET_NAME, SecretString=json.dumps(dbSecret)
         )
+        
+        #also for table creator:
+        authInfoTableCreator = {"usernameTableCreator": usernameTableCreator, "passwordTableCreator": passwordTableCreator}
+
+        # comment out to on redeployment
+        dbSecret.update(authInfoTableCreator)
+        sm_client = boto3.client("secretsmanager")
+        sm_client.put_secret_value(
+            SecretId=DB_USER_SECRET_NAME, SecretString=json.dumps(dbSecret)
+        )
+        sql = """
+            SELECT * FROM "Users";
+        """
+        
+        cursor.execute(sql)
+        print(cursor.fetchall())
+        
+        sql = """
+            SELECT * FROM "LLM_Vectors";
+        """
+        cursor.execute(sql)
+        print(cursor.fetchall())
+        
+        sql = """
+            SELECT * FROM "Courses";
+        """
+        cursor.execute(sql)
+        print(cursor.fetchall())
+
+        sql = """
+            SELECT * FROM "Course_Modules";
+        """
+        cursor.execute(sql)
+        print(cursor.fetchall())
+
+        sql = """
+            SELECT * FROM "Enrolments";
+        """
+        cursor.execute(sql)
+        print(cursor.fetchall())
+
+        sql = """
+            SELECT * FROM "Module_Files";
+        """
+        cursor.execute(sql)
+        print(cursor.fetchall())
+
+        sql = """
+            SELECT * FROM "Student_Modules";
+        """
+        cursor.execute(sql)
+        print(cursor.fetchall())
+
+        sql = """
+            SELECT * FROM "Sessions";
+        """
+        cursor.execute(sql)
+        print(cursor.fetchall())
+
+        sql = """
+            SELECT * FROM "Messages";
+        """
+        cursor.execute(sql)
+        print(cursor.fetchall())
+
+        sql = """
+            SELECT * FROM "Course_Concepts";
+        """
+        cursor.execute(sql)
+        print(cursor.fetchall())
+
+        sql = """
+            SELECT * FROM "User_Engagement_Log";
+        """
+        cursor.execute(sql)
+        print(cursor.fetchall())
 
 
         # Close cursor and connection

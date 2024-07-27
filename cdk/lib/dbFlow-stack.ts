@@ -21,7 +21,52 @@ export class DBFlowStack extends Stack {
          */
 
         const psycopgLambdaLayer = apiStack.getLayers()['psycopg2'];   
-
+        const lambdaRole = new iam.Role(this, "lambda-vpc-role", {
+          assumedBy: new iam.ServicePrincipal("lambda.amazonaws.com"),
+          description: "Role for all Lambda function inside VPC",
+        });
+        lambdaRole.addToPolicy(
+          new iam.PolicyStatement({
+            effect: iam.Effect.ALLOW,
+            actions: [
+              // Secrets Manager
+              "secretsmanager:GetSecretValue",
+              "secretsmanager:PutSecretValue"
+            ],
+            resources: [
+              `arn:aws:secretsmanager:${this.region}:${this.account}:secret:AILA/*`,
+            ],
+          })
+        );
+        lambdaRole.addToPolicy(
+          new iam.PolicyStatement({
+            effect: iam.Effect.ALLOW,
+            actions: [
+              // CloudWatch Logs
+              "logs:CreateLogGroup",
+              "logs:CreateLogStream",
+              "logs:PutLogEvents",
+            ],
+            resources: ["arn:aws:logs:*:*:*"],
+          })
+        );
+        lambdaRole.addToPolicy(
+          new iam.PolicyStatement({
+            effect: iam.Effect.ALLOW,
+            actions: [
+              "ec2:CreateNetworkInterface",
+              "ec2:DeleteNetworkInterface",
+              "ec2:DescribeNetworkInterfaces",
+            ],
+            resources: ["*"],
+          })
+        );
+        lambdaRole.addManagedPolicy(
+          iam.ManagedPolicy.fromAwsManagedPolicyName("AmazonSSMReadOnlyAccess")
+        );
+        lambdaRole.addManagedPolicy(
+          iam.ManagedPolicy.fromAwsManagedPolicyName("AmazonS3FullAccess")
+        );
         // Create an initilizer for the RDS instance, only invoke during deployment
         const initializerLambda = new triggers.TriggerFunction(this, "aila-triggerLambda", {
             functionName: "aila-initializerFunction",
@@ -36,34 +81,7 @@ export class DBFlowStack extends Stack {
             vpc: db.dbInstance.vpc,
             code: lambda.Code.fromAsset("lambda"),
             layers: [psycopgLambdaLayer],
-            // role: lambdaRole,
+            role: lambdaRole,
         });
-
-        initializerLambda.addToRolePolicy(
-            new iam.PolicyStatement({
-              effect: iam.Effect.ALLOW,
-              actions: [
-                //Secrets Manager
-                "secretsmanager:GetSecretValue",
-                "secretsmanager:PutSecretValue"
-              ],
-              resources: [
-                `arn:aws:secretsmanager:${this.region}:${this.account}:secret:AILA/*`,
-              ],
-            })
-        );
-
-        initializerLambda.addToRolePolicy(
-            new iam.PolicyStatement({
-              effect: iam.Effect.ALLOW,
-              actions: [
-                // CloudWatch Logs
-                "logs:CreateLogGroup",
-                "logs:CreateLogStream",
-                "logs:PutLogEvents",
-              ],
-              resources: ["arn:aws:logs:*:*:*"],
-            })
-        );
     }
 }

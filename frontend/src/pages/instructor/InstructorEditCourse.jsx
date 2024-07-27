@@ -1,5 +1,6 @@
 import React from "react";
 import { useState } from "react";
+import FileUpload from "../../components/FileUpload";
 // MUI
 import {
   Typography,
@@ -31,7 +32,9 @@ export const EditCourse = () => {
       >
         Course Name
       </Typography>
-      <Paper sx={{ width: "180%", overflow: "hidden", marginTop: 2 }}></Paper>
+      <Paper sx={{ width: "100%", overflow: "hidden", marginTop: 2 }}>
+        <FileUpload />
+      </Paper>
     </Box>
   );
 };

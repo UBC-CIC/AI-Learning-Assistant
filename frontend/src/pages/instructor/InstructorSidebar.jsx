@@ -16,7 +16,6 @@ import EditIcon from "@mui/icons-material/Edit";
 import PsychologyIcon from "@mui/icons-material/Psychology";
 import { useNavigate } from "react-router-dom";
 
-// TODO add onclick to route to different pages
 const InstructorSidebar = ({ setSelectedComponent }) => {
   return (
     <Drawer
@@ -25,7 +24,7 @@ const InstructorSidebar = ({ setSelectedComponent }) => {
         width: 220,
         flexShrink: 0,
         [`& .MuiDrawer-paper`]: { width: 220, boxSizing: "border-box" },
-        bgcolor: "#F8F9FD",
+        bgcolor: "background",
       }}
     >
       <Box sx={{ overflow: "auto", paddingTop: 10 }}>

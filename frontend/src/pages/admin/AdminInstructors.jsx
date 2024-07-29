@@ -17,7 +17,43 @@ import {
   TableFooter,
   TablePagination,
 } from "@mui/material";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { fetchAuthSession, fetchUserAttributes } from "aws-amplify/auth";
+
+// fetch instructor data from api
+const fetchInstructors = async () => {
+  try {
+    // Get session and token
+    const session = await fetchAuthSession();
+    const userAtrributes = await fetchUserAttributes();
+    const token = session.tokens.idToken.toString();
+    const adminEmail = userAtrributes.email;
+    console.log("admin email", adminEmail);
+
+    // Make the API request
+    const response = await fetch(
+      `${
+        import.meta.env.VITE_API_ENDPOINT
+      }/admin/instructors?instructor_email=${encodeURIComponent(adminEmail)}`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: token,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+    const data = await response.json();
+    console.log("Response from backend:", data);
+    return data;
+  } catch (error) {
+    console.error("Error fetching instructors:", error);
+    return [];
+  }
+};
 
 // populate with dummy data
 const createData = (user, email, status) => {
@@ -35,6 +71,23 @@ export const AdminInstructors = ({ setSelectedInstructor }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
+  const [instructors, setInstructors] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadInstructors = async () => {
+      try {
+        const data = await fetchInstructors();
+        setInstructors(data);
+      } catch (error) {
+        setError(error.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadInstructors();
+  }, []);
 
   const handleSearchChange = (event) => {
     setSearchQuery(event.target.value);

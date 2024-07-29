@@ -124,7 +124,7 @@ export class DatabaseStack extends Stack {
         let targetGroup = rdsProxy.node.children.find((child:any) => {
             return child instanceof rds.CfnDBProxyTargetGroup
         }) as rds.CfnDBProxyTargetGroup
-  
+
         targetGroup.addPropertyOverride('TargetGroupName', 'default');   
         this.dbInstance.grantConnect(rdsProxyRole);      
         this.rdsProxyEndpoint = rdsProxy.endpoint;

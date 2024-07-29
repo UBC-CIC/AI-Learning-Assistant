@@ -69,12 +69,13 @@ def handler(event, context):
             CREATE TABLE IF NOT EXISTS "Courses" (
             "course_id" uuid PRIMARY KEY DEFAULT (uuid_generate_v4()),
             "course_name" varchar,
-            "course_deparment" varchar,
+            "course_department" varchar,
             "course_number" integer,
-            "course_access_code" integer,
+            "course_access_code" varchar,
             "course_student_access" bool,
             "system_prompt" text,
-            "llm_tone" varchar
+            "llm_tone" varchar,
+            "course_status" bool
             );
 
             CREATE TABLE IF NOT EXISTS "Course_Modules" (
@@ -164,7 +165,7 @@ def handler(event, context):
 
             ALTER TABLE "Student_Modules" ADD FOREIGN KEY ("course_module_id") REFERENCES "Course_Modules" ("module_id") ON DELETE CASCADE ON UPDATE CASCADE;
 
-            ALTER TABLE "Enrolments" ADD FOREIGN KEY ("enrolment_id") REFERENCES "LLM_Vectors" ("enrolment_id") ON DELETE CASCADE ON UPDATE CASCADE;
+            ALTER TABLE "LLM_Vectors" ADD FOREIGN KEY ("enrolment_id") REFERENCES "Enrolments" ("enrolment_id") ON DELETE CASCADE ON UPDATE CASCADE;
 
             ALTER TABLE "Student_Modules" ADD FOREIGN KEY ("enrolment_id") REFERENCES "Enrolments" ("enrolment_id") ON DELETE CASCADE ON UPDATE CASCADE;
 
@@ -185,8 +186,8 @@ def handler(event, context):
         # Generate 16 bytes username and password randomly
         username = secrets.token_hex(8)
         password = secrets.token_hex(16)
-        usernameTableCreator = secrets.token_hex(8)
-        passwordTableCreator = secrets.token_hex(16)
+        # usernameTableCreator = secrets.token_hex(8)
+        # passwordTableCreator = secrets.token_hex(16)
 
         # Based on the observation,
         #   - Database name: does not reflect from the CDK dbname read more from https://stackoverflow.com/questions/51014647/aws-postgres-db-does-not-exist-when-connecting-with-pg
@@ -211,7 +212,7 @@ def handler(event, context):
 
             GRANT CONNECT ON DATABASE postgres TO readwrite;
 
-            GRANT USAGE ON SCHEMA public TO readwrite;
+            GRANT USAGE, CREATE ON SCHEMA public TO readwrite;
             GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO readwrite;
             ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO readwrite;
             GRANT USAGE ON ALL SEQUENCES IN SCHEMA public TO readwrite;
@@ -221,27 +222,27 @@ def handler(event, context):
             GRANT readwrite TO "%s";
         """
         
-        sqlCreateTableCreator = """
-            DO $$
-            BEGIN
-                CREATE ROLE tablecreator;
-            EXCEPTION
-                WHEN duplicate_object THEN
-                    RAISE NOTICE 'Role already exists.';
-            END
-            $$;
+        # sqlCreateTableCreator = """
+        #     DO $$
+        #     BEGIN
+        #         CREATE ROLE tablecreator;
+        #     EXCEPTION
+        #         WHEN duplicate_object THEN
+        #             RAISE NOTICE 'Role already exists.';
+        #     END
+        #     $$;
 
-            GRANT CONNECT ON DATABASE postgres TO tablecreator;
+        #     GRANT CONNECT ON DATABASE postgres TO tablecreator;
 
-            GRANT USAGE, CREATE ON SCHEMA public TO tablecreator;
-            GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO tablecreator;
-            ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO tablecreator;
-            GRANT USAGE ON ALL SEQUENCES IN SCHEMA public TO tablecreator;
-            ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT USAGE ON SEQUENCES TO tablecreator;
+        #     GRANT USAGE, CREATE ON SCHEMA public TO tablecreator;
+        #     GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO tablecreator;
+        #     ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO tablecreator;
+        #     GRANT USAGE ON ALL SEQUENCES IN SCHEMA public TO tablecreator;
+        #     ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT USAGE ON SEQUENCES TO tablecreator;
 
-            CREATE USER "%s" WITH PASSWORD '%s';
-            GRANT tablecreator TO "%s";
-        """
+        #     CREATE USER "%s" WITH PASSWORD '%s';
+        #     GRANT tablecreator TO "%s";
+        # """
 
 
         # Execute table creation
@@ -254,15 +255,15 @@ def handler(event, context):
             ),
         )
         connection.commit()
-        cursor.execute(
-            sqlCreateTableCreator,
-            (
-                AsIs(usernameTableCreator),
-                AsIs(passwordTableCreator),
-                AsIs(usernameTableCreator),
-            ),
-        )
-        connection.commit()
+        # cursor.execute(
+        #     sqlCreateTableCreator,
+        #     (
+        #         AsIs(usernameTableCreator),
+        #         AsIs(passwordTableCreator),
+        #         AsIs(usernameTableCreator),
+        #     ),
+        # )
+        # connection.commit()
 
         #
         ## Load client username and password to SSM
@@ -277,14 +278,14 @@ def handler(event, context):
         )
         
         #also for table creator:
-        authInfoTableCreator = {"usernameTableCreator": usernameTableCreator, "passwordTableCreator": passwordTableCreator}
+        # authInfoTableCreator = {"usernameTableCreator": usernameTableCreator, "passwordTableCreator": passwordTableCreator}
 
-        # comment out to on redeployment
-        dbSecret.update(authInfoTableCreator)
-        sm_client = boto3.client("secretsmanager")
-        sm_client.put_secret_value(
-            SecretId=DB_USER_SECRET_NAME, SecretString=json.dumps(dbSecret)
-        )
+        # # comment out to on redeployment
+        # dbSecret.update(authInfoTableCreator)
+        # sm_client = boto3.client("secretsmanager")
+        # sm_client.put_secret_value(
+        #     SecretId=DB_USER_SECRET_NAME, SecretString=json.dumps(dbSecret)
+        # )
         sql = """
             SELECT * FROM "Users";
         """

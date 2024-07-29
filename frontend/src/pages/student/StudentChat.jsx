@@ -1,8 +1,38 @@
 import AIMessage from "../../components/AIMessage";
 import Session from "../../components/Session";
 import StudentMessage from "../../components/StudentMessage";
-
+import { useEffect } from "react";
+import { fetchAuthSession } from 'aws-amplify/auth';
 const StudentChat = () => {
+
+
+  useEffect(() => {
+    const fetchInstructors = async () => {
+      try {
+        const session = await fetchAuthSession();
+        var token = session.tokens.idToken.toString()
+        print("token student chat")
+        print(token)
+        const response = await fetch(`${import.meta.env.VITE_API_ENDPOINT}student/create_user?user_email=a&username=a&first_name=a&last_name=a&preferred_name=a`, {
+          method: 'POST',
+          headers: {
+              'Authorization': token,
+              'Content-Type': 'application/json'
+          }
+      });
+        if (response.ok) {
+          const data = await response.json();
+          console.log('Instructors data:', data);
+        } else {
+          console.error('Failed to fetch instructors:', response.statusText);
+        }
+      } catch (error) {
+        console.error('Error fetching instructors:', error);
+      }
+    };
+
+    fetchInstructors();
+  }, []);
   return (
     <div className="flex flex-row">
       <div className="flex flex-col w-1/4 h-screen bg-gradient-to-tr from-purple-300 to-cyan-100">

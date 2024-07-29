@@ -1,5 +1,5 @@
-import {useEffect} from "react";
-import { fetchAuthSession } from 'aws-amplify/auth';
+import { useEffect } from "react";
+import { fetchAuthSession } from "aws-amplify/auth";
 
 // MUI
 import {
@@ -33,10 +33,13 @@ const initialRows = [
 ];
 
 function getInstructorInfo(coursesArray) {
-  return coursesArray.map(instructor => (
-    createData(`${instructor.first_name} ${instructor.last_name}`,instructor.email, "Active")
-
-));
+  return coursesArray.map((instructor) =>
+    createData(
+      `${instructor.first_name} ${instructor.last_name}`,
+      instructor.email,
+      "Active"
+    )
+  );
 }
 
 export const AdminInstructors = ({ setSelectedInstructor }) => {
@@ -44,28 +47,35 @@ export const AdminInstructors = ({ setSelectedInstructor }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchInstructors = async () => {
       try {
         const session = await fetchAuthSession();
-        var token = session.tokens.idToken.toString()
-        const response = await fetch(`${import.meta.env.VITE_API_ENDPOINT}admin/instructors?instructor_email=replace`, {
-          method: 'GET',
-          headers: {
-              'Authorization': token,
-              'Content-Type': 'application/json'
+        var token = session.tokens.idToken.toString();
+        const response = await fetch(
+          `${
+            import.meta.env.VITE_API_ENDPOINT
+          }admin/instructors?instructor_email=replace`,
+          {
+            method: "GET",
+            headers: {
+              Authorization: token,
+              "Content-Type": "application/json",
+            },
           }
-      });
+        );
         if (response.ok) {
           const data = await response.json();
           setRows(getInstructorInfo(data));
-          console.log('Instructors data:', data);
+          setLoading(false);
+          console.log("Instructors data:", data);
         } else {
-          console.error('Failed to fetch instructors:', response.statusText);
+          console.error("Failed to fetch instructors:", response.statusText);
         }
       } catch (error) {
-        console.error('Error fetching instructors:', error);
+        console.error("Error fetching instructors:", error);
       }
     };
 
@@ -115,37 +125,49 @@ export const AdminInstructors = ({ setSelectedInstructor }) => {
               sx={{ margin: 2, width: "95%", alignContent: "left" }}
             />
             <Table aria-label="user table">
-              <TableHead>
-                <TableRow>
-                  <TableCell sx={{ width: "35%" }}>User</TableCell>
-                  <TableCell>Email</TableCell>
-                  <TableCell>Status</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {filteredRows
-                  .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                  .map((row, index) => (
-                    <TableRow
-                      key={index}
-                      onClick={() => handleRowClick(row.user)}
-                      style={{ cursor: "pointer" }}
-                    >
-                      <TableCell>{row.user}</TableCell>
-                      <TableCell>{row.email}</TableCell>
-                      <TableCell>
-                        <Button
-                          variant="contained"
-                          color={
-                            row.status === "Active" ? "primary" : "secondary"
-                          }
-                        >
-                          {row.status}
-                        </Button>
-                      </TableCell>
+              {!loading ? (
+                <>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell sx={{ width: "35%" }}>User</TableCell>
+                      <TableCell>Email</TableCell>
+                      <TableCell>Status</TableCell>
                     </TableRow>
-                  ))}
-              </TableBody>
+                  </TableHead>
+                  <TableBody>
+                    {filteredRows
+                      .slice(
+                        page * rowsPerPage,
+                        page * rowsPerPage + rowsPerPage
+                      )
+                      .map((row, index) => (
+                        <TableRow
+                          key={index}
+                          onClick={() => handleRowClick(row.user)}
+                          style={{ cursor: "pointer" }}
+                        >
+                          <TableCell>{row.user}</TableCell>
+                          <TableCell>{row.email}</TableCell>
+                          <TableCell>
+                            <Button
+                              variant="contained"
+                              color={
+                                row.status === "Active"
+                                  ? "primary"
+                                  : "secondary"
+                              }
+                            >
+                              {row.status}
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                  </TableBody>
+                </>
+              ) : (
+                <>loading...</>
+              )}
+
               <TableFooter>
                 <TableRow>
                   <TablePagination

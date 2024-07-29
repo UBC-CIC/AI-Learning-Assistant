@@ -1,5 +1,5 @@
-import {useEffect} from "react";
-import { fetchAuthSession } from 'aws-amplify/auth';
+import { useEffect } from "react";
+import { fetchAuthSession } from "aws-amplify/auth";
 
 // MUI
 import {
@@ -34,42 +34,46 @@ const initialRows = [
 ];
 
 function getCourseInfo(coursesArray) {
-  return coursesArray.map(course => (
-    createData(`${course.course_department} ${course.course_number}`,"placeholder email", "Active")
-
-));
+  return coursesArray.map((course) =>
+    createData(
+      `${course.course_department} ${course.course_number}`,
+      "placeholder email",
+      "Active"
+    )
+  );
 }
 
 export const AdminCourses = ({ setSelectedCourse }) => {
-
-
-  
   const [rows, setRows] = useState(initialRows);
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
-
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchCourses = async () => {
       try {
         const session = await fetchAuthSession();
-        var token = session.tokens.idToken.toString()
-        const response = await fetch(`${import.meta.env.VITE_API_ENDPOINT}admin/courses`, {
-          method: 'GET',
-          headers: {
-              'Authorization': token,
-              'Content-Type': 'application/json'
+        var token = session.tokens.idToken.toString();
+        const response = await fetch(
+          `${import.meta.env.VITE_API_ENDPOINT}admin/courses`,
+          {
+            method: "GET",
+            headers: {
+              Authorization: token,
+              "Content-Type": "application/json",
+            },
           }
-      });
+        );
         if (response.ok) {
           const data = await response.json();
           setRows(getCourseInfo(data));
+          setLoading(false);
         } else {
-          console.error('Failed to fetch courses:', response.statusText);
+          console.error("Failed to fetch courses:", response.statusText);
         }
       } catch (error) {
-        console.error('Error fetching courses:', error);
+        console.error("Error fetching courses:", error);
       }
     };
 
@@ -119,37 +123,48 @@ export const AdminCourses = ({ setSelectedCourse }) => {
               sx={{ margin: 2, width: "95%", alignContent: "left" }}
             />
             <Table aria-label="user table">
-              <TableHead>
-                <TableRow>
-                  <TableCell sx={{ width: "35%" }}>Course</TableCell>
-                  <TableCell>Instructor</TableCell>
-                  <TableCell>Status</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {filteredRows
-                  .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                  .map((row, index) => (
-                    <TableRow
-                      key={index}
-                      onClick={() => handleCourseClick(row.course)}
-                      style={{ cursor: "pointer" }}
-                    >
-                      <TableCell>{row.course}</TableCell>
-                      <TableCell>{row.instructor}</TableCell>
-                      <TableCell>
-                        <Button
-                          variant="contained"
-                          color={
-                            row.status === "Active" ? "primary" : "secondary"
-                          }
-                        >
-                          {row.status}
-                        </Button>
-                      </TableCell>
+              {!loading ? (
+                <>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell sx={{ width: "35%" }}>Course</TableCell>
+                      <TableCell>Instructor</TableCell>
+                      <TableCell>Status</TableCell>
                     </TableRow>
-                  ))}
-              </TableBody>
+                  </TableHead>
+                  <TableBody>
+                    {filteredRows
+                      .slice(
+                        page * rowsPerPage,
+                        page * rowsPerPage + rowsPerPage
+                      )
+                      .map((row, index) => (
+                        <TableRow
+                          key={index}
+                          onClick={() => handleCourseClick(row.course)}
+                          style={{ cursor: "pointer" }}
+                        >
+                          <TableCell>{row.course}</TableCell>
+                          <TableCell>{row.instructor}</TableCell>
+                          <TableCell>
+                            <Button
+                              variant="contained"
+                              color={
+                                row.status === "Active"
+                                  ? "primary"
+                                  : "secondary"
+                              }
+                            >
+                              {row.status}
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                  </TableBody>
+                </>
+              ) : (
+                <>loading...</>
+              )}
               <TableFooter>
                 <TableRow>
                   <TablePagination

@@ -1446,7 +1446,7 @@ paths:
           name: course_student_access
           required: true
           schema:
-            type: string
+            type: bool
           description: Student access details for the course
         - in: query
           name: system_prompt
@@ -1473,6 +1473,213 @@ paths:
                     description: ID of the newly created course
         "400":
           description: Bad Request
+        "500":
+          description: Internal Server Error
+      security:
+        - adminAuthorizer: []
+      x-amazon-apigateway-integration:
+        uri:
+          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${adminFunction.Arn}/invocations"
+        passthroughBehavior: "when_no_match"
+        httpMethod: "POST"
+        type: "aws_proxy"
+  /admin/courseInstructors:
+    options:
+      summary: CORS support
+      description: |
+        Enable CORS by returning correct headers
+      responses:
+        200:
+          $ref: "#/components/responses/Success"
+      x-amazon-apigateway-integration:
+        type: mock
+        requestTemplates:
+          application/json: |
+            {
+              "statusCode" : 200
+            }
+        responses:
+          default:
+            statusCode: "200"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key'"
+              method.response.header.Access-Control-Allow-Methods: "'*'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+            responseTemplates:
+              application/json: |
+                {}
+    get:
+      tags:
+        - Admin
+      summary: Get all instructors for a given course
+      operationId: admin_get_instructors_GET
+      parameters:
+        - name: course_id
+          in: query
+          required: true
+          schema:
+            type: string
+          description: ID of the course to find instructors for
+      responses:
+        "200":
+          description: List of instructors
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    user_email:
+                      type: string
+                    first_name:
+                      type: string
+                    last_name:
+                      type: string
+        "400":
+          description: Bad Request
+        "500":
+          description: Internal Server Error
+      security:
+        - adminAuthorizer: []
+      x-amazon-apigateway-integration:
+        uri:
+          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${adminFunction.Arn}/invocations"
+        passthroughBehavior: "when_no_match"
+        httpMethod: "POST"
+        type: "aws_proxy"
+  /admin/instructorCourses:
+    options:
+      summary: CORS support
+      description: |
+        Enable CORS by returning correct headers
+      responses:
+        200:
+          $ref: "#/components/responses/Success"
+      x-amazon-apigateway-integration:
+        type: mock
+        requestTemplates:
+          application/json: |
+            {
+              "statusCode" : 200
+            }
+        responses:
+          default:
+            statusCode: "200"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key'"
+              method.response.header.Access-Control-Allow-Methods: "'*'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+            responseTemplates:
+              application/json: |
+                {}
+    get:
+      tags:
+        - Admin
+      summary: Get all courses for a given instructor where enrolment type is instructor
+      operationId: admin_get_instructor_courses_GET
+      parameters:
+        - name: instructor_email
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Email of the instructor to find courses for
+      responses:
+        "200":
+          description: List of courses
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    course_id:
+                      type: string
+                    course_name:
+                      type: string
+                    course_deparment:
+                      type: string
+                    course_number:
+                      type: integer
+        "400":
+          description: Bad Request
+        "500":
+          description: Internal Server Error
+      security:
+        - adminAuthorizer: []
+      x-amazon-apigateway-integration:
+        uri:
+          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${adminFunction.Arn}/invocations"
+        passthroughBehavior: "when_no_match"
+        httpMethod: "POST"
+        type: "aws_proxy"
+  /admin/updateCourseAccess:
+    options:
+      summary: CORS support
+      description: |
+        Enable CORS by returning correct headers
+      responses:
+        200:
+          $ref: "#/components/responses/Success"
+      x-amazon-apigateway-integration:
+        type: mock
+        requestTemplates:
+          application/json: |
+            {
+              "statusCode" : 200
+            }
+        responses:
+          default:
+            statusCode: "200"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key'"
+              method.response.header.Access-Control-Allow-Methods: "'*'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+            responseTemplates:
+              application/json: |
+                {}
+    patch:
+      tags:
+        - Admin
+      summary: Update course student access
+      operationId: admin_update_course_access_PATCH
+      parameters:
+        - in: query
+          name: course_id
+          required: true
+          schema:
+            type: string
+          description: ID of the course to update
+        - in: query
+          name: access
+          required: true
+          schema:
+            type: string
+            enum: [true, false]
+          description: Boolean value to set the course access (true or false)
+      responses:
+        "200":
+          description: Course access updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Course access updated successfully."
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "course_id and access query parameters are required"
         "500":
           description: Internal Server Error
       security:

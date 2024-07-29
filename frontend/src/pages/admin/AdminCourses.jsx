@@ -1,4 +1,6 @@
-import React from "react";
+import {useEffect} from "react";
+import { fetchAuthSession } from 'aws-amplify/auth';
+
 // MUI
 import {
   Typography,
@@ -31,11 +33,48 @@ const initialRows = [
   createData("CPSC XXX", "bob.johnson@example.com", "Active"),
 ];
 
+function getCourseInfo(coursesArray) {
+  return coursesArray.map(course => (
+    createData(`${course.course_department} ${course.course_number}`,"placeholder email", "Active")
+
+));
+}
+
 export const AdminCourses = ({ setSelectedCourse }) => {
+
+
+  
   const [rows, setRows] = useState(initialRows);
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
+
+
+  useEffect(() => {
+    const fetchInstructors = async () => {
+      try {
+        const session = await fetchAuthSession();
+        var token = session.tokens.idToken.toString()
+        const response = await fetch(`${import.meta.env.VITE_API_ENDPOINT}admin/courses`, {
+          method: 'GET',
+          headers: {
+              'Authorization': token,
+              'Content-Type': 'application/json'
+          }
+      });
+        if (response.ok) {
+          const data = await response.json();
+          setRows(getCourseInfo(data));
+        } else {
+          console.error('Failed to fetch courses:', response.statusText);
+        }
+      } catch (error) {
+        console.error('Error fetching courses:', error);
+      }
+    };
+
+    fetchInstructors();
+  }, []);
 
   const handleSearchChange = (event) => {
     setSearchQuery(event.target.value);

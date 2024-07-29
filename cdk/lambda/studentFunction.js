@@ -50,9 +50,10 @@ exports.handler = async (event) => {
               VALUES (${user_email}, ${username}, ${first_name}, ${last_name}, ${preferred_name}, CURRENT_TIMESTAMP, ARRAY['student'], CURRENT_TIMESTAMP)
               RETURNING *;
             `;
-            response.body = JSON.stringify(userData[0]);
+            response.body = JSON.stringify(userData);
           } catch (err) {
             response.statusCode = 500;
+            console.log(err);
             response.body = JSON.stringify({ error: "Internal server error" });
           }
         } else {
@@ -81,6 +82,7 @@ exports.handler = async (event) => {
             }
           } catch (err) {
             response.statusCode = 500;
+            console.log(err);
             response.body = JSON.stringify({ error: "Internal server error" });
           }
         } else {
@@ -152,6 +154,7 @@ exports.handler = async (event) => {
 
           if (enrolmentId) {
             await sqlConnection`
+              CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
               INSERT INTO "User_Engagement_Log" (log_id, user_email, course_id, module_id, enrolment_id, timestamp, engagement_type)
               VALUES (uuid_generate_v4(), ${studentEmail}, ${courseId}, null, ${enrolmentId}, CURRENT_TIMESTAMP, 'course access');
             `;
@@ -195,6 +198,7 @@ exports.handler = async (event) => {
 
           if (enrolmentId) {
             await sqlConnection`
+              CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
               INSERT INTO "User_Engagement_Log" (log_id, user_email, course_id, module_id, enrolment_id, timestamp, engagement_type)
               VALUES (uuid_generate_v4(), ${studentEmail}, ${courseId}, ${moduleId}, ${enrolmentId}, CURRENT_TIMESTAMP, 'module access');
             `;
@@ -222,6 +226,7 @@ exports.handler = async (event) => {
             WHERE course_module_id = '${moduleId}';
           `;
             data = await sqlConnection`
+              CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
               INSERT INTO "Sessions" (session_id, student_module_id, session_context_embeddings, last_accessed)
               SELECT uuid_generate_v4(), student_module_id, ARRAY[]::float[], CURRENT_TIMESTAMP
               FROM "Student_Modules"
@@ -239,6 +244,7 @@ exports.handler = async (event) => {
 
             if (enrolmentId) {
               await sqlConnection`
+                CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
                 INSERT INTO "User_Engagement_Log" (log_id, user_email, course_id, module_id, enrolment_id, timestamp, engagement_type)
                 VALUES (uuid_generate_v4(), ${studentEmail}, ${courseId}, ${moduleId}, ${enrolmentId}, CURRENT_TIMESTAMP, 'session creation');
               `;
@@ -247,6 +253,7 @@ exports.handler = async (event) => {
             response.body = JSON.stringify(data);
           } catch (err) {
             response.statusCode = 500;
+            console.log(err);
             response.body = JSON.stringify({ error: "Internal server error" });
           }
         } else {
@@ -290,6 +297,7 @@ exports.handler = async (event) => {
 
           if (enrolmentId) {
             await sqlConnection`
+              CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
               INSERT INTO "User_Engagement_Log" (log_id, user_email, course_id, module_id, enrolment_id, timestamp, engagement_type)
               VALUES (uuid_generate_v4(), ${studentEmail}, ${courseId}, ${moduleId}, ${enrolmentId}, CURRENT_TIMESTAMP, 'session deletion');
             `;
@@ -341,6 +349,7 @@ exports.handler = async (event) => {
 
             if (enrolmentId) {
               await sqlConnection`
+                CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
                 INSERT INTO "User_Engagement_Log" (log_id, user_email, course_id, module_id, enrolment_id, timestamp, engagement_type)
                 VALUES (uuid_generate_v4(), ${studentEmail}, ${courseId}, ${moduleId}, ${enrolmentId}, CURRENT_TIMESTAMP, 'message creation');
               `;
@@ -349,6 +358,7 @@ exports.handler = async (event) => {
             response.body = JSON.stringify(messageData[0]);
           } catch (err) {
             response.statusCode = 500;
+            console.log(err);
             response.body = JSON.stringify({ error: "Internal server error" });
           }
         } else {
@@ -358,66 +368,16 @@ exports.handler = async (event) => {
           });
         }
         break;
-      // case "PUT /student/edit_message":
-      //   if (
-      //     event.queryStringParameters != null &&
-      //     event.queryStringParameters.message_id &&
-      //     event.body
-      //   ) {
-      //     const { message_id } = event.queryStringParameters;
-      //     const { message_content } = JSON.parse(event.body);
-
-      //     // Start a transaction
-      //     await sqlConnection.beginTransaction();
-
-      //     try {
-      //       const currentMessageData = await sqlConnection`
-      //         SELECT session_id, message_content
-      //         FROM "Messages"
-      //         WHERE message_id = ${message_id}
-      //         FOR UPDATE;
-      //       `;
-
-      //       // Update the message content in Messages table
-      //       const updatedMessageData = await sqlConnection`
-      //             UPDATE "Messages"
-      //             SET message_content = ${message_content}
-      //             WHERE message_id = ${message_id}
-      //             RETURNING *;
-      //           `;
-
-      //       // Get session_id from the current message data
-      //       const session_id = currentMessageData[0].session_id;
-
-      //       // Update the last_accessed field in Sessions table
-      //       await sqlConnection`
-      //         UPDATE "Sessions"
-      //         SET last_accessed = CURRENT_TIMESTAMP
-      //         WHERE session_id = ${session_id};
-      //       `;
-
-      //       response.body = JSON.stringify(updatedMessageData[0]);
-      //     } catch (err) {
-      //       // Rollback the transaction in case of error
-      //       await sqlConnection.rollback();
-      //       response.statusCode = 500;
-      //       response.body = JSON.stringify({ error: "Internal server error" });
-      //     }
-      //   } else {
-      //     response.statusCode = 400;
-      //     response.body = JSON.stringify({
-      //       error: "message_id and message_content are required",
-      //     });
-      //   }
-      //   break;
 
       default:
         throw new Error(`Unsupported route: "${pathData}"`);
     }
   } catch (error) {
     response.statusCode = 400;
+    console.log(error);
     response.body = JSON.stringify(error.message);
   }
+  console.log(response)
 
   return response;
 };

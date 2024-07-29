@@ -1,6 +1,8 @@
-import React from "react";
+import {useEffect, useState} from "react";
 import StudentHeader from "../../components/StudentHeader";
 import Container from "../Container";
+import { fetchAuthSession } from 'aws-amplify/auth';
+
 // MUI
 import {
   Card,
@@ -25,7 +27,39 @@ const theme = createTheme({
   },
 });
 
+
+
 export const StudentHomepage = () => {
+  const [courses, setCourses] = useState([]);
+
+
+  useEffect(() => {
+    const fetchCourses = async () => {
+      try {
+        const session = await fetchAuthSession();
+        var token = session.tokens.idToken.toString()
+        const response = await fetch(`${import.meta.env.VITE_API_ENDPOINT}student/course?email=${encodeURIComponent(session.tokens.signInDetails.loginId)}`, {
+          method: 'GET',
+          headers: {
+              'Authorization': token,
+              'Content-Type': 'application/json'
+          }
+      });
+        if (response.ok) {
+          const data = await response.json();
+          setCourses(data);
+          console.log('course data:', data);
+        } else {
+          console.error('Failed to fetch course:', response.statusText);
+        }
+      } catch (error) {
+        console.error('Error fetching course:', error);
+      }
+    };
+
+    fetchCourses();
+  }, []);
+
   return (
     <ThemeProvider theme={theme}>
       <div>

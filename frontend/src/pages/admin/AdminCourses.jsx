@@ -51,7 +51,7 @@ export const AdminCourses = ({ setSelectedCourse }) => {
 
 
   useEffect(() => {
-    const fetchInstructors = async () => {
+    const fetchCourses = async () => {
       try {
         const session = await fetchAuthSession();
         var token = session.tokens.idToken.toString()
@@ -73,7 +73,7 @@ export const AdminCourses = ({ setSelectedCourse }) => {
       }
     };
 
-    fetchInstructors();
+    fetchCourses();
   }, []);
 
   const handleSearchChange = (event) => {

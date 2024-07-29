@@ -4,16 +4,12 @@ import StudentMessage from "../../components/StudentMessage";
 import { useEffect } from "react";
 import { fetchAuthSession } from 'aws-amplify/auth';
 const StudentChat = () => {
-
-
   useEffect(() => {
     const fetchInstructors = async () => {
       try {
         const session = await fetchAuthSession();
         var token = session.tokens.idToken.toString()
-        print("token student chat")
-        print(token)
-        const response = await fetch(`${import.meta.env.VITE_API_ENDPOINT}student/create_user?user_email=a&username=a&first_name=a&last_name=a&preferred_name=a`, {
+        const response = await fetch(`${import.meta.env.VITE_API_ENDPOINT}admin/instructors?instructor_email=replace`, {
           method: 'POST',
           headers: {
               'Authorization': token,

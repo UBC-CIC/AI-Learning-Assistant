@@ -54,6 +54,7 @@ exports.handler = async (event) => {
             response.body = JSON.stringify(data);
           } catch (err) {
             response.statusCode = 500;
+            console.log(err);
             response.body = JSON.stringify({ error: "Internal server error" });
           }
         } else {
@@ -130,6 +131,7 @@ exports.handler = async (event) => {
             });
           } catch (err) {
             response.statusCode = 500;
+            console.log(err);
             response.body = JSON.stringify({ error: "Internal server error" });
           }
         } else {
@@ -161,6 +163,7 @@ exports.handler = async (event) => {
             response.body = JSON.stringify(newConcept[0]);
           } catch (err) {
             response.statusCode = 500;
+            console.log(err);
             response.body = JSON.stringify({ error: "Internal server error" });
           }
         } else {
@@ -199,6 +202,7 @@ exports.handler = async (event) => {
             response.body = JSON.stringify(updatedConcept[0]);
           } catch (err) {
             response.statusCode = 500;
+            console.log(err);
             response.body = JSON.stringify({ error: "Internal server error" });
           }
         } else {
@@ -240,6 +244,7 @@ exports.handler = async (event) => {
             response.body = JSON.stringify(newModule[0]);
           } catch (err) {
             response.statusCode = 500;
+            console.log(err);
             response.body = JSON.stringify({ error: "Internal server error" });
           }
         } else {
@@ -276,6 +281,7 @@ exports.handler = async (event) => {
             response.body = JSON.stringify(updatedModule[0]);
           } catch (err) {
             response.statusCode = 500;
+            console.log(err);
             response.body = JSON.stringify({ error: "Internal server error" });
           }
         } else {
@@ -312,6 +318,7 @@ exports.handler = async (event) => {
             response.body = JSON.stringify(updatedCourse[0]);
           } catch (err) {
             response.statusCode = 500;
+            console.log(err);
             response.body = JSON.stringify({ error: "Internal server error" });
           }
         } else {
@@ -340,6 +347,7 @@ exports.handler = async (event) => {
             response.body = JSON.stringify(studentsData);
           } catch (err) {
             response.statusCode = 500;
+            console.log(err);
             response.body = JSON.stringify({ error: "Internal server error" });
           }
         } else {
@@ -387,6 +395,7 @@ exports.handler = async (event) => {
             }
           } catch (err) {
             response.statusCode = 500;
+            console.log(err);
             response.body = JSON.stringify({ error: "Internal server error" });
           }
         } else {
@@ -403,6 +412,7 @@ exports.handler = async (event) => {
     response.statusCode = 400;
     response.body = JSON.stringify(error.message);
   }
+  console.log(response)
 
   return response;
 };

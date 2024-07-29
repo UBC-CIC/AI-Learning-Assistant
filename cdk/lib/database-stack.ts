@@ -13,7 +13,6 @@ import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 // Stack import
 import { VpcStack } from './vpc-stack';
 
-
 export class DatabaseStack extends Stack {
     public readonly dbInstance: rds.DatabaseInstance;
     public readonly secretPathAdminName: string;
@@ -33,8 +32,8 @@ export class DatabaseStack extends Stack {
          * Create Empty Secret Manager
          * Secrets will be populate at initalization of data
          */
-        this.secretPathAdminName = "AILA/credentials/dbCredential"; // Name in the Secret Manager to store DB credentials        
-        const secretPathUserName = "AILA/userCredentials/dbCredential";
+        this.secretPathAdminName = "AILA/credentials/rdsCredential"; // Name in the Secret Manager to store DB credentials        
+        const secretPathUserName = "AILA/userCredentials/rdsCredential";
         this.secretPathUser = new secretsmanager.Secret(this, secretPathUserName, {
             secretName: secretPathUserName,
             description: "Secrets for clients to connect to RDS",
@@ -97,27 +96,39 @@ export class DatabaseStack extends Stack {
               "Postgres Ingress"
             );
         });
-        
-        // /**
+         
+
+        const rdsProxyRole = new iam.Role(this, "DBProxyRole", {
+            assumedBy: new iam.ServicePrincipal('rds.amazonaws.com')
+        });
+
+        rdsProxyRole.addToPolicy(new iam.PolicyStatement({
+            resources: ['*'],
+            actions: [
+              'rds-db:connect',
+            ],
+          }));
+
+          // /**
         //  * 
         //  * Create an RDS proxy that sit between lambda and RDS
         //  */
-        const rdsProxy = new rds.DatabaseProxy(this, "AILA-RDSProxy", {
-            proxyTarget: rds.ProxyTarget.fromInstance(this.dbInstance),
+        const rdsProxy = this.dbInstance.addProxy(id+'-proxy', {
             secrets: [this.secretPathUser!],
             vpc: vpcStack.vpc,
+            role: rdsProxyRole,
             securityGroups: this.dbInstance.connections.securityGroups,
-            // securityGroups: [ec2.SecurityGroup.fromSecurityGroupId(this, 'VpcDefaultSecurityGroup', vpcStack.vpc.vpcDefaultSecurityGroup)],
             requireTLS: false,
         });
-      
-        const dbProxyRole = new iam.Role(this, "DBProxyRole", {
-            assumedBy: new iam.AccountPrincipal(this.account),
-        });
-        rdsProxy.grantConnect(dbProxyRole); // Grant the role connection access to the DB Proxy for database user 'admin'.
-      
+        // Workaround for bug where TargetGroupName is not set but required
+        let targetGroup = rdsProxy.node.children.find((child:any) => {
+            return child instanceof rds.CfnDBProxyTargetGroup
+        }) as rds.CfnDBProxyTargetGroup
+  
+        targetGroup.addPropertyOverride('TargetGroupName', 'default');   
+        this.dbInstance.grantConnect(rdsProxyRole);      
         this.rdsProxyEndpoint = rdsProxy.endpoint;
-        this.rdsProxyEndpoint = "";
+        // this.rdsProxyEndpoint = "";
 
     }
 }

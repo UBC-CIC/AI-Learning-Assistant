@@ -19,10 +19,9 @@ export async function retrieveJwtToken(setJwtToken) {
   try {
     var session = await fetchAuthSession();
     var idToken = await session.tokens.idToken.toString();
+    console.log(idToken);
     var token = await session.tokens.accessToken.toString();
-    setJwtToken(token);
-    // console.log("jwt token", token);
-    // console.log("session", session);
+    setJwtToken(idToken);
 
     // Check if the token is close to expiration
     const expirationTime = session.credentials.expiration * 1000; // Milliseconds

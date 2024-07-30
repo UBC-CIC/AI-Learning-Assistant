@@ -90,15 +90,46 @@ exports.handler = async (event) => {
           response.body = JSON.stringify({ error: "User email is required" });
         }
         break;
+      case "GET /student/get_name":
+        if (
+          event.queryStringParameters &&
+          event.queryStringParameters.user_email
+        ) {
+          const user_email = event.queryStringParameters.user_email;
+          try {
+            // Retrieve roles for the user with the provided email
+            const userData = await sqlConnection`
+                  SELECT first_name
+                  FROM "Users"
+                  WHERE user_email = ${user_email};
+                `;
+            if (userData.length > 0) {
+              response.body = JSON.stringify({ name: userData[0].first_name });
+            } else {
+              response.statusCode = 404;
+              response.body = JSON.stringify({ error: "User not found" });
+            }
+          } catch (err) {
+            response.statusCode = 500;
+            console.log(err);
+            response.body = JSON.stringify({ error: "Internal server error" });
+          }
+        } else {
+          response.statusCode = 400;
+          response.body = JSON.stringify({ error: "User email is required" });
+        }
+        break;
       case "GET /student/course":
         if (
           event.queryStringParameters != null &&
           event.queryStringParameters.email
         ) {
-          data = await sqlConnection`SELECT Courses.*
+
+          const email = event.queryStringParameters.email
+          data = await sqlConnection`SELECT "Courses".*
 					FROM "Enrolments"
 					JOIN "Courses" ON "Enrolments".course_id = "Courses".course_id
-					WHERE "Enrolments".user_email = '${event.queryStringParameters.student_id}'
+					WHERE "Enrolments".user_email = ${email}
 					ORDER BY "Courses".course_name, "Courses".course_id;`;
           response.body = JSON.stringify(data);
         } else {
@@ -377,7 +408,7 @@ exports.handler = async (event) => {
     console.log(error);
     response.body = JSON.stringify(error.message);
   }
-  console.log(response)
+  console.log(response);
 
   return response;
 };

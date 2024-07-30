@@ -75,7 +75,6 @@ def handler(event, context):
             "course_student_access" bool,
             "system_prompt" text,
             "llm_tone" varchar,
-            "course_status" bool
             );
 
             CREATE TABLE IF NOT EXISTS "Course_Modules" (
@@ -172,6 +171,8 @@ def handler(event, context):
             ALTER TABLE "Sessions" ADD FOREIGN KEY ("student_module_id") REFERENCES "Student_Modules" ("student_module_id") ON DELETE CASCADE ON UPDATE CASCADE;
 
             ALTER TABLE "Messages" ADD FOREIGN KEY ("session_id") REFERENCES "Sessions" ("session_id");
+
+            ALTER TABLE "Enrolments" ADD CONSTRAINT unique_course_user UNIQUE (course_id, user_email);
 
         """
 

@@ -84,12 +84,13 @@ exports.handler = async (event) => {
 
             // Insert enrollment into Enrolments table with current timestamp
             const enrollment = await sqlConnection`
-                        INSERT INTO "Enrolments" (enrolment_id, course_id, user_email, enrolment_type, time_enroled)
-                        VALUES (uuid_generate_v4(), ${course_id}, ${instructor_email}, 'instructor', CURRENT_TIMESTAMP)
-                        RETURNING *;
-                    `;
+                INSERT INTO "Enrolments" (enrolment_id, course_id, user_email, enrolment_type, time_enroled)
+                VALUES (uuid_generate_v4(), ${course_id}, ${instructor_email}, 'instructor', CURRENT_TIMESTAMP)
+                ON CONFLICT (course_id, user_email) DO NOTHING
+                RETURNING *;
+            `;
 
-            response.body = JSON.stringify(enrollment[0]);
+            response.body = JSON.stringify(enrollment);
 
             // // Insert into User Engagement Log
             // await sqlConnection`
@@ -251,7 +252,7 @@ exports.handler = async (event) => {
 
           // SQL query to fetch all courses for a given instructor
           const courses = await sqlConnection`
-                  SELECT c.course_id, c.course_name, c.course_deparment, c.course_number
+                  SELECT c.course_id, c.course_name, c.course_department, c.course_number
                   FROM "Enrolments" e
                   JOIN "Courses" c ON e.course_id = c.course_id
                   WHERE e.user_email = ${instructor_email} AND e.enrolment_type = 'instructor';
@@ -265,7 +266,7 @@ exports.handler = async (event) => {
           });
         }
         break;
-      case "PATCH /admin/updateCourseAccess":
+      case "POST /admin/updateCourseAccess":
         if (
           event.queryStringParameters != null &&
           event.queryStringParameters.course_id &&
@@ -289,6 +290,60 @@ exports.handler = async (event) => {
           response.body = JSON.stringify({
             error: "course_id and access query parameters are required",
           });
+        }
+        break;
+      case "DELETE /admin/delete_instructor_enrolments":
+        if (
+          event.queryStringParameters != null &&
+          event.queryStringParameters.instructor_email
+        ) {
+          try {
+            const { instructor_email } = event.queryStringParameters;
+            // Delete all enrolments for the instructor where enrolment_type is 'instructor'
+            await sqlConnection`
+                      DELETE FROM "Enrolments"
+                      WHERE user_email = ${instructor_email} AND enrolment_type = 'instructor';
+                  `;
+
+            response.body = JSON.stringify({
+              message: "Instructor enrolments deleted successfully.",
+            });
+          } catch (err) {
+            await sqlConnection.rollback();
+            response.statusCode = 500;
+            console.log(err);
+            response.body = JSON.stringify({ error: "Internal server error" });
+          }
+        } else {
+          response.statusCode = 400;
+          response.body = "instructor_email query parameter is required";
+        }
+        break;
+      case "DELETE /admin/delete_course_instructor_enrolments":
+        if (
+          event.queryStringParameters != null &&
+          event.queryStringParameters.course_id
+        ) {
+          try {
+            const { course_id } = event.queryStringParameters;
+
+            // Delete all enrolments for the course where enrolment_type is 'instructor'
+            await sqlConnection`
+                      DELETE FROM "Enrolments"
+                      WHERE course_id = ${course_id} AND enrolment_type = 'instructor';
+                  `;
+
+            response.body = JSON.stringify({
+              message: "Course instructor enrolments deleted successfully.",
+            });
+          } catch (err) {
+            response.statusCode = 500;
+            console.log(err);
+            response.body = JSON.stringify({ error: "Internal server error" });
+          }
+        } else {
+          response.statusCode = 400;
+          response.body = "course_id query parameter is required";
         }
         break;
       default:

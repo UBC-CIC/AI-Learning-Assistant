@@ -5,7 +5,6 @@ import { fetchAuthSession } from "aws-amplify/auth";
 import {
   Typography,
   Box,
-  AppBar,
   Toolbar,
   Table,
   TableBody,
@@ -15,35 +14,34 @@ import {
   TableRow,
   Paper,
   TextField,
-  Button,
   TableFooter,
   TablePagination,
 } from "@mui/material";
 import { useState } from "react";
 
 // populate with dummy data
-const createData = (user, email, status) => {
-  return { user, email, status };
+const createData = (user, last, email) => {
+  return { user, last, email };
 };
 
-const initialRows = [
-  createData("John Doe", "john.doe@example.com", "Active"),
-  createData("Jane Smith", "jane.smith@example.com", "Inactive"),
-  createData("Bob Johnson", "bob.johnson@example.com", "Active"),
-];
+// const initialRows = [
+//   createData("John Doe", "john.doe@example.com", "Active"),
+//   createData("Jane Smith", "jane.smith@example.com", "Inactive"),
+//   createData("Bob Johnson", "bob.johnson@example.com", "Active"),
+// ];
 
 function getInstructorInfo(coursesArray) {
   return coursesArray.map((instructor) =>
     createData(
-      `${instructor.first_name} ${instructor.last_name}`,
-      instructor.email,
-      "Active"
+      instructor.first_name,
+      instructor.last_name,
+      instructor.user_email,
     )
   );
 }
 
 export const AdminInstructors = ({ setSelectedInstructor }) => {
-  const [rows, setRows] = useState(initialRows);
+  const [rows, setRows] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
@@ -68,6 +66,7 @@ export const AdminInstructors = ({ setSelectedInstructor }) => {
         );
         if (response.ok) {
           const data = await response.json();
+          console.log(data)
           setRows(getInstructorInfo(data));
           setLoading(false);
           console.log("Instructors data:", data);
@@ -129,9 +128,9 @@ export const AdminInstructors = ({ setSelectedInstructor }) => {
                 <>
                   <TableHead>
                     <TableRow>
-                      <TableCell sx={{ width: "35%" }}>User</TableCell>
+                      <TableCell sx={{ width: "35%" }}>First Name</TableCell>
+                      <TableCell>Last Name</TableCell>
                       <TableCell>Email</TableCell>
-                      <TableCell>Status</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -143,23 +142,12 @@ export const AdminInstructors = ({ setSelectedInstructor }) => {
                       .map((row, index) => (
                         <TableRow
                           key={index}
-                          onClick={() => handleRowClick(row.user)}
+                          onClick={() => handleRowClick({row})}
                           style={{ cursor: "pointer" }}
                         >
                           <TableCell>{row.user}</TableCell>
+                          <TableCell>{row.last}</TableCell>
                           <TableCell>{row.email}</TableCell>
-                          <TableCell>
-                            <Button
-                              variant="contained"
-                              color={
-                                row.status === "Active"
-                                  ? "primary"
-                                  : "secondary"
-                              }
-                            >
-                              {row.status}
-                            </Button>
-                          </TableCell>
                         </TableRow>
                       ))}
                   </TableBody>

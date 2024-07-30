@@ -1,4 +1,3 @@
-import React from "react";
 // components
 import AdminSidebar from "./AdminSidebar";
 import AdminHeader from "../../components/AdminHeader";
@@ -23,7 +22,7 @@ export const AdminHomepage = () => {
     if (selectedInstructor) {
       return (
         <InstructorDetails
-          instructorName={selectedInstructor}
+          instructorData={selectedInstructor.row}
           onBack={() => setSelectedInstructor(null)}
         />
       );
@@ -31,7 +30,7 @@ export const AdminHomepage = () => {
     if (selectedCourse) {
       return (
         <CourseDetails
-          courseName={selectedCourse}
+          course={selectedCourse.row}
           onBack={() => setSelectedCourse(null)}
         />
       );

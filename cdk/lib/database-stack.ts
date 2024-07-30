@@ -32,8 +32,8 @@ export class DatabaseStack extends Stack {
          * Create Empty Secret Manager
          * Secrets will be populate at initalization of data
          */
-        this.secretPathAdminName = "AILA/credentials/rdsCredential"; // Name in the Secret Manager to store DB credentials        
-        const secretPathUserName = "AILA/userCredentials/rdsCredential";
+        this.secretPathAdminName = "AILA/credentials/rdsDbCredential"; // Name in the Secret Manager to store DB credentials        
+        const secretPathUserName = "AILA/userCredentials/rdsDbCredential";
         this.secretPathUser = new secretsmanager.Secret(this, secretPathUserName, {
             secretName: secretPathUserName,
             description: "Secrets for clients to connect to RDS",
@@ -43,7 +43,7 @@ export class DatabaseStack extends Stack {
                 password: SecretValue.unsafePlainText("applicationPassword")    // in the initializer
             }
         })
-        const parameterGroup = new rds.ParameterGroup(this, "rdsParameterGroup", {
+        const parameterGroup = new rds.ParameterGroup(this, "rdsParameterGroup2", {
             engine: rds.DatabaseInstanceEngine.postgres({
               version: rds.PostgresEngineVersion.VER_16_3,
             }),
@@ -57,7 +57,7 @@ export class DatabaseStack extends Stack {
          * 
          * Create an RDS with Postgres database in an isolated subnet
          */
-        this.dbInstance = new rds.DatabaseInstance(this, "AILA", {
+        this.dbInstance = new rds.DatabaseInstance(this, "AILA2", {
             vpc: vpcStack.vpc,
             vpcSubnets: {
                 subnetType: ec2.SubnetType.PRIVATE_ISOLATED,

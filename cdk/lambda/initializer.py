@@ -74,7 +74,7 @@ def handler(event, context):
             "course_access_code" varchar,
             "course_student_access" bool,
             "system_prompt" text,
-            "llm_tone" varchar,
+            "llm_tone" varchar
             );
 
             CREATE TABLE IF NOT EXISTS "Course_Modules" (

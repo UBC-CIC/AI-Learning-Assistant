@@ -23,28 +23,23 @@ import {
 import { useState } from "react";
 
 // populate with dummy data
-const createData = (course, instructor, status) => {
-  return { course, instructor, status };
+const createData = (course, instructor, status, id) => {
+  return { course, instructor, status, id };
 };
-
-const initialRows = [
-  createData("CPSC XXX", "john.doe@example.com", "Active"),
-  createData("CPSC XXX", "jane.smith@example.com", "Inactive"),
-  createData("CPSC XXX", "bob.johnson@example.com", "Active"),
-];
 
 function getCourseInfo(coursesArray) {
   return coursesArray.map((course) =>
     createData(
       `${course.course_department} ${course.course_number}`,
-      "placeholder email",
-      "Active"
+      `${course.course_access_code}`,
+      `${course.course_student_access}`,
+      `${course.course_id}`
     )
   );
 }
 
 export const AdminCourses = ({ setSelectedCourse }) => {
-  const [rows, setRows] = useState(initialRows);
+  const [rows, setRows] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
@@ -67,6 +62,7 @@ export const AdminCourses = ({ setSelectedCourse }) => {
         );
         if (response.ok) {
           const data = await response.json();
+          console.log(data);
           setRows(getCourseInfo(data));
           setLoading(false);
         } else {
@@ -128,7 +124,7 @@ export const AdminCourses = ({ setSelectedCourse }) => {
                   <TableHead>
                     <TableRow>
                       <TableCell sx={{ width: "35%" }}>Course</TableCell>
-                      <TableCell>Instructor</TableCell>
+                      <TableCell>Course Access Code</TableCell>
                       <TableCell>Status</TableCell>
                     </TableRow>
                   </TableHead>
@@ -141,7 +137,7 @@ export const AdminCourses = ({ setSelectedCourse }) => {
                       .map((row, index) => (
                         <TableRow
                           key={index}
-                          onClick={() => handleCourseClick(row.course)}
+                          onClick={() => handleCourseClick({row})}
                           style={{ cursor: "pointer" }}
                         >
                           <TableCell>{row.course}</TableCell>
@@ -150,7 +146,7 @@ export const AdminCourses = ({ setSelectedCourse }) => {
                             <Button
                               variant="contained"
                               color={
-                                row.status === "Active"
+                                row.status === "true"
                                   ? "primary"
                                   : "secondary"
                               }

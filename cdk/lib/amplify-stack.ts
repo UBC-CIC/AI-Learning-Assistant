@@ -71,7 +71,6 @@ export class AmplifyStack extends cdk.Stack {
       buildSpec: BuildSpec.fromObjectToYaml(amplifyYaml),
     });
 
-    amplifyApp.addBranch('stacks')
     amplifyApp.addBranch('main')
     amplifyApp.addBranch('frontend')
 

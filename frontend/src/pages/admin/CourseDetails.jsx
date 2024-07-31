@@ -23,10 +23,12 @@ import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 const CourseDetails = ({ course, onBack }) => {
-  console.log(course)
+  console.log(course.status);
   const [activeInstructors, setActiveInstructors] = useState([]);
-  const [isActive, setIsActive] = useState(true);
+  const [isActive, setIsActive] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [allInstructors, setAllInstructors] = useState([]);
+
   useEffect(() => {
     const fetchActiveInstructors = async () => {
       try {
@@ -84,20 +86,70 @@ const CourseDetails = ({ course, onBack }) => {
     };
     fetchActiveInstructors();
     fetchInstructors();
+    setLoading(false);
   }, []);
 
   const handleInstructorsChange = (event) => {
     const newInstructors = event.target.value;
     // Filter out duplicates
     const uniqueInstructors = Array.from(
-      new Map(newInstructors.map(instructor => [instructor.user_email, instructor])).values()
+      new Map(
+        newInstructors.map((instructor) => [instructor.user_email, instructor])
+      ).values()
     );
     setActiveInstructors(uniqueInstructors);
   };
 
   const handleStatusChange = (event) => {
-    console.log(event.target.checked)
+    console.log(event.target.checked);
     setIsActive(event.target.checked);
+  };
+
+  const handleDelete = async () => {
+    const session = await fetchAuthSession();
+    var token = session.tokens.idToken.toString();
+    const deleteResponse = await fetch(
+      `${
+        import.meta.env.VITE_API_ENDPOINT
+      }admin/delete_course?&course_id=${encodeURIComponent(course.id)}`,
+      {
+        method: "DELETE",
+        headers: {
+          Authorization: token,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    if (deleteResponse.ok) {
+      const enrollData = await deleteResponse.json();
+      console.log("delete data:", enrollData);
+      toast.success("Course Successfully Deleted", {
+        position: "top-center",
+        autoClose: 1000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "colored",
+      });
+      setTimeout(function () {
+        onBack();
+      }, 1000);
+    } else {
+      console.error("Failed to update enrolment:", deleteResponse.statusText);
+      toast.error("update enrolment Failed", {
+        position: "top-center",
+        autoClose: 1000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "colored",
+      });
+    }
   };
 
   const handleSave = async () => {
@@ -106,7 +158,9 @@ const CourseDetails = ({ course, onBack }) => {
     const deleteResponse = await fetch(
       `${
         import.meta.env.VITE_API_ENDPOINT
-      }admin/delete_course_instructor_enrolments?&course_id=${encodeURIComponent(course.id)}`,
+      }admin/delete_course_instructor_enrolments?&course_id=${encodeURIComponent(
+        course.id
+      )}`,
       {
         method: "DELETE",
         headers: {
@@ -120,10 +174,7 @@ const CourseDetails = ({ course, onBack }) => {
       const enrollData = await deleteResponse.json();
       console.log("delete data:", enrollData);
     } else {
-      console.error(
-        "Failed to update enrolment:",
-        deleteResponse.statusText
-      );
+      console.error("Failed to update enrolment:", deleteResponse.statusText);
       toast.error("update enrolment Failed", {
         position: "top-center",
         autoClose: 1000,
@@ -187,7 +238,9 @@ const CourseDetails = ({ course, onBack }) => {
     const updateCourseAccess = await fetch(
       `${
         import.meta.env.VITE_API_ENDPOINT
-      }admin/updateCourseAccess?&course_id=${encodeURIComponent(course.id)}&access=${encodeURIComponent(isActive)}`,
+      }admin/updateCourseAccess?&course_id=${encodeURIComponent(
+        course.id
+      )}&access=${encodeURIComponent(isActive)}`,
       {
         method: "POST",
         headers: {
@@ -201,10 +254,7 @@ const CourseDetails = ({ course, onBack }) => {
       const enrollData = await updateCourseAccess.json();
       console.log("updateCourseAccess data:", enrollData);
     } else {
-      console.error(
-        "Failed to update enrolment:",
-        deleteResponse.statusText
-      );
+      console.error("Failed to update enrolment:", deleteResponse.statusText);
       toast.error("update enrolment Failed", {
         position: "top-center",
         autoClose: 1000,
@@ -221,76 +271,92 @@ const CourseDetails = ({ course, onBack }) => {
 
   return (
     <>
-    <Box
-      component="main"
-      sx={{ flexGrow: 1, p: 3, marginTop: 1, textAlign: "left" }}
-    >
-      <Toolbar />
-      <Paper sx={{ padding: 2, marginBottom: 2 }}>
-        <Typography variant="h4" sx={{ marginBottom: 0 }}>
-          {course.course}
-        </Typography>
-        <Divider sx={{ p: 1, marginBottom: 3 }} />
-        <FormControl fullWidth sx={{ marginBottom: 2 }}>
-          <InputLabel id="select-instructors-label">
-            Active Instructors
-          </InputLabel>
-          <Select
-            labelId="select-instructors-label"
-            multiple
-            value={activeInstructors}
-            onChange={handleInstructorsChange}
-            input={
-              <OutlinedInput
-                id="select-multiple-chip"
-                label="Active Instructors"
-              />
-            }
-            renderValue={(selected) => (
-              <Box
-                sx={{
-                  display: "flex",
-                  flexWrap: "wrap",
-                  gap: 0.5,
-                }}
+      {!loading && (
+        <Box
+          component="main"
+          sx={{ flexGrow: 1, p: 3, marginTop: 1, textAlign: "left" }}
+        >
+          <Toolbar />
+          <Paper sx={{ padding: 2, marginBottom: 2 }}>
+            <Typography variant="h4" sx={{ marginBottom: 0 }}>
+              {course.course}
+            </Typography>
+            <Divider sx={{ p: 1, marginBottom: 3 }} />
+            <FormControl fullWidth sx={{ marginBottom: 2 }}>
+              <InputLabel id="select-instructors-label">
+                Active Instructors
+              </InputLabel>
+              <Select
+                labelId="select-instructors-label"
+                multiple
+                value={activeInstructors}
+                onChange={handleInstructorsChange}
+                input={
+                  <OutlinedInput
+                    id="select-multiple-chip"
+                    label="Active Instructors"
+                  />
+                }
+                renderValue={(selected) => (
+                  <Box
+                    sx={{
+                      display: "flex",
+                      flexWrap: "wrap",
+                      gap: 0.5,
+                    }}
+                  >
+                    {selected.map((value) => (
+                      <Chip key={value.user_email} label={value.first_name} />
+                    ))}
+                  </Box>
+                )}
               >
-                {selected.map((value) => (
-                  <Chip key={value.user_email} label={value.first_name} />
+                {allInstructors.map((instructor) => (
+                  <MenuItem key={instructor.user_email} value={instructor}>
+                    {instructor.first_name} {instructor.last_name}
+                  </MenuItem>
                 ))}
-              </Box>
-            )}
-          >
-            {allInstructors.map((instructor) => (
-              <MenuItem key={instructor.user_email} value={instructor}>
-                {instructor.first_name} {instructor.last_name}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-        <FormControlLabel
-          control={<Switch checked={isActive} onChange={handleStatusChange} />}
-          label={isActive ? "Active" : "Inactive"}
-        />
-      </Paper>
-      <Grid container spacing={2}>
-        <Grid item xs={6}>
-          <Button variant="contained" onClick={onBack} sx={{ width: "30%" }}>
-            Back
-          </Button>
-        </Grid>
-        <Grid item xs={6} sx={{ textAlign: "right" }}>
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={handleSave}
-            sx={{ width: "30%" }}
-          >
-            Save
-          </Button>
-        </Grid>
-      </Grid>
-    </Box>
-    <ToastContainer/>
+              </Select>
+            </FormControl>
+            <FormControlLabel
+              control={
+                <Switch checked={isActive} onChange={handleStatusChange} />
+              }
+              label={isActive ? "Active" : "Inactive"}
+            />
+          </Paper>
+          <Grid container spacing={2}>
+            <Grid item xs={6}>
+              <Button
+                variant="contained"
+                onClick={onBack}
+                sx={{ width: "30%" }}
+              >
+                Back
+              </Button>
+            </Grid>
+            <Grid item xs={6} sx={{ textAlign: "right" }}>
+              <Button
+                variant="contained"
+                color="red"
+                onClick={handleDelete}
+                sx={{ width: "30%", marginRight: "15px" }}
+              >
+                Delete
+              </Button>
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={handleSave}
+                sx={{ width: "30%" }}
+              >
+                Save
+              </Button>
+            </Grid>
+          </Grid>
+        </Box>
+      )}
+      <ToastContainer />
     </>
   );
 };

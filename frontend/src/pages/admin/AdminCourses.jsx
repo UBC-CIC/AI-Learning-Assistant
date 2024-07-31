@@ -24,6 +24,7 @@ import { useState } from "react";
 
 // populate with dummy data
 const createData = (course, instructor, status, id) => {
+  console.log(status)
   return { course, instructor, status, id };
 };
 
@@ -44,7 +45,6 @@ export const AdminCourses = ({ setSelectedCourse }) => {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [loading, setLoading] = useState(true);
-
   useEffect(() => {
     const fetchCourses = async () => {
       try {
@@ -151,7 +151,7 @@ export const AdminCourses = ({ setSelectedCourse }) => {
                                   : "secondary"
                               }
                             >
-                              {row.status}
+                              {row.status === "true" ? "Active" : "Inactive"}
                             </Button>
                           </TableCell>
                         </TableRow>

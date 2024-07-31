@@ -45,7 +45,7 @@ export const AdminHomepage = () => {
         <AdminCourses setSelectedCourse={setSelectedCourse} />
         );
       case "AdminCreateCourse":
-        return <AdminCreateCourse />;
+        return <AdminCreateCourse setSelectedComponent = {setSelectedComponent} />;
       default:
         return (
           <AdminInstructors setSelectedInstructor={setSelectedInstructor} />

@@ -76,7 +76,8 @@ export class DBFlowStack extends Stack {
             memorySize: 512,
             environment: {
               DB_SECRET_NAME: db.secretPathAdminName,     // Admin Secret Manager name that only use once here.
-              DB_USER_SECRET_NAME: db.secretPathUser.secretName
+              DB_USER_SECRET_NAME: db.secretPathUser.secretName,
+              DB_PROXY: db.secretPathTableCreator.secretName
             },
             vpc: db.dbInstance.vpc,
             code: lambda.Code.fromAsset("lambda"),

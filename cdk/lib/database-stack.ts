@@ -17,7 +17,9 @@ export class DatabaseStack extends Stack {
     public readonly dbInstance: rds.DatabaseInstance;
     public readonly secretPathAdminName: string;
     public readonly secretPathUser: secretsmanager.Secret;
+    public readonly secretPathTableCreator: secretsmanager.Secret;
     public readonly rdsProxyEndpoint: string; 
+    public readonly rdsProxyEndpointTableCreator: string; 
     constructor(scope: Construct, id: string, vpcStack: VpcStack, props?: StackProps){
         super(scope, id, props);
 
@@ -37,6 +39,17 @@ export class DatabaseStack extends Stack {
         this.secretPathUser = new secretsmanager.Secret(this, secretPathUserName, {
             secretName: secretPathUserName,
             description: "Secrets for clients to connect to RDS",
+            removalPolicy: RemovalPolicy.DESTROY,
+            secretObjectValue: {
+                username: SecretValue.unsafePlainText("applicationUsername"),   // this will change later at runtime
+                password: SecretValue.unsafePlainText("applicationPassword")    // in the initializer
+            }
+        })
+
+        const secretPathTableCreator = "AILA/userCredentials/TableCreator";
+        this.secretPathTableCreator= new secretsmanager.Secret(this, secretPathTableCreator, {
+            secretName: secretPathTableCreator,
+            description: "Secrets for TableCreator to connect to RDS",
             removalPolicy: RemovalPolicy.DESTROY,
             secretObjectValue: {
                 username: SecretValue.unsafePlainText("applicationUsername"),   // this will change later at runtime
@@ -120,14 +133,30 @@ export class DatabaseStack extends Stack {
             securityGroups: this.dbInstance.connections.securityGroups,
             requireTLS: false,
         });
+        const rdsProxyTableCreator = this.dbInstance.addProxy(id+'+proxy', {
+            secrets: [this.secretPathTableCreator!],
+            vpc: vpcStack.vpc,
+            role: rdsProxyRole,
+            securityGroups: this.dbInstance.connections.securityGroups,
+            requireTLS: false,
+        });
         // Workaround for bug where TargetGroupName is not set but required
         let targetGroup = rdsProxy.node.children.find((child:any) => {
             return child instanceof rds.CfnDBProxyTargetGroup
         }) as rds.CfnDBProxyTargetGroup
 
         targetGroup.addPropertyOverride('TargetGroupName', 'default');   
+
+        let targetGroupTableCreator = rdsProxyTableCreator.node.children.find((child:any) => {
+            return child instanceof rds.CfnDBProxyTargetGroup
+        }) as rds.CfnDBProxyTargetGroup
+
+        targetGroup.addPropertyOverride('TargetGroupName', 'default');  
+        targetGroupTableCreator.addPropertyOverride('TargetGroupName', 'default');   
+ 
         this.dbInstance.grantConnect(rdsProxyRole);      
         this.rdsProxyEndpoint = rdsProxy.endpoint;
+        this.rdsProxyEndpointTableCreator = rdsProxyTableCreator.endpoint;
         // this.rdsProxyEndpoint = "";
 
     }

@@ -492,8 +492,8 @@ export class ApiGatewayStack extends cdk.Stack {
       timeout: Duration.seconds(300),
       vpc: vpcStack.vpc,
       environment: {
-        SM_DB_CREDENTIALS: db.secretPathUser.secretName,
-        RDS_PROXY_ENDPOINT: db.rdsProxyEndpoint,
+        SM_DB_CREDENTIALS: db.secretPathTableCreator.secretName,
+        RDS_PROXY_ENDPOINT: db.rdsProxyEndpointTableCreator,
       },
       functionName: "adminFunction",
       memorySize: 512,

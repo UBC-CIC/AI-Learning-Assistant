@@ -18,8 +18,8 @@ async function initializeConnection(SM_DB_CREDENTIALS, RDS_PROXY_ENDPOINT) {
 		host: RDS_PROXY_ENDPOINT,
 		// host: credentials.host,
 		port: credentials.port,
-		username: credentials.usernameTableCreator,
-		password: credentials.passwordTableCreator,
+		username: credentials.username,
+		password: credentials.password,
 		database: credentials.dbname,
 		ssl: false,
 	};

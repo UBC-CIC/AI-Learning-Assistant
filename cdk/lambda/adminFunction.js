@@ -346,6 +346,35 @@ exports.handler = async (event) => {
           response.body = "course_id query parameter is required";
         }
         break;
+      case "DELETE /admin/delete_course":
+        if (
+          event.queryStringParameters != null &&
+          event.queryStringParameters.course_id
+        ) {
+          try {
+            const { course_id } = event.queryStringParameters;
+
+            // Delete the course, related records will be automatically deleted due to cascading
+            await sqlConnectionTableCreator`
+                      DELETE FROM "Courses"
+                      WHERE course_id = ${course_id};
+                  `;
+
+            response.body = JSON.stringify({
+              message: "Course and related records deleted successfully.",
+            });
+          } catch (err) {
+            await sqlConnection.rollback();
+            response.statusCode = 500;
+            console.log(err);
+            response.body = JSON.stringify({ error: "Internal server error" });
+          }
+        } else {
+          response.statusCode = 400;
+          response.body = "course_id query parameter is required";
+        }
+        break;
+
       default:
         throw new Error(`Unsupported route: "${pathData}"`);
     }

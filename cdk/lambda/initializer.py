@@ -224,7 +224,7 @@ def handler(event, context):
 
             GRANT CONNECT ON DATABASE postgres TO readwrite;
 
-            GRANT USAGE, CREATE ON SCHEMA public TO readwrite;
+            GRANT USAGE ON SCHEMA public TO readwrite;
             GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO readwrite;
             ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO readwrite;
             GRANT USAGE ON ALL SEQUENCES IN SCHEMA public TO readwrite;

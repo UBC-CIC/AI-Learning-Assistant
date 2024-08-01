@@ -611,7 +611,7 @@ export class ApiGatewayStack extends cdk.Stack {
         statements: [
           new iam.PolicyStatement({
             effect: iam.Effect.ALLOW,
-            actions: ["cognito-idp:AdminAddUserToGroup"],
+            actions: ["cognito-idp:AdminAddUserToGroup", "cognito-idp:AdminGetUser", "cognito-idp:AdminListGroupsForUser"],
             resources: [
               `arn:aws:cognito-idp:${this.region}:${this.account}:userpool/${this.userPool.userPoolId}`,
             ],
@@ -623,6 +623,20 @@ export class ApiGatewayStack extends cdk.Stack {
     // Attach the inline policy to the role
     coglambdaRole.attachInlinePolicy(adminAddUserToGroupPolicy);
 
+    coglambdaRole.addToPolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: [
+          // Secrets Manager
+          "secretsmanager:GetSecretValue",
+          "secretsmanager:PutSecretValue"
+        ],
+        resources: [
+          `arn:aws:secretsmanager:${this.region}:${this.account}:secret:AILA/*`,
+        ],
+      })
+    );
+
     const AutoSignupLambda = new lambda.Function(this, "addStudentOnSignUp", {
       runtime: lambda.Runtime.NODEJS_16_X, // Execution environment
       code: lambda.Code.fromAsset("lambda"), // Code loaded from "lambda" directory
@@ -633,6 +647,27 @@ export class ApiGatewayStack extends cdk.Stack {
       memorySize: 128,
       role: coglambdaRole,
     })
+
+    const adjustUserRoles = new lambda.Function(this, "adjustUserRoles", {
+      runtime: lambda.Runtime.NODEJS_16_X, // Execution environment
+      code: lambda.Code.fromAsset("lambda"), // Code loaded from "lambda" directory
+      handler: "adjustUserRoles.handler", // Code handler
+      timeout: Duration.seconds(300),
+      environment: {
+        SM_DB_CREDENTIALS: db.secretPathTableCreator.secretName,
+        RDS_PROXY_ENDPOINT: db.rdsProxyEndpointTableCreator,
+      },
+      vpc: db.dbInstance.vpc,
+      functionName: "adjustUserRoles",
+      memorySize: 512,
+      layers: [postgres],
+      role: coglambdaRole,
+    })
+
+    this.userPool.addTrigger(
+      cognito.UserPoolOperation.POST_AUTHENTICATION,
+      adjustUserRoles
+    );
 
     //cognito auto assign authenticated users to the student group
 

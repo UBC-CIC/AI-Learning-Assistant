@@ -119,8 +119,8 @@ export const AdminCreateCourse = () => {
         const { course_id } = data;
         // Enroll each selected instructor
         for (const instructor of selectedInstructors) {
-          console.log('course_id',course_id);
-          console.log('instructor',instructor);
+          console.log("course_id", course_id);
+          console.log("instructor", instructor);
           const enrollResponse = await fetch(
             `${
               import.meta.env.VITE_API_ENDPOINT
@@ -218,7 +218,7 @@ export const AdminCreateCourse = () => {
   };
   return (
     <>
-      <Box sx={{ maxWidth: 500, mx: "left", mt: 7, p: 4 }}>
+      <Box sx={{ maxWidth: 500, mx: "left", mt: 7, p: 4, overflow: "auto" }}>
         <Typography
           color="black"
           fontStyle="semibold"

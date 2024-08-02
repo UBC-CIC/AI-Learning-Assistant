@@ -20,9 +20,12 @@ import {
   TablePagination,
 } from "@mui/material";
 
-export const EditCourse = () => {
+export const EditCourse = ({ courseId }) => {
   return (
-    <Box component="main" sx={{ flexGrow: 1, p: 3, marginTop: 1 }}>
+    <Box
+      component="main"
+      sx={{ flexGrow: 1, p: 3, marginTop: 1, overflow: "auto" }}
+    >
       <Toolbar />
       <Typography
         color="black"
@@ -30,7 +33,7 @@ export const EditCourse = () => {
         textAlign="left"
         variant="h6"
       >
-        Course Name
+        {courseId}
       </Typography>
       <Paper sx={{ width: "100%", overflow: "hidden", marginTop: 2 }}>
         <FileUpload />

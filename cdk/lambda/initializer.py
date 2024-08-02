@@ -7,6 +7,7 @@ import secrets
 
 DB_SECRET_NAME = os.environ["DB_SECRET_NAME"]
 DB_USER_SECRET_NAME = os.environ["DB_USER_SECRET_NAME"]
+DB_PROXY = os.environ["DB_PROXY"]
 print(psycopg2.__version__)
 
 
@@ -74,8 +75,7 @@ def handler(event, context):
             "course_access_code" varchar,
             "course_student_access" bool,
             "system_prompt" text,
-            "llm_tone" varchar,
-            "course_status" bool
+            "llm_tone" varchar
             );
 
             CREATE TABLE IF NOT EXISTS "Course_Modules" (
@@ -173,6 +173,18 @@ def handler(event, context):
 
             ALTER TABLE "Messages" ADD FOREIGN KEY ("session_id") REFERENCES "Sessions" ("session_id");
 
+            DO $$
+            BEGIN
+                IF NOT EXISTS (
+                    SELECT 1
+                    FROM pg_constraint
+                    WHERE conname = 'unique_course_user'
+                    AND conrelid = '"Enrolments"'::regclass
+                ) THEN
+                    ALTER TABLE "Enrolments" ADD CONSTRAINT unique_course_user UNIQUE (course_id, user_email);
+                END IF;
+            END $$;
+
         """
 
         #
@@ -186,8 +198,8 @@ def handler(event, context):
         # Generate 16 bytes username and password randomly
         username = secrets.token_hex(8)
         password = secrets.token_hex(16)
-        # usernameTableCreator = secrets.token_hex(8)
-        # passwordTableCreator = secrets.token_hex(16)
+        usernameTableCreator = secrets.token_hex(8)
+        passwordTableCreator = secrets.token_hex(16)
 
         # Based on the observation,
         #   - Database name: does not reflect from the CDK dbname read more from https://stackoverflow.com/questions/51014647/aws-postgres-db-does-not-exist-when-connecting-with-pg
@@ -212,7 +224,7 @@ def handler(event, context):
 
             GRANT CONNECT ON DATABASE postgres TO readwrite;
 
-            GRANT USAGE, CREATE ON SCHEMA public TO readwrite;
+            GRANT USAGE ON SCHEMA public TO readwrite;
             GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO readwrite;
             ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO readwrite;
             GRANT USAGE ON ALL SEQUENCES IN SCHEMA public TO readwrite;
@@ -222,30 +234,30 @@ def handler(event, context):
             GRANT readwrite TO "%s";
         """
         
-        # sqlCreateTableCreator = """
-        #     DO $$
-        #     BEGIN
-        #         CREATE ROLE tablecreator;
-        #     EXCEPTION
-        #         WHEN duplicate_object THEN
-        #             RAISE NOTICE 'Role already exists.';
-        #     END
-        #     $$;
+        sqlCreateTableCreator = """
+            DO $$
+            BEGIN
+                CREATE ROLE tablecreator;
+            EXCEPTION
+                WHEN duplicate_object THEN
+                    RAISE NOTICE 'Role already exists.';
+            END
+            $$;
 
-        #     GRANT CONNECT ON DATABASE postgres TO tablecreator;
+            GRANT CONNECT ON DATABASE postgres TO tablecreator;
 
-        #     GRANT USAGE, CREATE ON SCHEMA public TO tablecreator;
-        #     GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO tablecreator;
-        #     ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO tablecreator;
-        #     GRANT USAGE ON ALL SEQUENCES IN SCHEMA public TO tablecreator;
-        #     ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT USAGE ON SEQUENCES TO tablecreator;
+            GRANT USAGE, CREATE ON SCHEMA public TO tablecreator;
+            GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO tablecreator;
+            ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO tablecreator;
+            GRANT USAGE ON ALL SEQUENCES IN SCHEMA public TO tablecreator;
+            ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT USAGE ON SEQUENCES TO tablecreator;
 
-        #     CREATE USER "%s" WITH PASSWORD '%s';
-        #     GRANT tablecreator TO "%s";
-        # """
+            CREATE USER "%s" WITH PASSWORD '%s';
+            GRANT tablecreator TO "%s";
+        """
 
 
-        # Execute table creation
+        #Execute table creation
         cursor.execute(
             sqlCreateUser,
             (
@@ -255,15 +267,25 @@ def handler(event, context):
             ),
         )
         connection.commit()
-        # cursor.execute(
-        #     sqlCreateTableCreator,
-        #     (
-        #         AsIs(usernameTableCreator),
-        #         AsIs(passwordTableCreator),
-        #         AsIs(usernameTableCreator),
-        #     ),
-        # )
-        # connection.commit()
+        cursor.execute(
+            sqlCreateTableCreator,
+            (
+                AsIs(usernameTableCreator),
+                AsIs(passwordTableCreator),
+                AsIs(usernameTableCreator),
+            ),
+        )
+        connection.commit()
+
+        #also for table creator:
+        authInfoTableCreator = {"username": usernameTableCreator, "password": passwordTableCreator}
+
+        # comment out to on redeployment
+        dbSecret.update(authInfoTableCreator)
+        sm_client = boto3.client("secretsmanager")
+        sm_client.put_secret_value(
+            SecretId=DB_PROXY, SecretString=json.dumps(dbSecret)
+        )
 
         #
         ## Load client username and password to SSM
@@ -276,16 +298,6 @@ def handler(event, context):
         sm_client.put_secret_value(
             SecretId=DB_USER_SECRET_NAME, SecretString=json.dumps(dbSecret)
         )
-        
-        #also for table creator:
-        # authInfoTableCreator = {"usernameTableCreator": usernameTableCreator, "passwordTableCreator": passwordTableCreator}
-
-        # # comment out to on redeployment
-        # dbSecret.update(authInfoTableCreator)
-        # sm_client = boto3.client("secretsmanager")
-        # sm_client.put_secret_value(
-        #     SecretId=DB_USER_SECRET_NAME, SecretString=json.dumps(dbSecret)
-        # )
         sql = """
             SELECT * FROM "Users";
         """

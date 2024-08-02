@@ -90,15 +90,46 @@ exports.handler = async (event) => {
           response.body = JSON.stringify({ error: "User email is required" });
         }
         break;
+      case "GET /student/get_name":
+        if (
+          event.queryStringParameters &&
+          event.queryStringParameters.user_email
+        ) {
+          const user_email = event.queryStringParameters.user_email;
+          try {
+            // Retrieve roles for the user with the provided email
+            const userData = await sqlConnection`
+                  SELECT first_name
+                  FROM "Users"
+                  WHERE user_email = ${user_email};
+                `;
+            if (userData.length > 0) {
+              response.body = JSON.stringify({ name: userData[0].first_name });
+            } else {
+              response.statusCode = 404;
+              response.body = JSON.stringify({ error: "User not found" });
+            }
+          } catch (err) {
+            response.statusCode = 500;
+            console.log(err);
+            response.body = JSON.stringify({ error: "Internal server error" });
+          }
+        } else {
+          response.statusCode = 400;
+          response.body = JSON.stringify({ error: "User email is required" });
+        }
+        break;
       case "GET /student/course":
         if (
           event.queryStringParameters != null &&
           event.queryStringParameters.email
         ) {
-          data = await sqlConnection`SELECT Courses.*
+          const email = event.queryStringParameters.email;
+          data = await sqlConnection`SELECT "Courses".*
 					FROM "Enrolments"
 					JOIN "Courses" ON "Enrolments".course_id = "Courses".course_id
-					WHERE "Enrolments".user_email = '${event.queryStringParameters.student_id}'
+					WHERE "Enrolments".user_email = ${email}
+          AND "Courses".course_status = TRUE
 					ORDER BY "Courses".course_name, "Courses".course_id;`;
           response.body = JSON.stringify(data);
         } else {
@@ -368,6 +399,59 @@ exports.handler = async (event) => {
           });
         }
         break;
+      case "POST /student/enroll_student":
+        if (
+          event.queryStringParameters != null &&
+          event.queryStringParameters.student_email &&
+          event.queryStringParameters.course_access_code
+        ) {
+          try {
+            const { student_email, course_access_code } =
+              event.queryStringParameters;
+
+            // Retrieve the course_id using the access code
+            const courseResult = await sqlConnection`
+                      SELECT course_id
+                      FROM "Courses"
+                      WHERE course_access_code = ${course_access_code}
+                      AND course_status = TRUE
+                      LIMIT 1;
+                  `;
+
+            if (courseResult.length === 0) {
+              response.statusCode = 404;
+              response.body = JSON.stringify({
+                error: "Invalid course access code or course not available.",
+              });
+              break;
+            }
+
+            const course_id = courseResult[0].course_id;
+
+            // Insert enrollment into Enrolments table
+            await sqlConnection`
+                      INSERT INTO "Enrolments" (enrolment_id, user_email, course_id, enrolment_type, time_enroled)
+                      VALUES (uuid_generate_v4(), ${student_email}, ${course_id}, 'student', CURRENT_TIMESTAMP)
+                      ON CONFLICT (course_id, user_email) DO NOTHING
+                      RETURNING *;
+                  `;
+
+            response.body = JSON.stringify({
+              message: "Student enrolled successfully.",
+            });
+          } catch (err) {
+            response.statusCode = 500;
+            console.log(err);
+            response.body = JSON.stringify({ error: "Internal server error" });
+          }
+        } else {
+          response.statusCode = 400;
+          response.body = JSON.stringify({
+            error:
+              "student_email and course_access_code query parameters are required",
+          });
+        }
+        break;
 
       default:
         throw new Error(`Unsupported route: "${pathData}"`);
@@ -377,7 +461,7 @@ exports.handler = async (event) => {
     console.log(error);
     response.body = JSON.stringify(error.message);
   }
-  console.log(response)
+  console.log(response);
 
   return response;
 };

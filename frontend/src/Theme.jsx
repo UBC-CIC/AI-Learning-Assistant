@@ -18,6 +18,9 @@ const theme = createTheme({
     //   primary: "#000000",
     //   secondary: "#ffffff",
     // },
+    red: {
+      main: "#cc0c0c",
+    },
     default: {
       main: "#fffff",
     },

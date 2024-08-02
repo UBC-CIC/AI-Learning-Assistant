@@ -34,17 +34,17 @@ function formatInstructors(instructorsArray) {
   }));
 }
 
-export const AdminCreateCourse = () => {
+export const AdminCreateCourse = ( {setSelectedComponent} ) => {
   const [courseName, setCourseName] = useState("");
   const [coursePrompt, setCoursePrompt] = useState("");
   const [courseDepartment, setCourseDepartment] = useState("");
   const [courseCode, setCourseCode] = useState("");
-  const [active, setActive] = useState(true);
+  const [isActive, setIsActive] = useState(true);
   const [tone, setTone] = useState("");
   const [selectedInstructors, setSelectedInstructors] = useState([]);
   const [instructors, setInstructors] = useState([]);
   const handleStatusChange = (event) => {
-    setActive(!active);
+    setIsActive(event.target.checked);
   };
 
   useEffect(() => {
@@ -90,6 +90,19 @@ export const AdminCreateCourse = () => {
     try {
       const session = await fetchAuthSession();
       var token = session.tokens.idToken.toString();
+      const numericCourseCode = Number(courseCode);
+      if (isNaN(numericCourseCode)) {
+        toast.error("access code must be a number", {
+          position: "top-center",
+          autoClose: 1000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: "colored",
+        });
+      }
       const response = await fetch(
         `${
           import.meta.env.VITE_API_ENDPOINT
@@ -102,7 +115,7 @@ export const AdminCreateCourse = () => {
         )}&course_access_code=${encodeURIComponent(
           access_code
         )}&course_student_access=${encodeURIComponent(
-          active
+          isActive
         )}&system_prompt=${encodeURIComponent(
           coursePrompt
         )}&llm_tone=${encodeURIComponent(tone)}`,
@@ -118,6 +131,24 @@ export const AdminCreateCourse = () => {
         const data = await response.json();
         const { course_id } = data;
         // Enroll each selected instructor
+        if (selectedInstructors.length === 0) {
+          toast.success("🦄 Course Created!", {
+            position: "top-center",
+            autoClose: 1000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            theme: "colored",
+          });
+          setTimeout(function (){
+  
+            setSelectedComponent("AdminCourses");
+                      
+          }, 1000)
+          return;
+      }
         for (const instructor of selectedInstructors) {
           console.log("course_id", course_id);
           console.log("instructor", instructor);
@@ -308,8 +339,8 @@ export const AdminCreateCourse = () => {
             </Select>
           </FormControl>
           <FormControlLabel
-            control={<Switch checked={active} onChange={handleStatusChange} />}
-            label={active ? "Active" : "Inactive"}
+            control={<Switch checked={isActive} onChange={handleStatusChange} />}
+            label={isActive ? "Active" : "Inactive"}
             sx={{
               color: "black",
               textAlign: "left",

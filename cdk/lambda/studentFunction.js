@@ -414,7 +414,7 @@ exports.handler = async (event) => {
                       SELECT course_id
                       FROM "Courses"
                       WHERE course_access_code = ${course_access_code}
-                      AND course_status = TRUE
+                      AND course_student_access = TRUE
                       LIMIT 1;
                   `;
 

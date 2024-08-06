@@ -19,7 +19,7 @@ import {
 } from "@mui/material";
 // components
 import Analytics from "./InstructorAnalytics";
-import EditCourse from "./InstructorEditCourse";
+import EditCourse from "./InstructorNewModule";
 import PromptSettings from "./PromptSettings";
 
 // populate with dummy data

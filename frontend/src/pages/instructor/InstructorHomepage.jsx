@@ -23,9 +23,10 @@ import InstructorHeader from "../../components/InstructorHeader";
 import InstructorSidebar from "./InstructorSidebar";
 import InstructorAnalytics from "./InstructorAnalytics";
 import InstructorEditCourse from "./InstructorEditCourse";
-import InstructorOverview from "./InstructorOverview";
 import PromptSettings from "./PromptSettings";
 import ViewStudents from "./ViewStudents";
+import InstructorModules from "./InstructorModules";
+import InstructorNewModule from "./InstructorNewModule";
 
 const createData = (course, date, status) => {
   return { course, date, status };
@@ -49,7 +50,7 @@ const CourseDetails = () => {
       case "InstructorAnalytics":
         return <InstructorAnalytics courseId={courseId} />;
       case "InstructorEditCourse":
-        return <InstructorEditCourse courseId={courseId} />;
+        return <InstructorModules courseId={courseId} />;
       case "PromptSettings":
         return <PromptSettings courseId={courseId} />;
       case "ViewStudents":
@@ -69,6 +70,16 @@ const CourseDetails = () => {
       </AppBar>
       <InstructorSidebar setSelectedComponent={setSelectedComponent} />
       {renderComponent()}
+      {/* <Routes>
+        <Route
+          path=":courseId/edit-module/:moduleId"
+          element={<InstructorEditCourse />}
+        />
+        <Route
+          path=":course/courseId/new-module"
+          element={<InstructorNewModule />}
+        />
+      </Routes> */}
     </PageContainer>
   );
 };
@@ -87,7 +98,7 @@ const InstructorHomepage = () => {
         var token = session.tokens.idToken.toString();
         const userAtrributes = await fetchUserAttributes();
         const email = userAtrributes.email;
-        console.log("instructor email", email);
+        // console.log("instructor email", email);
         const response = await fetch(
           `${
             import.meta.env.VITE_API_ENDPOINT
@@ -102,7 +113,6 @@ const InstructorHomepage = () => {
         );
         if (response.ok) {
           const data = await response.json();
-          console.log(data);
           // setRows(getInstructorInfo(data));
           // setLoading(false);
           console.log("Instructors course data:", data);
@@ -227,7 +237,12 @@ const InstructorHomepage = () => {
           </PageContainer>
         }
       />
-      <Route path=":courseId/*" element={<CourseDetails />} />
+      <Route exact path=":courseId/*" element={<CourseDetails />} />
+      <Route
+        path=":courseId/edit-module/:moduleId"
+        element={<InstructorEditCourse />}
+      />
+      <Route path=":courseId/new-module" element={<InstructorNewModule />} />
     </Routes>
   );
 };

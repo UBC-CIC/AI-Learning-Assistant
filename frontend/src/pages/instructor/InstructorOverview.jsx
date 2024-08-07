@@ -4,7 +4,7 @@ import { useState } from "react";
 import {
   Typography,
   Box,
-  AppBar,
+  Grid,
   Toolbar,
   Table,
   TableBody,
@@ -13,14 +13,13 @@ import {
   TableHead,
   TableRow,
   Paper,
-  TextField,
   Button,
   TableFooter,
   TablePagination,
 } from "@mui/material";
 // components
 import Analytics from "./InstructorAnalytics";
-import EditCourse from "./InstructorEditCourse";
+import EditCourse from "./InstructorNewModule";
 import PromptSettings from "./PromptSettings";
 
 // populate with dummy data
@@ -79,15 +78,18 @@ export const InstructorOverview = () => {
     <div>
       <Box component="main" sx={{ flexGrow: 1, p: 3, marginTop: 1 }}>
         <Toolbar />
-        <Typography
-          color="black"
-          fontStyle="semibold"
-          textAlign="left"
-          variant="h6"
-        >
-          Your Courses
-        </Typography>
-        <Button> Add new course</Button>
+        <Grid container alignItems="center">
+          <Grid item>
+            <Typography
+              color="black"
+              fontStyle="semibold"
+              textAlign="left"
+              variant="h6"
+            >
+              Your Courses
+            </Typography>
+          </Grid>
+        </Grid>
         <Paper sx={{ width: "180%", overflow: "hidden", marginTop: 2 }}>
           <TableContainer>
             <Table aria-label="course table">

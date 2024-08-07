@@ -1,42 +1,75 @@
-import React from "react";
-import { useState } from "react";
-import FileUpload from "../../components/FileUpload";
-// MUI
-import {
-  Typography,
-  Box,
-  AppBar,
-  Toolbar,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  TextField,
-  Button,
-  TableFooter,
-  TablePagination,
-} from "@mui/material";
+import React, { useState, useEffect } from "react";
+import { useParams } from "react-router-dom";
+import { TextField, Button, Paper, Typography } from "@mui/material";
+import PageContainer from "../Container";
 
-export const EditCourse = () => {
+// Sample data (replace)
+const sampleModule = {
+  id: "1",
+  name: "Introduction to Course",
+  description: "Overview of the course.",
+  content: "This is the content of the module.",
+};
+
+const InstructorEditCourse = () => {
+  const { courseId, moduleId } = useParams();
+  const [module, setModule] = useState(null);
+
+  useEffect(() => {
+    // Fetch module data by ID (for now, use the sample data)
+    if (moduleId === sampleModule.id) {
+      setModule(sampleModule);
+    }
+  }, [moduleId]);
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setModule({ ...module, [name]: value });
+  };
+
+  const handleSave = () => {
+    // Save module data (for now, log to console)
+    console.log("Module saved:", module);
+  };
+
+  if (!module) return <Typography>Loading...</Typography>;
+
   return (
-    <Box component="main" sx={{ flexGrow: 1, p: 3, marginTop: 1 }}>
-      <Toolbar />
-      <Typography
-        color="black"
-        fontStyle="semibold"
-        textAlign="left"
-        variant="h6"
-      >
-        Course Name
-      </Typography>
-      <Paper sx={{ width: "100%", overflow: "hidden", marginTop: 2 }}>
-        <FileUpload />
+    <PageContainer>
+      <Paper style={{ padding: 16 }}>
+        <Typography variant="h6">Edit Module {moduleId} </Typography>
+        <TextField
+          label="Module Name"
+          name="name"
+          value={module.name}
+          onChange={handleInputChange}
+          fullWidth
+          margin="normal"
+        />
+        <TextField
+          label="Description"
+          name="description"
+          value={module.description}
+          onChange={handleInputChange}
+          fullWidth
+          margin="normal"
+        />
+        <TextField
+          label="Content"
+          name="content"
+          value={module.content}
+          onChange={handleInputChange}
+          fullWidth
+          multiline
+          rows={6}
+          margin="normal"
+        />
+        <Button variant="contained" color="primary" onClick={handleSave}>
+          Save
+        </Button>
       </Paper>
-    </Box>
+    </PageContainer>
   );
 };
 
-export default EditCourse;
+export default InstructorEditCourse;

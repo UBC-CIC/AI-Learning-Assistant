@@ -1,4 +1,4 @@
-import { useEffect, useState, useContext } from "react";
+import { useEffect, useState } from "react";
 import StudentHeader from "../../components/StudentHeader";
 import Container from "../Container";
 import { fetchAuthSession } from "aws-amplify/auth";
@@ -9,7 +9,6 @@ import "react-toastify/dist/ReactToastify.css";
 // MUI
 import {
   Card,
-  CardActions,
   CardContent,
   Button,
   Typography,
@@ -25,6 +24,7 @@ import {
   TextField,
 } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
+import { getCurrentUser } from 'aws-amplify/auth';
 
 import { useNavigate } from 'react-router-dom';
 // MUI theming
@@ -47,18 +47,22 @@ export const StudentHomepage = ({setCourse}) => {
 
   const enterCourse = (course) => {
     setCourse(course);
+    sessionStorage.clear();
+    sessionStorage.setItem("course", JSON.stringify(course));
     navigate(`/student_course`);
   }
 
   const handleJoin = async (code) => {
     try {
       const session = await fetchAuthSession();
+      const {signInDetails } = await getCurrentUser();
+
       var token = session.tokens.idToken.toString();
       const response = await fetch(
         `${
           import.meta.env.VITE_API_ENDPOINT
         }student/enroll_student?student_email=${encodeURIComponent(
-          session.tokens.signInDetails.loginId
+          signInDetails.loginId
         )}&course_access_code=${encodeURIComponent(code)}`,
         {
           method: "POST",
@@ -118,15 +122,19 @@ export const StudentHomepage = ({setCourse}) => {
   };
 
   useEffect(() => {
+    sessionStorage.removeItem('course')
+    sessionStorage.removeItem('module')
     const fetchCourses = async () => {
       try {
         const session = await fetchAuthSession();
+        const {signInDetails } = await getCurrentUser();
+
         var token = session.tokens.idToken.toString();
         const response = await fetch(
           `${
             import.meta.env.VITE_API_ENDPOINT
           }student/course?email=${encodeURIComponent(
-            session.tokens.signInDetails.loginId
+            signInDetails.loginId
           )}`,
           {
             method: "GET",

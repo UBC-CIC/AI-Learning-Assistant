@@ -129,7 +129,7 @@ exports.handler = async (event) => {
 					FROM "Enrolments"
 					JOIN "Courses" ON "Enrolments".course_id = "Courses".course_id
 					WHERE "Enrolments".user_email = ${email}
-          AND "Courses".course_status = TRUE
+          AND "Courses".course_student_access = TRUE
 					ORDER BY "Courses".course_name, "Courses".course_id;`;
           response.body = JSON.stringify(data);
         } else {
@@ -147,49 +147,50 @@ exports.handler = async (event) => {
           const courseId = event.queryStringParameters.course_id;
 
           data = await sqlConnection`
-            WITH EnrolmentData AS (
+            WITH StudentEnrollment AS (
                 SELECT 
                     "Enrolments".enrolment_id
                 FROM 
                     "Enrolments"
                 JOIN 
                     "Users" ON "Enrolments".user_email = "Users".user_email
-                JOIN 
-                    "Courses" ON "Enrolments".course_id = "Courses".course_id
                 WHERE 
                     "Users".user_email = ${studentEmail}
-                    AND "Courses".course_id = ${courseId}
+                    AND "Enrolments".course_id = ${courseId}
             )
             SELECT
-                "Enrolments".enrolment_id,
+                "Course_Concepts".concept_id,
+                "Course_Concepts".concept_name,
                 "Course_Modules".module_id,
                 "Course_Modules".module_name,
                 "Course_Modules".module_number,
-                "Course_Concepts".concept_id,
-                "Course_Concepts".concept_name,
                 "Student_Modules".student_module_id,
                 "Student_Modules".module_score,
                 "Student_Modules".last_accessed,
                 "Student_Modules".module_context_embedding
             FROM
-                "EnrolmentData"
+                "Course_Concepts"
             JOIN
-                "Course_Modules" ON "Course_Modules".course_id = ${courseId}
+                "Course_Modules" ON "Course_Modules".concept_id = "Course_Concepts".concept_id
             JOIN
-                "Course_Concepts" ON "Course_Modules".concept_id = "Course_Concepts".concept_id
+                "Courses" ON "Courses".course_id = "Course_Concepts".course_id
             LEFT JOIN
-                "Student_Modules" ON "Course_Modules".module_id = "Student_Modules".course_module_id AND "Student_Modules".enrolment_id = "EnrolmentData".enrolment_id;
+                "Student_Modules" ON "Student_Modules".course_module_id = "Course_Modules".module_id
+            LEFT JOIN
+                StudentEnrollment ON "Student_Modules".enrolment_id = StudentEnrollment.enrolment_id
+            WHERE
+                "Courses".course_id = ${courseId};
         `;
 
-          const enrolmentId = data[0]?.enrolment_id;
+          // const enrolmentId = data[0]?.enrolment_id;
 
-          if (enrolmentId) {
-            await sqlConnection`
-              CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-              INSERT INTO "User_Engagement_Log" (log_id, user_email, course_id, module_id, enrolment_id, timestamp, engagement_type)
-              VALUES (uuid_generate_v4(), ${studentEmail}, ${courseId}, null, ${enrolmentId}, CURRENT_TIMESTAMP, 'course access');
-            `;
-          }
+          // if (enrolmentId) {
+          //   await sqlConnection`
+          //     CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+          //     INSERT INTO "User_Engagement_Log" (log_id, user_email, course_id, module_id, enrolment_id, timestamp, engagement_type)
+          //     VALUES (uuid_generate_v4(), ${studentEmail}, ${courseId}, null, ${enrolmentId}, CURRENT_TIMESTAMP, 'course access');
+          //   `;
+          // }
 
           response.body = JSON.stringify(data);
         } else {

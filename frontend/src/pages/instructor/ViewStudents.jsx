@@ -17,6 +17,7 @@ import {
   OutlinedInput,
 } from "@mui/material";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 // populate with dummy data
 const createData = (name, email) => {
@@ -29,22 +30,13 @@ const initialRows = [
   createData("bob jognson", "bob.johnson@example.com"),
 ];
 
-// function getCourseInfo(coursesArray) {
-//   return coursesArray.map((course) =>
-//     createData(
-//       `${course.course_department} ${course.course_number}`,
-//       "placeholder email",
-//       "Active"
-//     )
-//   );
-// }
-
-export const ViewStudents = ({ courseId }) => {
+export const ViewStudents = ({ courseName, course_id }) => {
   const [rows, setRows] = useState(initialRows);
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   const handleSearchChange = (event) => {
     setSearchQuery(event.target.value);
@@ -63,9 +55,11 @@ export const ViewStudents = ({ courseId }) => {
     row.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // const handleCourseClick = (course) => {
-  //   setSelectedCourse(course);
-  // };
+  const handleRowClick = (student) => {
+    navigate(`/course/${course_id}/student/${student.name}`, {
+      state: { student },
+    });
+  };
 
   return (
     <div>
@@ -77,7 +71,7 @@ export const ViewStudents = ({ courseId }) => {
           textAlign="left"
           variant="h6"
         >
-          {courseId} Students
+          {courseName} Students
         </Typography>
         <Paper sx={{ width: "170%", overflow: "hidden", marginTop: 2 }}>
           <TableContainer>
@@ -104,7 +98,11 @@ export const ViewStudents = ({ courseId }) => {
                         page * rowsPerPage + rowsPerPage
                       )
                       .map((row, index) => (
-                        <TableRow key={index} style={{ cursor: "pointer" }}>
+                        <TableRow
+                          key={index}
+                          onClick={() => handleRowClick(row)}
+                          style={{ cursor: "pointer" }}
+                        >
                           <TableCell>{row.name}</TableCell>
                           <TableCell>{row.email}</TableCell>
                         </TableRow>

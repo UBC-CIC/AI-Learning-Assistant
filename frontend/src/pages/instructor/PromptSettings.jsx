@@ -9,7 +9,7 @@ import {
   Toolbar,
 } from "@mui/material";
 
-const PromptSettings = ({ courseId }) => {
+const PromptSettings = ({ courseName, course_id }) => {
   const [userPrompt, setUserPrompt] = useState("");
 
   const handleSave = () => {
@@ -37,7 +37,7 @@ const PromptSettings = ({ courseId }) => {
             variant="h6"
             gutterBottom
           >
-            {courseId} Prompt Settings
+            {courseName} Prompt Settings
           </Typography>
           <Typography variant="h8">
             example and brief explanation of how it works

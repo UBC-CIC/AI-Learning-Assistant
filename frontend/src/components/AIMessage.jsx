@@ -7,7 +7,7 @@ const AIMessage = ({message}) => {
     <div className=" ml-16 mb-4 mr-16">
       <div className="flex flex-row flex-start">
         <AccountBoxIcon  fontSize="large" style={{ color: "#5536DA" }} />{" "}
-        <div className=" text-start ml-4">{message}</div>
+        <div className=" text-start ml-4 text-black">{message}</div>
       </div>
     </div>
   );

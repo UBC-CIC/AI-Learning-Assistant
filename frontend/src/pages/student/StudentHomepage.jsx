@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useContext } from "react";
 import StudentHeader from "../../components/StudentHeader";
 import Container from "../Container";
 import { fetchAuthSession } from "aws-amplify/auth";
@@ -25,6 +25,8 @@ import {
   TextField,
 } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
+
+import { useNavigate } from 'react-router-dom';
 // MUI theming
 const { palette } = createTheme();
 const { augmentColor } = palette;
@@ -36,9 +38,17 @@ const theme = createTheme({
   },
 });
 
-export const StudentHomepage = () => {
+export const StudentHomepage = ({setCourse}) => {
+
+  const navigate = useNavigate();
+
   const [courses, setCourses] = useState([]);
   const [open, setOpen] = useState(false);
+
+  const enterCourse = (course) => {
+    setCourse(course);
+    navigate(`/course`);
+  }
 
   const handleJoin = async (code) => {
     try {
@@ -48,8 +58,8 @@ export const StudentHomepage = () => {
         `${
           import.meta.env.VITE_API_ENDPOINT
         }student/enroll_student?student_email=${encodeURIComponent(
-          session.tokens.signInDetails.loginId)
-        }&course_access_code=${encodeURIComponent(code)}`,
+          session.tokens.signInDetails.loginId
+        )}&course_access_code=${encodeURIComponent(code)}`,
         {
           method: "POST",
           headers: {
@@ -60,8 +70,7 @@ export const StudentHomepage = () => {
       );
       if (response.ok) {
         const data = await response.json();
-        console.log(data);
-        toast.success('🦄 Successfully Joined Course!', {
+        toast.success("🦄 Successfully Joined Course!", {
           position: "top-center",
           autoClose: 1000,
           hideProgressBar: false,
@@ -70,11 +79,11 @@ export const StudentHomepage = () => {
           draggable: true,
           progress: undefined,
           theme: "colored",
-          });
+        });
         handleClose();
       } else {
         console.error("Failed to fetch courses:", response.statusText);
-        toast.error('Failed to Join Course', {
+        toast.error("Failed to Join Course", {
           position: "top-center",
           autoClose: 1000,
           hideProgressBar: false,
@@ -83,11 +92,11 @@ export const StudentHomepage = () => {
           draggable: true,
           progress: undefined,
           theme: "colored",
-          });
+        });
       }
     } catch (error) {
       console.error("Error fetching courses:", error);
-      toast.error('Failed to Join Course', {
+      toast.error("Failed to Join Course", {
         position: "top-center",
         autoClose: 1000,
         hideProgressBar: false,
@@ -96,7 +105,7 @@ export const StudentHomepage = () => {
         draggable: true,
         progress: undefined,
         theme: "colored",
-        });
+      });
     }
   };
 
@@ -130,7 +139,6 @@ export const StudentHomepage = () => {
         if (response.ok) {
           const data = await response.json();
           setCourses(data);
-          console.log("course data:", data);
         } else {
           console.error("Failed to fetch course:", response.statusText);
         }
@@ -182,39 +190,43 @@ export const StudentHomepage = () => {
                     alignItems: "flex-start",
                   }}
                 >
-                  <Card
-                    sx={{
-                      maxWidth: 1000,
-                      minWidth: 500,
-                      bgcolor: "bg",
-                    }}
-                  >
-                    <CardContent>
-                      <Grid container alignItems="center">
-                        <Grid item xs={8}>
-                          <Typography
-                            variant="h6"
-                            component="div"
-                            sx={{ textAlign: "left", fontWeight: "medium" }}
-                          >
-                            Course Name
-                          </Typography>
+                  {courses.map((course, index) => (
+                    <Card
+                      key={index}
+                      sx={{
+                        maxWidth: 1000,
+                        minWidth: 500,
+                        bgcolor: "bg",
+                      }}
+                    >
+                      <CardContent>
+                        <Grid container alignItems="center">
+                          <Grid item xs={8}>
+                            <Typography
+                              variant="h6"
+                              component="div"
+                              sx={{ textAlign: "left", fontWeight: "medium" }}
+                            >
+                              {course.course_department} {course.course_number}
+                            </Typography>
+                          </Grid>
+                          <Grid item xs={4} sx={{ textAlign: "right" }}>
+                            <Button
+                              size="small"
+                              sx={{
+                                bgcolor: "purple",
+                                color: "white",
+                                ":hover": { bgcolor: "purple" },
+                              }}
+                              onClick={()=>enterCourse(course)}
+                            >
+                              Continue
+                            </Button>
+                          </Grid>
                         </Grid>
-                        <Grid item xs={4} sx={{ textAlign: "right" }}>
-                          <Button
-                            size="small"
-                            sx={{
-                              bgcolor: "purple",
-                              color: "white",
-                              ":hover": { bgcolor: "purple" },
-                            }}
-                          >
-                            Continue
-                          </Button>
-                        </Grid>
-                      </Grid>
-                    </CardContent>
-                  </Card>
+                      </CardContent>
+                    </Card>
+                  ))}
                 </Box>
               </Stack>
             </Grid>

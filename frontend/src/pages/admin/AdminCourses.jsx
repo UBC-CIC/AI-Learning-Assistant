@@ -1,6 +1,5 @@
 import { useEffect } from "react";
 import { fetchAuthSession } from "aws-amplify/auth";
-
 // MUI
 import {
   Typography,

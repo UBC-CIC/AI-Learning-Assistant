@@ -47,7 +47,7 @@ export const StudentHomepage = ({setCourse}) => {
 
   const enterCourse = (course) => {
     setCourse(course);
-    navigate(`/course`);
+    navigate(`/student_course`);
   }
 
   const handleJoin = async (code) => {

@@ -1,5 +1,5 @@
 import React from "react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 // MUI
 import {
   Drawer,
@@ -14,9 +14,19 @@ import HomeIcon from "@mui/icons-material/Home";
 import ViewTimelineIcon from "@mui/icons-material/ViewTimeline";
 import EditIcon from "@mui/icons-material/Edit";
 import PsychologyIcon from "@mui/icons-material/Psychology";
-import { useNavigate } from "react-router-dom";
+import GroupIcon from "@mui/icons-material/Group";
 
 const InstructorSidebar = ({ setSelectedComponent }) => {
+  const navigate = useNavigate();
+
+  const handleNavigation = (component) => {
+    if (component === "InstructorAllCourses") {
+      navigate("/home"); // Navigate to homepage
+    } else {
+      setSelectedComponent(component);
+    }
+  };
+
   return (
     <Drawer
       variant="permanent"
@@ -31,17 +41,17 @@ const InstructorSidebar = ({ setSelectedComponent }) => {
         <List>
           <ListItem
             button
-            onClick={() => setSelectedComponent("InstructorOverview")}
+            onClick={() => handleNavigation("InstructorAllCourses")}
           >
             <ListItemIcon>
               <HomeIcon />
             </ListItemIcon>
-            <ListItemText primary="Overview" />
+            <ListItemText primary="All Courses" />
           </ListItem>
           <Divider />
           <ListItem
             button
-            onClick={() => setSelectedComponent("InstructorAnalytics")}
+            onClick={() => handleNavigation("InstructorAnalytics")}
           >
             <ListItemIcon>
               <ViewTimelineIcon />
@@ -51,7 +61,7 @@ const InstructorSidebar = ({ setSelectedComponent }) => {
           <Divider />
           <ListItem
             button
-            onClick={() => setSelectedComponent("InstructorEditCourse")}
+            onClick={() => handleNavigation("InstructorEditCourse")}
           >
             <ListItemIcon>
               <EditIcon />
@@ -59,14 +69,18 @@ const InstructorSidebar = ({ setSelectedComponent }) => {
             <ListItemText primary="Edit Course" />
           </ListItem>
           <Divider />
-          <ListItem
-            button
-            onClick={() => setSelectedComponent("PromptSettings")}
-          >
+          <ListItem button onClick={() => handleNavigation("PromptSettings")}>
             <ListItemIcon>
               <PsychologyIcon />
             </ListItemIcon>
             <ListItemText primary="Prompt Settings" />
+          </ListItem>
+          <Divider />
+          <ListItem button onClick={() => handleNavigation("ViewStudents")}>
+            <ListItemIcon>
+              <GroupIcon />
+            </ListItemIcon>
+            <ListItemText primary="View Students" />
           </ListItem>
         </List>
       </Box>

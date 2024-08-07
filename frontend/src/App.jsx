@@ -83,7 +83,6 @@ function App() {
           const group = tokens.accessToken.payload["cognito:groups"];
           setUser(tokens.accessToken.payload);
           setUserGroup(group || []);
-          console.log("User belongs to following groups: " + group);
           console.log(
             "auth token payload",
             tokens.accessToken.payload["cognito:groups"]
@@ -115,18 +114,16 @@ function App() {
   };
 
   return (
-      <Router>
-        <Routes>
-          <Route
-            path="/"
-            element={user ? <Navigate to="/home" /> : <Login />}
-          />
-          <Route path="/chat" element={<StudentChat />} />
-          <Route path="/course" element={<CourseView course = {course} setModuleId = {moduleId}/>} />
-          <Route path="/home" element={getHomePage()} />
-        </Routes>
-      </Router>
-  );
+
+    <Router>
+      <Routes>
+        <Route path="/" element={user ? <Navigate to="/home" /> : <Login />} />
+        <Route path="/chat" element={<StudentChat />} />
+        <Route path="/student_course" element={<CourseView course = {course} setModuleId = {moduleId}/>} />
+        <Route path="/home" element={getHomePage()} />
+        <Route path="/course/*" element={<InstructorHomepage />} />
+      </Routes>
+    </Router>  );
 }
 
 export default App;

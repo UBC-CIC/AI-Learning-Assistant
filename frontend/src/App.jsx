@@ -17,6 +17,7 @@ import StudentHomepage from "./pages/student/StudentHomepage";
 import StudentChat from "./pages/student/StudentChat";
 import AdminHomepage from "./pages/admin/AdminHomepage";
 import InstructorHomepage from "./pages/instructor/InstructorHomepage";
+import CourseView from "./pages/student/CourseView";
 // functions
 
 Amplify.configure({
@@ -41,6 +42,8 @@ function App() {
   const [user, setUser] = useState(null);
   const [userGroup, setUserGroup] = useState(null);
   const [userInfo, setUserInfo] = useState({});
+  const [course, setCourse] = useState(null);
+  const [moduleId, setModuleId] = useState(null);
 
   //get user info and render page based on role
 
@@ -102,24 +105,25 @@ function App() {
     ) {
       return <AdminHomepage />;
     } else if (userGroup && userGroup.includes("instructor")) {
-      return <InstructorHomepage />;
+      return <InstructorHomepage/>;
     } else if (userGroup && userGroup.includes("student")) {
-      return <StudentHomepage />;
+      return <StudentHomepage setCourse = {setCourse}/>;
     } else {
       return <Login />;
     }
   };
 
   return (
+
     <Router>
       <Routes>
         <Route path="/" element={user ? <Navigate to="/home" /> : <Login />} />
         <Route path="/chat" element={<StudentChat />} />
+        <Route path="/student_course" element={<CourseView course = {course} setModuleId = {moduleId}/>} />
         <Route path="/home" element={getHomePage()} />
         <Route path="/course/*" element={<InstructorHomepage />} />
       </Routes>
-    </Router>
-  );
+    </Router>  );
 }
 
 export default App;

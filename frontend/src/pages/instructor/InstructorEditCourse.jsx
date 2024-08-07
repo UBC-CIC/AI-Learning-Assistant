@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { TextField, Button, Paper, Typography } from "@mui/material";
 import PageContainer from "../Container";
 
@@ -12,8 +12,17 @@ const sampleModule = {
 };
 
 const InstructorEditCourse = () => {
-  const { courseId, moduleId } = useParams();
+  const { courseName, moduleId } = useParams();
   const [module, setModule] = useState(null);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { lastVisitedComponent } = location.state || {};
+
+  const handleBackClick = () => {
+    navigate(`/course/${courseName}`, {
+      state: { courseName, lastVisitedComponent: "InstructorModules" },
+    });
+  };
 
   useEffect(() => {
     // Fetch module data by ID (for now, use the sample data)
@@ -64,6 +73,9 @@ const InstructorEditCourse = () => {
           rows={6}
           margin="normal"
         />
+        <Button variant="contained" color="primary" onClick={handleBackClick}>
+          Cancel
+        </Button>
         <Button variant="contained" color="primary" onClick={handleSave}>
           Save
         </Button>

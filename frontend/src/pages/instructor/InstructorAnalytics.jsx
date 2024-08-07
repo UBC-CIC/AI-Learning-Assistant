@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { fetchAuthSession } from "aws-amplify/auth";
 import {
   Container,
   Typography,
@@ -54,8 +55,42 @@ const modulesData = [
   },
 ];
 
-const Analytics = ({ courseId }) => {
+const InstructorAnalytics = ({ courseName, course_id }) => {
   const [value, setValue] = useState(0);
+  console.log("course name", courseName);
+  console.log("course id", course_id);
+
+  // retrieve analytics data
+  useEffect(() => {
+    const fetchAnalytics = async () => {
+      try {
+        const session = await fetchAuthSession();
+        var token = session.tokens.idToken.toString();
+        const response = await fetch(
+          `${
+            import.meta.env.VITE_API_ENDPOINT
+          }instructor/analytics?course_id=${encodeURIComponent(course_id)}`,
+          {
+            method: "GET",
+            headers: {
+              Authorization: token,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+        if (response.ok) {
+          const data = await response.json();
+          console.log("Course analytics:", data);
+        } else {
+          console.error("Failed to fetch analytics:", response.statusText);
+        }
+      } catch (error) {
+        console.error("Error fetching analytics:", error);
+      }
+    };
+
+    fetchAnalytics();
+  }, []);
 
   const handleChange = (event, newValue) => {
     setValue(newValue);
@@ -70,7 +105,7 @@ const Analytics = ({ courseId }) => {
         variant="h6"
         gutterBottom
       >
-        {courseId}
+        {courseName}
       </Typography>
       <Box mb={4}>
         <Typography color="black" textAlign="left" paddingLeft={10}>
@@ -148,4 +183,4 @@ const Analytics = ({ courseId }) => {
   );
 };
 
-export default Analytics;
+export default InstructorAnalytics;

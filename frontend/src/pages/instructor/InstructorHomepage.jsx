@@ -1,5 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { Routes, Route, useNavigate, useParams } from "react-router-dom";
+import {
+  Routes,
+  Route,
+  useNavigate,
+  useParams,
+  useLocation,
+} from "react-router-dom";
 import { fetchAuthSession, fetchUserAttributes } from "aws-amplify/auth";
 import {
   Typography,
@@ -27,38 +33,39 @@ import PromptSettings from "./PromptSettings";
 import ViewStudents from "./ViewStudents";
 import InstructorModules from "./InstructorModules";
 import InstructorNewModule from "./InstructorNewModule";
-
-const createData = (course, date, status) => {
-  return { course, date, status };
-};
-
-const initialRows = [
-  createData("CPSC221", "Sept - Dec 2023", "Active"),
-  createData("CPSC210", "Jan - April 2023", "Inactive"),
-  createData("CPSC210", "Sept - Dec 2023", "Active"),
-];
+import StudentDetails from "./StudentDetails";
 
 // course details page
 const CourseDetails = () => {
-  const { courseId } = useParams();
+  const location = useLocation();
+  console.log("Location object:", location); // Debugging line
+  const { courseName } = useParams();
   const [selectedComponent, setSelectedComponent] = useState(
     "InstructorAnalytics"
   );
+  const { course_id } = location.state;
 
   const renderComponent = () => {
     switch (selectedComponent) {
       case "InstructorAnalytics":
-        return <InstructorAnalytics courseId={courseId} />;
+        return (
+          <InstructorAnalytics courseName={courseName} course_id={course_id} />
+        );
       case "InstructorEditCourse":
-        return <InstructorModules courseId={courseId} />;
+        return (
+          <InstructorModules courseName={courseName} course_id={course_id} />
+        );
       case "PromptSettings":
-        return <PromptSettings courseId={courseId} />;
+        return <PromptSettings courseName={courseName} course_id={course_id} />;
       case "ViewStudents":
-        return <ViewStudents courseId={courseId} />;
+        return <ViewStudents courseName={courseName} course_id={course_id} />;
       default:
-        return <InstructorAnalytics courseId={courseId} />;
+        return (
+          <InstructorAnalytics courseName={courseName} course_id={course_id} />
+        );
     }
   };
+
   return (
     <PageContainer>
       <AppBar
@@ -70,22 +77,12 @@ const CourseDetails = () => {
       </AppBar>
       <InstructorSidebar setSelectedComponent={setSelectedComponent} />
       {renderComponent()}
-      {/* <Routes>
-        <Route
-          path=":courseId/edit-module/:moduleId"
-          element={<InstructorEditCourse />}
-        />
-        <Route
-          path=":course/courseId/new-module"
-          element={<InstructorNewModule />}
-        />
-      </Routes> */}
     </PageContainer>
   );
 };
 
 const InstructorHomepage = () => {
-  const [rows, setRows] = useState(initialRows);
+  const [rows, setRows] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
@@ -98,7 +95,6 @@ const InstructorHomepage = () => {
         var token = session.tokens.idToken.toString();
         const userAtrributes = await fetchUserAttributes();
         const email = userAtrributes.email;
-        // console.log("instructor email", email);
         const response = await fetch(
           `${
             import.meta.env.VITE_API_ENDPOINT
@@ -113,7 +109,13 @@ const InstructorHomepage = () => {
         );
         if (response.ok) {
           const data = await response.json();
-          // setRows(getInstructorInfo(data));
+          const formattedData = data.map((course) => ({
+            course: course.course_name,
+            date: new Date().toLocaleDateString(), // REPLACE
+            status: course.course_student_access ? "Active" : "Inactive",
+            id: course.course_id,
+          }));
+          setRows(formattedData);
           // setLoading(false);
           console.log("Instructors course data:", data);
         } else {
@@ -144,8 +146,9 @@ const InstructorHomepage = () => {
     row.course.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleRowClick = (courseId) => {
-    navigate(`/course/${courseId}`);
+  const handleRowClick = (courseName, course_id) => {
+    navigate(`/course/${courseName}`, { state: { course_id } });
+   // console.log("state", state);
   };
 
   return (
@@ -197,7 +200,7 @@ const InstructorHomepage = () => {
                         .map((row, index) => (
                           <TableRow
                             key={index}
-                            onClick={() => handleRowClick(row.course)}
+                            onClick={() => handleRowClick(row.course, row.id)}
                             style={{ cursor: "pointer" }}
                           >
                             <TableCell>{row.course}</TableCell>
@@ -237,12 +240,16 @@ const InstructorHomepage = () => {
           </PageContainer>
         }
       />
-      <Route exact path=":courseId/*" element={<CourseDetails />} />
+      <Route exact path=":courseName/*" element={<CourseDetails />} />
       <Route
-        path=":courseId/edit-module/:moduleId"
+        path=":courseName/edit-module/:moduleId"
         element={<InstructorEditCourse />}
       />
-      <Route path=":courseId/new-module" element={<InstructorNewModule />} />
+      <Route path=":courseName/new-module" element={<InstructorNewModule />} />
+      <Route
+        path=":courseName/student/:studentId"
+        element={<StudentDetails />}
+      />
     </Routes>
   );
 };

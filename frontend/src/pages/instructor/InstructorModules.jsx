@@ -14,7 +14,7 @@ import {
   Typography,
 } from "@mui/material";
 
-const InstructorModules = ({ courseId }) => {
+const InstructorModules = ({ courseName, course_id }) => {
   const navigate = useNavigate();
 
   // Sample data for modules
@@ -32,11 +32,11 @@ const InstructorModules = ({ courseId }) => {
   const [accessCode, setAccessCode] = useState("111111");
 
   const handleEditClick = (moduleId) => {
-    navigate(`/course/${courseId}/edit-module/${moduleId}`);
+    navigate(`/course/${courseName}/edit-module/${moduleId}`);
   };
 
   const handleCreateModuleClick = () => {
-    navigate(`/course/${courseId}/new-module`);
+    navigate(`/course/${courseName}/new-module`);
   };
 
   const handleGenerateAccessCode = () => {
@@ -57,7 +57,7 @@ const InstructorModules = ({ courseId }) => {
         textAlign="left"
         variant="h6"
       >
-        {courseId}
+        {courseName}
       </Typography>
       <Paper sx={{ width: "100%", overflow: "hidden", marginTop: 2 }}>
         <Table>

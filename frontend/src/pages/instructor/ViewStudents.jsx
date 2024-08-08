@@ -16,8 +16,9 @@ import {
   TablePagination,
   OutlinedInput,
 } from "@mui/material";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { fetchAuthSession } from "aws-amplify/auth";
 
 // populate with dummy data
 const createData = (name, email) => {
@@ -37,6 +38,40 @@ export const ViewStudents = ({ courseName, course_id }) => {
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+
+  console.log(course_id);
+
+  // retrieve analytics data
+  useEffect(() => {
+    const fetchStudents = async () => {
+      try {
+        const session = await fetchAuthSession();
+        var token = session.tokens.idToken.toString();
+        const response = await fetch(
+          `${
+            import.meta.env.VITE_API_ENDPOINT
+          }instructor/view_students?course_id=${encodeURIComponent(course_id)}`,
+          {
+            method: "GET",
+            headers: {
+              Authorization: token,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+        if (response.ok) {
+          const data = await response.json();
+          console.log("Students in course:", data);
+        } else {
+          console.error("Failed to fetch students:", response.statusText);
+        }
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      }
+    };
+
+    fetchStudents();
+  }, []);
 
   const handleSearchChange = (event) => {
     setSearchQuery(event.target.value);

@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import {
   Box,
   TextField,
@@ -10,12 +11,16 @@ import {
   IconButton,
 } from "@mui/material";
 import { CloudUpload as CloudUploadIcon } from "@mui/icons-material";
+import DeleteIcon from "@mui/icons-material/Delete";
 
 const FileUpload = () => {
   const [moduleName, setModuleName] = useState("");
-  const [course, setCourse] = useState("");
+  const [concept, setConcept] = useState("");
   const [additionalContent, setAdditionalContent] = useState("");
   const [files, setFiles] = useState([]);
+  const [imagesWithText, setImagesWithText] = useState([]);
+  const navigate = useNavigate();
+  const { courseName } = useParams();
 
   const handleFileChange = (event) => {
     setFiles([...files, ...Array.from(event.target.files)]);
@@ -25,13 +30,37 @@ const FileUpload = () => {
     event.preventDefault();
     // Handle form submission logic here
     console.log("Module Name:", moduleName);
-    console.log("Course:", course);
+    console.log("Concept:", concept);
     console.log("Additional Content:", additionalContent);
-    console.log("Files:", files);
+    console.log("Files and images:", files, imagesWithText);
+  };
+
+  const handleBackClick = () => {
+    navigate(`/course/${courseName}`, {
+      state: { courseName, lastVisitedComponent: "InstructorModules" },
+    });
   };
 
   const handleRemoveFile = (index) => {
     setFiles(files.filter((_, i) => i !== index));
+  };
+
+  const handleImageWithTextChange = (index, field, value) => {
+    const updatedImages = [...imagesWithText];
+    updatedImages[index][field] = value;
+    setImagesWithText(updatedImages);
+  };
+
+  const handleAddImageWithText = () => {
+    setImagesWithText([
+      ...imagesWithText,
+      { id: Date.now(), image: "", text: "" },
+    ]);
+  };
+
+  const handleRemoveImageWithText = (id) => {
+    const updatedImages = imagesWithText.filter((img) => img.id !== id);
+    setImagesWithText(updatedImages);
   };
 
   return (
@@ -54,9 +83,9 @@ const FileUpload = () => {
         <Grid item xs={6}>
           <TextField
             fullWidth
-            label="Course"
-            value={course}
-            onChange={(e) => setCourse(e.target.value)}
+            label="Concept"
+            value={concept}
+            onChange={(e) => setConcept(e.target.value)}
             variant="outlined"
             required
           />
@@ -132,6 +161,67 @@ const FileUpload = () => {
           )}
         </Grid>
         <Grid item xs={12}>
+          <Box
+            sx={{
+              border: 1,
+              borderRadius: 3,
+              borderColor: "grey.400",
+              p: 1,
+              marginY: 2,
+            }}
+          >
+            <Typography variant="h6" style={{ marginTop: 16 }} sx={{ p: 1 }}>
+              Images with Text
+            </Typography>
+
+            {imagesWithText.map((img, index) => (
+              <Grid container spacing={2} key={img.id}>
+                <Grid item xs={12}>
+                  <input
+                    type="file"
+                    sx={{ paddingLeft: 3 }}
+                    onChange={(e) =>
+                      handleImageWithTextChange(
+                        index,
+                        "image",
+                        e.target.files[0]
+                      )
+                    }
+                  />
+                </Grid>
+
+                <Grid item xs={12}>
+                  <TextField
+                    label="Text"
+                    value={img.text}
+                    onChange={(e) =>
+                      handleImageWithTextChange(index, "text", e.target.value)
+                    }
+                    sx={{ width: "50%" }}
+                    margin="normal"
+                  />
+                  <IconButton onClick={() => handleRemoveImageWithText(img.id)}>
+                    <DeleteIcon />
+                  </IconButton>
+                </Grid>
+              </Grid>
+            ))}
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={handleAddImageWithText}
+            >
+              Add Another
+            </Button>
+          </Box>
+        </Grid>
+
+        <Grid item xs={6}>
+          <Button variant="contained" color="primary" onClick={handleBackClick}>
+            Cancel
+          </Button>
+        </Grid>
+        <Grid item xs={6}>
           <Button
             type="submit"
             variant="contained"

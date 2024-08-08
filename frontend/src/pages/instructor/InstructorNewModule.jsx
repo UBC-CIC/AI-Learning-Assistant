@@ -10,11 +10,7 @@ import { Typography, Box, AppBar, Toolbar, Paper } from "@mui/material";
 export const InstructorNewModule = ({ courseId }) => {
   return (
     <PageContainer>
-      <Box
-        component="main"
-        sx={{ flexGrow: 1, p: 3, marginTop: 1, overflow: "auto" }}
-      >
-        <Toolbar />
+      <Box component="main" sx={{ flexGrow: 1, p: 3, overflow: "auto" }}>
         <Typography
           color="black"
           fontStyle="semibold"
@@ -23,7 +19,10 @@ export const InstructorNewModule = ({ courseId }) => {
         >
           {courseId}
         </Typography>
-        <Paper sx={{ width: "100%", overflow: "hidden", marginTop: 2 }}>
+        <Typography variant="h6" color="black" textAlign="center" padding={1}>
+          Create new module
+        </Typography>
+        <Paper sx={{ width: "100%", overflow: "hidden", marginTop: 1 }}>
           <FileUpload />
         </Paper>
       </Box>

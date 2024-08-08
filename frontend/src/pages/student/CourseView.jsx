@@ -1,9 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { fetchAuthSession } from "aws-amplify/auth";
+import { getCurrentUser } from "aws-amplify/auth";
+
 import { BiCheck } from "react-icons/bi";
 import { FaInfoCircle } from "react-icons/fa";
 
-import { Button } from "@mui/material";
+import { Button, Stepper, Step, StepLabel } from "@mui/material";
+import { useNavigate } from "react-router-dom";
 const sampleData = [
   {
     concept_id: "1aaf566b-6800-48f6-91ac-67e43bf86c9b",
@@ -126,20 +129,35 @@ function getUniqueConceptNames(data) {
   );
 }
 
-export const CourseView = ({ course, setModuleId }) => {
+export const CourseView = ({ course, setModule, setCourse }) => {
+  console.log(course);
   const [concepts, setConcepts] = useState([]);
   const [data, setData] = useState([]);
 
+  const navigate = useNavigate();
+  const enterModule = (module) => {
+    setModule(module);
+    sessionStorage.setItem("module", JSON.stringify(module));
+    navigate(`/student_chat`);
+  };
+
+  const handleBack = () => {
+    sessionStorage.removeItem("course");
+    navigate("/home");
+  };
+
   useEffect(() => {
-    const fetchName = async () => {
+    const fetchCoursePage = async () => {
       try {
         const session = await fetchAuthSession();
+        const { signInDetails } = await getCurrentUser();
+
         const token = session.tokens.idToken.toString();
         const response = await fetch(
           `${
             import.meta.env.VITE_API_ENDPOINT
           }student/course_page?email=${encodeURIComponent(
-            session.tokens.signInDetails.loginId
+            signInDetails.loginId
           )}&course_id=${encodeURIComponent(course.course_id)}`,
           {
             method: "GET",
@@ -150,7 +168,7 @@ export const CourseView = ({ course, setModuleId }) => {
           }
         );
         if (response.ok) {
-          const data = sampleData; // Replace with actual data fetching if needed
+          const data = await response.json();
           setData(data);
           setConcepts(getUniqueConceptNames(data));
         } else {
@@ -160,15 +178,29 @@ export const CourseView = ({ course, setModuleId }) => {
         console.error("Error fetching name:", error);
       }
     };
-
-    fetchName();
+    fetchCoursePage();
   }, [course]);
-
+  useEffect(() => {
+    sessionStorage.removeItem("module")
+    const storedCourse = sessionStorage.getItem("course");
+    if (storedCourse) {
+      setCourse(JSON.parse(storedCourse));
+    }
+  }, [setCourse]);
+  if (!course) {
+    return <div>Loading...</div>; // Or any placeholder UI
+  }
   return (
     <div className="bg-[#F8F9FD] w-screen h-screen">
       <div>
         <header className="bg-[#F8F9FD] p-4 flex justify-between items-center max-h-20">
-          <div className="text-black text-4xl font-roboto font-semibold p-4">
+          <div className="text-black text-4xl font-roboto font-semibold p-4 flex flex-row">
+            <img
+              onClick={() => handleBack()}
+              className="mt-1 mr-2 w-8 h-8 cursor-pointer"
+              src="./ArrowCircleDownRounded.png"
+              alt="back"
+            />
             {course.course_department} {course.course_number}
           </div>
         </header>
@@ -225,38 +257,14 @@ export const CourseView = ({ course, setModuleId }) => {
                         Complete
                       </div>
                     ) : (
-                      <div className="px-4 py-2">
-                        Incomplete
-                      </div>
+                      <div className="px-4 py-2">Incomplete</div>
                     )}
-                    <div className="bg-[#9747FF] text-white px-4 rounded py-2 hover:bg-purple-700">
+                    <button
+                      className="bg-[#9747FF] text-white px-4 rounded py-2 hover:bg-purple-700"
+                      onClick={() => enterModule(entry)}
+                    >
                       Review
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-            {data.map((entry, index) => (
-              <div key={entry.module_id + index}>
-                <div className=" flex flex-row justify-between text-black text-lg ml-32 font-light">
-                  <div className="flex flex-row gap-2">
-                    <FaInfoCircle style={{ marginTop: "6px" }} />
-                    {entry.module_name}
-                  </div>
-                  <div className="flex flex-row gap-x-48 mr-[390px]">
-                    <div>{entry.module_score}%</div>
-                    {entry.module_score === 100 ? (
-                      <div className="bg-[#2E7D32] text-white text-light px-4 py-2 rounded">
-                        Complete
-                      </div>
-                    ) : (
-                      <div className="px-4 py-2">
-                        Incomplete
-                      </div>
-                    )}
-                    <div className="bg-[#9747FF] text-white px-4 rounded py-2 hover:bg-purple-700">
-                      Review
-                    </div>
+                    </button>
                   </div>
                 </div>
               </div>

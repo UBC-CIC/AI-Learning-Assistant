@@ -43,8 +43,7 @@ function App() {
   const [userGroup, setUserGroup] = useState(null);
   const [userInfo, setUserInfo] = useState({});
   const [course, setCourse] = useState(null);
-  const [moduleId, setModuleId] = useState(null);
-
+  const [module, setModule] = useState(null);
   //get user info and render page based on role
 
   // useEffect(() => {
@@ -74,6 +73,7 @@ function App() {
 
   //   getCognitoUser();
   // }, []);
+
 
   useEffect(() => {
     const fetchAuthData = async () => {
@@ -118,8 +118,8 @@ function App() {
     <Router>
       <Routes>
         <Route path="/" element={user ? <Navigate to="/home" /> : <Login />} />
-        <Route path="/chat" element={<StudentChat />} />
-        <Route path="/student_course" element={<CourseView course = {course} setModuleId = {moduleId}/>} />
+        <Route path="/student_chat*" element={<StudentChat course = {course} module = {module} setModule={setModule}/>} />
+        <Route path="/student_course*" element={<CourseView course = {course} setModule = {setModule} setCourse = {setCourse}/>} />
         <Route path="/home" element={getHomePage()} />
         <Route path="/course/*" element={<InstructorHomepage />} />
       </Routes>

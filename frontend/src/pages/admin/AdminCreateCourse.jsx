@@ -360,37 +360,6 @@ export const AdminCreateCourse = ( {setSelectedComponent} ) => {
               <Chip key={value} label={value} />
             ))}
           </Box>
-          {/* <div>
-          <label style={labelStyles}>
-            Assign Instructors:
-            <select
-              multiple
-              value={selectedInstructors}
-              onChange={handleChange}
-              style={inputStyles}
-            >
-              {instructors.map((instructor) => (
-                <option key={instructor.id} value={instructor.name}>
-                  {instructor.name}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-        <div
-          style={{
-            display: "flex",
-            flexWrap: "wrap",
-            gap: "0.5rem",
-            margin: "8px 0",
-            backgroundColor: "transparent",
-            color: "black",
-          }}
-        >
-          {selectedInstructors.map((value) => (
-            <Chip key={value} label={value} />
-          ))}
-        </div> */}
           <Button
             variant="contained"
             color="primary"

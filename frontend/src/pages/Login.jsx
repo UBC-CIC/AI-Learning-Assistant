@@ -22,6 +22,9 @@ import {
   Box,
   Typography,
 } from "@mui/material";
+
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 // login assets
 import loginframe from "../assets/loginframe.png";
 import PageContainer from "./Container";
@@ -149,6 +152,16 @@ export const Login = () => {
         window.location.reload();
       }
     } catch (error) {
+      toast.error(`Error logging in: ${error}`, {
+        position: "top-center",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "colored",
+      });
       console.log("Error logging in:", error);
       setLoading(false);
     }
@@ -186,6 +199,16 @@ export const Login = () => {
         }
       }
     } catch (error) {
+      toast.error(`Error logging in: ${error}`, {
+        position: "top-center",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "colored",
+      });
       console.log("Error signing up:", error);
       setLoading(false);
       setError(error.message);
@@ -200,6 +223,16 @@ export const Login = () => {
 
     if (newPassword !== confirmNewPassword) {
       setPasswordError("Passwords do not match!");
+      toast.error(`Passwords do not match!`, {
+        position: "top-center",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "colored",
+      });
       return;
     }
     setPasswordError("");
@@ -669,7 +702,7 @@ export const Login = () => {
               <div className="flex flex-col items-center justify-center">
                 <form onSubmit={handleConfirmSignUp}>
                   <input
-                    className="input input-bordered mt-1 h-10 w-full text-xs"
+                    className="input input-bordered mt-1 h-10 w-full text-xs bg-gray-200 border border-gray-400 rounded pl-2"
                     name="confirmationCode"
                     placeholder="Confirmation Code"
                     type="password"
@@ -816,6 +849,18 @@ export const Login = () => {
           )}
         </Grid>
       </PageContainer>
+      <ToastContainer
+        position="top-center"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="colored"
+      />
     </ThemeProvider>
   );
 };

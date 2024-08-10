@@ -22,11 +22,12 @@ import {
   DialogContentText,
   DialogTitle,
   TextField,
+  CardActions,
 } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
-import { getCurrentUser } from 'aws-amplify/auth';
+import { getCurrentUser } from "aws-amplify/auth";
 
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from "react-router-dom";
 // MUI theming
 const { palette } = createTheme();
 const { augmentColor } = palette;
@@ -38,8 +39,7 @@ const theme = createTheme({
   },
 });
 
-export const StudentHomepage = ({setCourse}) => {
-
+export const StudentHomepage = ({ setCourse }) => {
   const navigate = useNavigate();
 
   const [courses, setCourses] = useState([]);
@@ -50,12 +50,19 @@ export const StudentHomepage = ({setCourse}) => {
     sessionStorage.clear();
     sessionStorage.setItem("course", JSON.stringify(course));
     navigate(`/student_course`);
-  }
+  };
+
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = "auto"; // Reset when component unmounts
+    };
+  }, []);
 
   const handleJoin = async (code) => {
     try {
       const session = await fetchAuthSession();
-      const {signInDetails } = await getCurrentUser();
+      const { signInDetails } = await getCurrentUser();
 
       var token = session.tokens.idToken.toString();
       const response = await fetch(
@@ -122,20 +129,18 @@ export const StudentHomepage = ({setCourse}) => {
   };
 
   useEffect(() => {
-    sessionStorage.removeItem('course')
-    sessionStorage.removeItem('module')
+    sessionStorage.removeItem("course");
+    sessionStorage.removeItem("module");
     const fetchCourses = async () => {
       try {
         const session = await fetchAuthSession();
-        const {signInDetails } = await getCurrentUser();
+        const { signInDetails } = await getCurrentUser();
 
         var token = session.tokens.idToken.toString();
         const response = await fetch(
           `${
             import.meta.env.VITE_API_ENDPOINT
-          }student/course?email=${encodeURIComponent(
-            signInDetails.loginId
-          )}`,
+          }student/course?email=${encodeURIComponent(signInDetails.loginId)}`,
           {
             method: "GET",
             headers: {
@@ -160,112 +165,130 @@ export const StudentHomepage = ({setCourse}) => {
 
   return (
     <ThemeProvider theme={theme}>
-      <div>
-        <StudentHeader />
-        <Container>
-          <Grid
-            container
-            direction="row"
-            // justifyContent="space-evenly"
-            alignItems="flex-start"
-            wrap="nowrap"
-            columns={12}
+      <StudentHeader />
+      <Container
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "flex-start",
+          alignItems: "stretch",
+          width: "100%",
+          maxWidth: "100%",
+        }}
+      >
+        <Stack
+          sx={{
+            flex: 1,
+            width: "100%",
+            maxWidth: "100%",
+          }}
+        >
+          <Typography
+            component="h1"
+            variant="h5"
+            color="black"
+            sx={{
+              fontWeight: "500",
+              mb: 2,
+              width: "100%",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              paddingLeft: 5,
+              maxWidth: "1000px",
+              minWidth: "500px",
+            }}
+            textAlign="left"
           >
-            <Grid item xs={6}>
-              <Stack>
-                <Typography
-                  component="h1"
-                  variant="h5"
-                  color="black"
-                  sx={{ fontWeight: "500", mb: 2 }}
-                  paddingLeft={3}
-                  textAlign="left"
-                >
-                  Courses
-                  <Button
-                    sx={{ ml: 40 }}
-                    variant="outlined"
-                    onClick={handleClickOpen}
-                  >
-                    +
-                  </Button>
-                </Typography>
-                <Box
-                  paddingLeft={3}
-                  sx={{
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "flex-start",
-                  }}
-                >
-                  {courses.map((course, index) => (
-                    <Card
-                      key={index}
-                      sx={{
-                        maxWidth: 1000,
-                        minWidth: 500,
-                        bgcolor: "bg",
-                      }}
-                    >
-                      <CardContent>
-                        <Grid container alignItems="center">
-                          <Grid item xs={8}>
-                            <Typography
-                              variant="h6"
-                              component="div"
-                              sx={{ textAlign: "left", fontWeight: "medium" }}
-                            >
-                              {course.course_department} {course.course_number}
-                            </Typography>
-                          </Grid>
-                          <Grid item xs={4} sx={{ textAlign: "right" }}>
-                            <Button
-                              size="small"
-                              sx={{
-                                bgcolor: "purple",
-                                color: "white",
-                                ":hover": { bgcolor: "purple" },
-                              }}
-                              onClick={()=>enterCourse(course)}
-                            >
-                              Continue
-                            </Button>
-                          </Grid>
-                        </Grid>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </Box>
-              </Stack>
-            </Grid>
-
-            <Grid item xs={6}>
-              <Box
-                paddingLeft={2}
+            Courses
+            <Button sx={{}} variant="outlined" onClick={handleClickOpen}>
+              +
+            </Button>
+          </Typography>
+          <Box
+            paddingLeft={3}
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "flex-start",
+              width: "100%",
+              overflowY: "scroll",
+              maxHeight: "90vh",
+            }}
+          >
+            {courses.map((course, index) => (
+              <Card
+                key={index}
                 sx={{
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "flex-start",
-                  justifyContent: "left",
+                  flex: 1,
+                  m: 1,
+                  width: "100%",
+                  maxWidth: "1000px",
+                  minWidth: "500px",
+                  minHeight: "200px",
+                  bgcolor: "transparent",
+                  background: `linear-gradient(10deg, rgb(83.137% 92.157% 99.608%) 0%, rgb(83.213% 92.029% 99.612%) 6.25%, rgb(83.436% 91.649% 99.623%) 12.5%, rgb(83.798% 91.033% 99.641%) 18.75%, rgb(84.286% 90.204% 99.665%) 25%, rgb(84.88% 89.194% 99.695%) 31.25%, rgb(85.558% 88.041% 99.729%) 37.5%, rgb(86.294% 86.791% 99.766%) 43.75%, rgb(87.059% 85.49% 99.804%) 50%, rgb(87.824% 84.19% 99.842%) 56.25%, rgb(88.56% 82.939% 99.879%) 62.5%, rgb(89.238% 81.786% 99.913%) 68.75%, rgb(89.832% 80.776% 99.943%) 75%, rgb(90.319% 79.947% 99.967%) 81.25%, rgb(90.682% 79.331% 99.985%) 87.5%, rgb(90.905% 78.952% 99.996%) 93.75%, rgb(90.98% 78.824% 100%) 100% )`,
                 }}
               >
-                <Typography
-                  component="h1"
-                  variant="h5"
-                  color="black"
-                  sx={{ fontWeight: "500", mb: 2 }}
-                  paddingLeft={0}
-                  paddingTop={0}
-                  textAlign="right"
+                <CardContent
+                  sx={{ height:"50%"  }}>
+                  <Grid container alignItems="center">
+                    <Grid item xs={8}>
+                      <Typography
+                        variant="h6"
+                        component="div"
+                        sx={{ textAlign: "left", fontWeight: "600",fontSize: "1.75rem" }}
+                      >
+                        {course.course_department} {course.course_number}
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        sx={{ textAlign: "left", mt: 1, fontSize: "1.15rem" }}
+                      >
+                        {course.course_name} {/* Add course description here */}
+                      </Typography>
+                    </Grid>
+                    <Grid
+                      item
+                      xs={4}
+                      sx={{
+                        display: "flex",
+                        alignItems: "flex-end",
+                        justifyContent: "flex-end",
+                      }}
+                    >
+                      {/* Empty grid item to push the button to the bottom right */}
+                    </Grid>
+                  </Grid>
+                </CardContent>
+                <CardActions
+                  sx={{
+                    display: "flex",
+                    justifyContent: "flex-end",
+                    p: 1,
+                    pr: 4,
+                    height:"50%" // Padding for the right
+                  }}
                 >
-                  Your progress
-                </Typography>
-                <Skeleton variant="rectangular" width={500} height={100} />
-              </Box>
-            </Grid>
-          </Grid>
-        </Container>
-      </div>
+                  <Button
+                    size="small"
+                    sx={{
+                      bgcolor: "#5536DA",
+                      p:1,
+                      color: "white",
+                      fontWeight: "light",
+                      ":hover": { bgcolor: "purple" },
+                    }}
+                    onClick={() => enterCourse(course)}
+                  >
+                    Continue
+                  </Button>
+                </CardActions>
+              </Card>
+            ))}
+          </Box>
+        </Stack>
+      </Container>
       <Dialog
         open={open}
         onClose={handleClose}

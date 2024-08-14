@@ -1,5 +1,5 @@
 const { initializeConnection } = require("./lib.js");
-
+var aws = require('aws-sdk');
 // Setting up evironments
 let { SM_DB_CREDENTIALS, RDS_PROXY_ENDPOINT } = process.env;
 
@@ -491,11 +491,11 @@ exports.handler = async (event) => {
           const studentEmail = event.queryStringParameters.email;
           const courseId = event.queryStringParameters.course_id;
           const moduleId = event.queryStringParameters.module_id;
-          console.log("message",message_content)
-          console.log("session",sessionId)
-          console.log("email",studentEmail)
-          console.log("course",courseId)
-          console.log("module",moduleId)
+          console.log("message", message_content);
+          console.log("session", sessionId);
+          console.log("email", studentEmail);
+          console.log("course", courseId);
+          console.log("module", moduleId);
 
           try {
             // Insert the new message into the Messages table with a generated UUID for message_id
@@ -525,6 +525,69 @@ exports.handler = async (event) => {
                           INSERT INTO "User_Engagement_Log" (log_id, user_email, course_id, module_id, enrolment_id, timestamp, engagement_type)
                           VALUES (uuid_generate_v4(), ${studentEmail}, ${courseId}, ${moduleId}, ${enrolmentId}, CURRENT_TIMESTAMP, 'message creation');
                         `;
+            }
+
+            response.body = JSON.stringify(messageData);
+          } catch (err) {
+            response.statusCode = 500;
+            console.log(err);
+            response.body = JSON.stringify({ error: "Internal server error" });
+          }
+        } else {
+          response.statusCode = 400;
+          response.body = JSON.stringify({
+            error: "session_id and message_content are required",
+          });
+        }
+        break;
+      case "POST /student/create_ai_message":
+        if (
+          event.queryStringParameters != null &&
+          event.queryStringParameters.session_id &&
+          event.queryStringParameters.email &&
+          event.queryStringParameters.course_id &&
+          event.queryStringParameters.module_id &&
+          event.body
+        ) {
+          const sessionId = event.queryStringParameters.session_id;
+          const { message_content } = JSON.parse(event.body);
+          const studentEmail = event.queryStringParameters.email;
+          const courseId = event.queryStringParameters.course_id;
+          const moduleId = event.queryStringParameters.module_id;
+          console.log("AI message", message_content);
+          console.log("session", sessionId);
+          console.log("email", studentEmail);
+          console.log("course", courseId);
+          console.log("module", moduleId);
+
+          try {
+            // Insert the new AI message into the Messages table with a generated UUID for message_id
+            const messageData = await sqlConnection`
+                      INSERT INTO "Messages" (message_id, session_id, student_sent, message_content, time_sent)
+                      VALUES (uuid_generate_v4(), ${sessionId}, false, ${message_content}, CURRENT_TIMESTAMP)
+                      RETURNING *;
+                  `;
+
+            // Update the last_accessed field in the Sessions table
+            await sqlConnection`
+                      UPDATE "Sessions"
+                      SET last_accessed = CURRENT_TIMESTAMP
+                      WHERE session_id = ${sessionId};
+                  `;
+
+            const enrolmentData = await sqlConnection`
+                      SELECT "Enrolments".enrolment_id
+                      FROM "Enrolments"
+                      WHERE user_email = ${studentEmail} AND course_id = ${courseId};
+                  `;
+
+            const enrolmentId = enrolmentData[0]?.enrolment_id;
+
+            if (enrolmentId) {
+              await sqlConnection`
+                          INSERT INTO "User_Engagement_Log" (log_id, user_email, course_id, module_id, enrolment_id, timestamp, engagement_type)
+                          VALUES (uuid_generate_v4(), ${studentEmail}, ${courseId}, ${moduleId}, ${enrolmentId}, CURRENT_TIMESTAMP, 'AI message creation');
+                      `;
             }
 
             response.body = JSON.stringify(messageData);

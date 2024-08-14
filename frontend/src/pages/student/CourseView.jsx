@@ -4,22 +4,6 @@ import { getCurrentUser } from "aws-amplify/auth";
 
 import { BiCheck } from "react-icons/bi";
 import { FaInfoCircle } from "react-icons/fa";
-import {
-  Typography,
-  Box,
-  AppBar,
-  Toolbar,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  TextField,
-  TableFooter,
-  TablePagination,
-} from "@mui/material";
 
 import { Button, Stepper, Step, StepLabel } from "@mui/material";
 import { useNavigate } from "react-router-dom";
@@ -81,28 +65,6 @@ export const CourseView = ({ course, setModule, setCourse }) => {
   console.log(course);
   const [concepts, setConcepts] = useState([]);
   const [data, setData] = useState([]);
-  const [rows, setRows] = useState([]);
-  const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(5);
-  const [searchQuery, setSearchQuery] = useState("");
-
-  const handleSearchChange = (event) => {
-    setSearchQuery(event.target.value);
-  };
-
-  const handleChangePage = (event, newPage) => {
-    setPage(newPage);
-  };
-
-  const handleChangeRowsPerPage = (event) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
-    setPage(0);
-  };
-
-  const filteredRows = rows.filter((row) =>
-    row.course.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
   const navigate = useNavigate();
   const enterModule = (module) => {
     setModule(module);
@@ -138,6 +100,7 @@ export const CourseView = ({ course, setModule, setCourse }) => {
         );
         if (response.ok) {
           const data = await response.json();
+          console.log(data)
           setData(data);
           setConcepts(getUniqueConceptNames(data));
         } else {
@@ -162,11 +125,11 @@ export const CourseView = ({ course, setModule, setCourse }) => {
   return (
     <div className="bg-[#F8F9FD] w-screen h-screen">
       <div>
-        <header className="bg-[#F8F9FD] p-4 flex justify-between items-center max-h-20">
-          <div className="text-black text-4xl font-roboto font-semibold p-4 flex flex-row">
+        <header className="bg-[#F8F9FD] p-2 flex justify-between items-center max-h-20">
+          <div className="text-black text-xl font-roboto font-semibold p-2 flex flex-row">
             <img
               onClick={() => handleBack()}
-              className="mt-1 mr-2 w-8 h-8 cursor-pointer"
+              className="mt-1 mr-2 w-6 h-6 cursor-pointer"
               src="./ArrowCircleDownRounded.png"
               alt="back"
             />
@@ -174,190 +137,104 @@ export const CourseView = ({ course, setModule, setCourse }) => {
           </div>
         </header>
         <div className="flex flex-col">
-          <div className="text-black text-start text-2xl font-roboto font-semibold p-4 ml-8">
+          <div className="text-black text-start text-lg font-roboto font-semibold p-2 ml-4">
             Learning Journey
           </div>
-          <div className="p-4 ml-8 flex flex-row justify-center gap-x-80">
+          <div className="p-2 ml-4 flex flex-row justify-center gap-x-20">
             {concepts.map((concept, index) => (
               <div key={index} className="flex flex-col items-center">
                 <div
-                  className="flex items-center justify-center w-12 h-12 text-white font-bold rounded-full mb-2"
+                  className="flex items-center justify-center w-8 h-8 text-white font-bold rounded-full mb-2"
                   style={{
                     backgroundColor: calculateColor(concept.average_score),
                   }}
                 >
                   {concept.average_score === 100 ? (
-                    <span className="text-2xl">
+                    <span className="text-xl">
                       <BiCheck />
-                    </span> // Checkmark for full score
+                    </span>
                   ) : (
                     index + 1
                   )}
                 </div>
-                <div className="text-black text-start text-lg font-roboto">
+                <div className="text-black text-start text-sm font-roboto">
                   {concept.concept_name}
                 </div>
               </div>
             ))}
           </div>
-          <div className="text-black text-start text-2xl font-roboto font-semibold p-4 ml-8">
+          <div className="text-black text-start text-lg font-roboto font-semibold p-2 ml-4">
             Modules
           </div>
-          <div className=" flex flex-row justify-between text-black text-xl mt-4 ml-32 font-semibold">
-            <div>Module</div>
-            <div className="flex flex-row gap-x-[180px] mr-[390px]">
-              <div className="py-2">Progress</div>
-              <div className="pr-4 py-2">Completion</div>
-              <div className=" px-4 py-2">Review</div>
-            </div>
-          </div>
-          {/* <Paper sx={{ width: "170%", overflow: "hidden", marginTop: 2 }}>
-            <TableContainer>
-              <Table sx={{ maxWidth: 1600, ml: 16, mr: 12 }}>
-                {" "}
-                <TableHead>
-                  <TableRow>
-                    <TableCell sx={{ width: "45%" }}>Module</TableCell>
-                    <TableCell>Progress</TableCell>
-                    <TableCell>Completion</TableCell>
-                    <TableCell>Review</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {data
-                    .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                    .map((entry, index) => (
-                      <TableRow
-                        key={entry.module_id + index}
-                        className=" flex flex-row justify-between text-black text-lg ml-32 font-light"
-                      >
-                        <TableCell
-                          sx={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 1, // Adjust spacing between icon and text
-                          }}
-                        >
-                          <FaInfoCircle style={{ marginTop: "6px" }} />
-                          {entry.module_name}
-                        </TableCell>
-
-                        {entry.module_score === 100 ? (
-                          <>
-                            <TableCell>{entry.module_score}%</TableCell>
-                            <TableCell>
-                              <div
-                                style={{
-                                  backgroundColor: "#2E7D32",
-                                  color: "white",
-                                  padding: "8px 16px", // px-4 py-2 translates to 8px 16px padding
-                                  borderRadius: "4px", // rounded translates to 4px border radius
-                                  fontWeight: "light", // text-light (assuming it's a lighter font weight)
-                                  maxWidth: "100px", // Set the maximum width as needed
-                                  overflow: "hidden",
-                                  textOverflow: "ellipsis",
-                                  whiteSpace: "nowrap",
-                                }}
-                              >
-                                Complete
-                              </div>
-                            </TableCell>
-                          </>
-                        ) : (
-                          <>
-                            <TableCell>{entry.module_score}%</TableCell>
-                            <TableCell className="px-4 py-2">
-                              <div
-                                style={{
-                                  padding: "8px 16px", // px-4 py-2 translates to 8px 16px padding
-                                  borderRadius: "4px", // rounded translates to 4px border radius
-                                  fontWeight: "light", // text-light (assuming it's a lighter font weight)
-                                  maxWidth: "100px", // Set the maximum width as needed
-                                }}
-                              >
-                                Incomplete
-                              </div>
-                            </TableCell>
-                          </>
-                        )}
-                        <TableCell>
-                          <button
-                            className={`bg-[#9747FF] text-white px-4 rounded py-2 hover:bg-purple-700 ${
-                              entry.module_score === 0
-                                ? "opacity-50 cursor-not-allowed"
-                                : ""
-                            }`}
-                            onClick={() =>
-                              entry.module_score !== 0 && enterModule(entry)
-                            }
-                            disabled={entry.module_score === 0}
-                          >
-                            Review
-                          </button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                </TableBody>
-                <TableFooter sx={{ maxWidth: 1600, ml: 16, mr: 12 }}>
-                  <TableRow>
-                    <TablePagination
-                      rowsPerPageOptions={[5, 10, 25]}
-                      component="div"
-                      count={filteredRows.length}
-                      rowsPerPage={rowsPerPage}
-                      page={page}
-                      onPageChange={handleChangePage}
-                      onRowsPerPageChange={handleChangeRowsPerPage}
-                    />
-                  </TableRow>
-                </TableFooter>
-              </Table>
-            </TableContainer>
-          </Paper> */}
-          <div className="flex flex-col mt-8 gap-y-8 max-h-[400px] overflow-auto" >
-            {data.map((entry, index) => (
-              <div key={entry.module_id + index} >
-                <div className=" flex flex-row justify-between text-black text-lg ml-32 font-light">
-                  <div className="flex flex-row gap-2">
-                    <FaInfoCircle style={{ marginTop: "6px" }} />
-                    {entry.module_name}
-                  </div>
-                  <div className="flex flex-row gap-x-48 mr-[390px]">
+          <div className="flex justify-center items-center">
+            <table className="text-left w-8/12 mx-auto text-xs mt-4">
+              <thead className="bg-white flex text-black w-full">
+                <tr className="flex w-full mb-2">
+                  <th className="p-1 w-1/4">Module</th>
+                  <th className="p-1 w-1/4 text-center">Score</th>
+                  <th className="p-1 w-1/4 text-center">Completion</th>
+                  <th className="p-1 w-1/4 mr-4 text-center">Review</th>
+                </tr>
+              </thead>
+              <tbody className="bg-[#FAF9F6] flex flex-col items-center justify-between overflow-y-scroll w-full h-[40vh]">
+                {data.map((entry, index) => (
+                  <tr
+                    key={entry.module_id + index}
+                    className="flex w-full mb-2 text-black text-center"
+                  >
+                    <td className="p-1 w-1/4 flex flex-row gap-1 items-center">
+                      <FaInfoCircle className="text-xs" />
+                      <span className="text-xs">{entry.module_name}</span>
+                    </td>
                     {entry.module_score === 100 ? (
                       <>
-                        <div className="mr-2">{entry.module_score}%</div>
-                        <div className="bg-[#2E7D32] text-white text-light px-4 py-2 rounded">
-                          Complete
-                        </div>
+                        <td className="p-1 w-1/4 text-xs text-center">
+                          {entry.module_score}%
+                        </td>
+                        <td className="p-1 w-1/4 text-xs text-center">
+                          <span
+                            className="bg-[#2E7D32] text-white text-light rounded px-2 py-1"
+                            style={{ display: "inline-block" }}
+                          >
+                            Complete
+                          </span>
+                        </td>
                       </>
                     ) : (
                       <>
-                        <div>{entry.module_score}%</div>
-                        <div className="px-4 py-2">Incomplete</div>
+                        <td className="p-1 w-1/4 text-xs text-center">
+                          {entry.module_score}%
+                        </td>
+                        <td className="p-1 w-1/4 text-xs text-center">
+                          Incomplete
+                        </td>
                       </>
                     )}
-                    <button
-                      className={`bg-[#9747FF] text-white px-4 rounded py-2 hover:bg-purple-700 ${
-                        entry.module_score === 0
-                          ? "opacity-50 cursor-not-allowed"
-                          : ""
-                      }`}
-                      onClick={() =>
-                        entry.module_score !== 0 && enterModule(entry)
-                      }
-                      disabled={entry.module_score === 0}
-                    >
-                      Review
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
+                    <td className="p-1 w-1/4 text-xs text-center">
+                      <button
+                        className={`bg-[#9747FF] text-white px-2 py-1 rounded hover:bg-purple-700 ${
+                          entry.module_score === 0
+                            ? "opacity-50 cursor-not-allowed"
+                            : ""
+                        }`}
+                        onClick={() =>
+                          entry.module_score !== 0 && enterModule(entry)
+                        }
+                        disabled={entry.module_score === 0}
+                      >
+                        Review
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
     </div>
   );
+  
+  
 };
-
 export default CourseView;

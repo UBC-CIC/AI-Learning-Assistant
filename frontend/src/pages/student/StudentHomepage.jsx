@@ -9,6 +9,7 @@ import "react-toastify/dist/ReactToastify.css";
 // MUI
 import {
   Card,
+  CardActions,
   CardContent,
   Button,
   Typography,
@@ -22,7 +23,6 @@ import {
   DialogContentText,
   DialogTitle,
   TextField,
-  CardActions,
 } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { getCurrentUser } from "aws-amplify/auth";
@@ -51,13 +51,6 @@ export const StudentHomepage = ({ setCourse }) => {
     sessionStorage.setItem("course", JSON.stringify(course));
     navigate(`/student_course`);
   };
-
-  useEffect(() => {
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = "auto"; // Reset when component unmounts
-    };
-  }, []);
 
   const handleJoin = async (code) => {
     try {
@@ -174,6 +167,7 @@ export const StudentHomepage = ({ setCourse }) => {
           alignItems: "stretch",
           width: "100%",
           maxWidth: "100%",
+          pb: 0,
         }}
       >
         <Stack
@@ -183,28 +177,49 @@ export const StudentHomepage = ({ setCourse }) => {
             maxWidth: "100%",
           }}
         >
-          <Typography
-            component="h1"
-            variant="h5"
-            color="black"
+          <Box
             sx={{
-              fontWeight: "500",
-              mb: 2,
-              width: "100%",
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
+              width: "calc(100% - 210px)", 
               paddingLeft: 5,
-              maxWidth: "1000px",
-              minWidth: "500px",
+              paddingRight: 5,
             }}
-            textAlign="left"
           >
-            Courses
-            <Button sx={{}} variant="outlined" onClick={handleClickOpen}>
+            <Typography
+              component="h1"
+              variant="h5"
+              color="black"
+              sx={{
+                fontWeight: "500",
+                mb: 2,
+                display: "flex",
+                alignItems: "center",
+                fontSize: "1.5rem",
+              }}
+              textAlign="left"
+            >
+              Courses
+            </Typography>
+            <Button
+              sx={{
+                alignSelf: "flex-end",
+                variant: "outlined",
+                borderColor: "black", 
+                color: "black", 
+                borderWidth: "1px",
+                marginLeft: "auto", 
+                "&:hover": {
+                  bgcolor: "white", 
+                  borderColor: "black",
+                },
+              }}
+              onClick={handleClickOpen}
+            >
               +
             </Button>
-          </Typography>
+          </Box>
           <Box
             paddingLeft={3}
             sx={{
@@ -212,38 +227,41 @@ export const StudentHomepage = ({ setCourse }) => {
               flexDirection: "column",
               alignItems: "flex-start",
               width: "100%",
-              overflowY: "scroll",
-              maxHeight: "90vh",
+              height: "calc(90vh - 100px)", // Adjust height to accommodate header and other elements
+              overflowY: "auto", // Enable vertical scrolling
+              overflowX: "hidden", // Hide horizontal overflow
             }}
           >
             {courses.map((course, index) => (
               <Card
                 key={index}
                 sx={{
-                  flex: 1,
-                  m: 1,
-                  width: "100%",
-                  maxWidth: "1000px",
-                  minWidth: "500px",
-                  minHeight: "200px",
+                  mb: 1, // Margin between cards (removed bottom margin)
+                  width: "calc(100% - 255px)", // Slightly less than full width (considering margins)
+                  maxWidth: "calc(100% - 255px)", // Ensure it doesn't exceed container width
+                  minWidth: "calc(100% - 255px)", // Ensure it occupies slightly less than full width
+                  minHeight: "120px", // Reduced height
                   bgcolor: "transparent",
                   background: `linear-gradient(10deg, rgb(83.137% 92.157% 99.608%) 0%, rgb(83.213% 92.029% 99.612%) 6.25%, rgb(83.436% 91.649% 99.623%) 12.5%, rgb(83.798% 91.033% 99.641%) 18.75%, rgb(84.286% 90.204% 99.665%) 25%, rgb(84.88% 89.194% 99.695%) 31.25%, rgb(85.558% 88.041% 99.729%) 37.5%, rgb(86.294% 86.791% 99.766%) 43.75%, rgb(87.059% 85.49% 99.804%) 50%, rgb(87.824% 84.19% 99.842%) 56.25%, rgb(88.56% 82.939% 99.879%) 62.5%, rgb(89.238% 81.786% 99.913%) 68.75%, rgb(89.832% 80.776% 99.943%) 75%, rgb(90.319% 79.947% 99.967%) 81.25%, rgb(90.682% 79.331% 99.985%) 87.5%, rgb(90.905% 78.952% 99.996%) 93.75%, rgb(90.98% 78.824% 100%) 100% )`,
                 }}
               >
-                <CardContent
-                  sx={{ height:"50%"  }}>
+                <CardContent sx={{ height: "50%" }}>
                   <Grid container alignItems="center">
                     <Grid item xs={8}>
                       <Typography
                         variant="h6"
                         component="div"
-                        sx={{ textAlign: "left", fontWeight: "600",fontSize: "1.75rem" }}
+                        sx={{
+                          textAlign: "left",
+                          fontWeight: "600",
+                          fontSize: "1.25rem",
+                        }} // Reduced font size
                       >
                         {course.course_department} {course.course_number}
                       </Typography>
                       <Typography
                         variant="body2"
-                        sx={{ textAlign: "left", mt: 1, fontSize: "1.15rem" }}
+                        sx={{ textAlign: "left", mt: 1, fontSize: "1rem" }} // Reduced font size
                       >
                         {course.course_name} {/* Add course description here */}
                       </Typography>
@@ -266,15 +284,15 @@ export const StudentHomepage = ({ setCourse }) => {
                     display: "flex",
                     justifyContent: "flex-end",
                     p: 1,
-                    pr: 4,
-                    height:"50%" // Padding for the right
+                    pr: 2, // Reduced padding
+                    height: "50%", // Padding for the right
                   }}
                 >
                   <Button
                     size="small"
                     sx={{
                       bgcolor: "#5536DA",
-                      p:1,
+                      p: 1,
                       color: "white",
                       fontWeight: "light",
                       ":hover": { bgcolor: "purple" },
@@ -338,6 +356,7 @@ export const StudentHomepage = ({ setCourse }) => {
       />
     </ThemeProvider>
   );
+  
 };
 
 export default StudentHomepage;

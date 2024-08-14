@@ -313,66 +313,6 @@ exports.handler = async (event) => {
           response.body = "Invalid value";
         }
         break;
-
-        if (
-          event.queryStringParameters != null &&
-          event.queryStringParameters.module_id &&
-          event.queryStringParameters.email &&
-          event.queryStringParameters.course_id &&
-          event.queryStringParameters.session_name
-        ) {
-          try {
-            const moduleId = event.queryStringParameters.module_id;
-            const studentEmail = event.queryStringParameters.email;
-            const courseId = event.queryStringParameters.course_id;
-            const sessionName = event.queryStringParameters.session_name;
-
-            // Update last_accessed for the Student_Module entry
-            await sqlConnection`
-                UPDATE "Student_Modules"
-                SET last_accessed = CURRENT_TIMESTAMP
-                WHERE course_module_id = ${moduleId};
-              `;
-
-            // Insert a new session with the session_name
-            data = await sqlConnection`
-                CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-                INSERT INTO "Sessions" (session_id, student_module_id, session_name, session_context_embeddings, last_accessed)
-                SELECT uuid_generate_v4(), student_module_id, ${sessionName}, ARRAY[]::float[], CURRENT_TIMESTAMP
-                FROM "Student_Modules"
-                WHERE course_module_id = ${moduleId}
-                RETURNING *;
-              `;
-
-            // Get the enrolment ID
-            const enrolmentData = await sqlConnection`
-                SELECT "Enrolments".enrolment_id
-                FROM "Enrolments"
-                WHERE user_email = ${studentEmail} AND course_id = ${courseId};
-              `;
-
-            const enrolmentId = enrolmentData[0]?.enrolment_id;
-
-            // Insert an entry into the User_Engagement_Log
-            if (enrolmentId) {
-              await sqlConnection`
-                  CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-                  INSERT INTO "User_Engagement_Log" (log_id, user_email, course_id, module_id, enrolment_id, timestamp, engagement_type)
-                  VALUES (uuid_generate_v4(), ${studentEmail}, ${courseId}, ${moduleId}, ${enrolmentId}, CURRENT_TIMESTAMP, 'session creation');
-                `;
-            }
-
-            response.body = JSON.stringify(data);
-          } catch (err) {
-            response.statusCode = 500;
-            console.log(err);
-            response.body = JSON.stringify({ error: "Internal server error" });
-          }
-        } else {
-          response.statusCode = 400;
-          response.body = "Invalid value";
-        }
-        break;
       case "DELETE /student/delete_session":
         if (
           event.queryStringParameters != null &&
@@ -603,7 +543,6 @@ exports.handler = async (event) => {
           });
         }
         break;
-
       case "POST /student/enroll_student":
         if (
           event.queryStringParameters != null &&

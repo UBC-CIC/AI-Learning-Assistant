@@ -678,6 +678,102 @@ paths:
         passthroughBehavior: "when_no_match"
         httpMethod: "POST"
         type: "aws_proxy"
+  /student/create_ai_message:
+    options:
+      summary: CORS support
+      description: |
+        Enable CORS by returning correct headers
+      responses:
+        200:
+          $ref: "#/components/responses/Success"
+      x-amazon-apigateway-integration:
+        type: mock
+        requestTemplates:
+          application/json: |
+            {
+              "statusCode" : 200
+            }
+        responses:
+          default:
+            statusCode: "200"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key'"
+              method.response.header.Access-Control-Allow-Methods: "'*'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+            responseTemplates:
+              application/json: |
+                {}
+    post:
+      tags:
+        - Student
+      summary: Create an AI response message for a session
+      operationId: student_create_ai_message_POST
+      parameters:
+        - in: query
+          name: session_id
+          required: true
+          description: ID of the session where the message is sent
+          schema:
+            type: string
+        - in: query
+          name: email
+          required: true
+          description: Email of the student associated with the session
+          schema:
+            type: string
+        - in: query
+          name: course_id
+          required: true
+          description: ID of the course related to the session
+          schema:
+            type: string
+        - in: query
+          name: module_id
+          required: true
+          description: ID of the module related to the session
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message_content:
+                  type: string
+                  description: Content of the AI's message
+      responses:
+        "200":
+          description: AI message created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  session_id:
+                    type: string
+                    description: ID of the session where the message was created
+                  message_content:
+                    type: string
+                    description: Content of the AI's created message
+        "400":
+          description: Invalid value or missing parameter
+        "401":
+          description: Unauthorized
+        "429":
+          description: Too Many Requests
+        "500":
+          description: Internal Server Error
+      security:
+        - studentAuthorizer: []
+      x-amazon-apigateway-integration:
+        uri:
+          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${studentFunction.Arn}/invocations"
+        passthroughBehavior: "when_no_match"
+        httpMethod: "POST"
+        type: "aws_proxy"
+
   /student/enroll_student:
     options:
       summary: CORS support

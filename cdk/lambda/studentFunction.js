@@ -1,5 +1,5 @@
 const { initializeConnection } = require("./lib.js");
-var aws = require('aws-sdk');
+var aws = require("aws-sdk");
 // Setting up evironments
 let { SM_DB_CREDENTIALS, RDS_PROXY_ENDPOINT } = process.env;
 
@@ -146,58 +146,62 @@ exports.handler = async (event) => {
           const studentEmail = event.queryStringParameters.email;
           const courseId = event.queryStringParameters.course_id;
 
-          data = await sqlConnection`
-            WITH StudentEnrollment AS (
-                SELECT 
+          try {
+            data = await sqlConnection`
+                WITH StudentEnrollment AS (
+                  SELECT 
                     "Enrolments".enrolment_id
-                FROM 
+                  FROM 
                     "Enrolments"
-                JOIN 
-                    "Users" ON "Enrolments".user_email = "Users".user_email
-                WHERE 
-                    "Users".user_email = ${studentEmail}
+                  WHERE 
+                    "Enrolments".user_email = ${studentEmail}
                     AND "Enrolments".course_id = ${courseId}
-            )
-            SELECT
-                "Course_Concepts".concept_id,
-                "Course_Concepts".concept_name,
-                "Course_Modules".module_id,
-                "Course_Modules".module_name,
-                "Course_Modules".module_number,
-                "Student_Modules".student_module_id,
-                "Student_Modules".module_score,
-                "Student_Modules".last_accessed,
-                "Student_Modules".module_context_embedding
-            FROM
-                "Course_Concepts"
-            JOIN
-                "Course_Modules" ON "Course_Modules".concept_id = "Course_Concepts".concept_id
-            JOIN
-                "Courses" ON "Courses".course_id = "Course_Concepts".course_id
-            LEFT JOIN
-                "Student_Modules" ON "Student_Modules".course_module_id = "Course_Modules".module_id
-            LEFT JOIN
-                StudentEnrollment ON "Student_Modules".enrolment_id = StudentEnrollment.enrolment_id
-            WHERE
-                "Courses".course_id = ${courseId};
-        `;
+                  LIMIT 1
+                )
+                SELECT
+                  "Course_Concepts".concept_id,
+                  "Course_Concepts".concept_name,
+                  "Course_Modules".module_id,
+                  "Course_Modules".module_name,
+                  "Course_Modules".module_number,
+                  "Student_Modules".student_module_id,
+                  "Student_Modules".module_score,
+                  "Student_Modules".last_accessed,
+                  "Student_Modules".module_context_embedding
+                FROM
+                  "Course_Concepts"
+                JOIN
+                  "Course_Modules" ON "Course_Modules".concept_id = "Course_Concepts".concept_id
+                LEFT JOIN
+                  "Student_Modules" ON "Student_Modules".course_module_id = "Course_Modules".module_id
+                JOIN
+                  StudentEnrollment ON "Student_Modules".enrolment_id = StudentEnrollment.enrolment_id
+                WHERE
+                  "Course_Concepts".course_id = ${courseId}
+                ORDER BY
+                  "Course_Modules".module_number;
+              `;
 
-          // const enrolmentId = data[0]?.enrolment_id;
+            const enrolmentId = data[0]?.enrolment_id;
 
-          // if (enrolmentId) {
-          //   await sqlConnection`
-          //     CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-          //     INSERT INTO "User_Engagement_Log" (log_id, user_email, course_id, module_id, enrolment_id, timestamp, engagement_type)
-          //     VALUES (uuid_generate_v4(), ${studentEmail}, ${courseId}, null, ${enrolmentId}, CURRENT_TIMESTAMP, 'course access');
-          //   `;
-          // }
+            if (enrolmentId) {
+              await sqlConnection`
+                  INSERT INTO "User_Engagement_Log" (log_id, user_email, course_id, module_id, enrolment_id, timestamp, engagement_type)
+                  VALUES (uuid_generate_v4(), ${studentEmail}, ${courseId}, null, ${enrolmentId}, CURRENT_TIMESTAMP, 'course access');
+                `;
+            }
 
-          response.body = JSON.stringify(data);
+            response.body = JSON.stringify(data);
+          } catch (err) {
+            response.statusCode = 500;
+            response.body = JSON.stringify({ error: "Internal server error" });
+          }
         } else {
           response.statusCode = 400;
           response.body = "Invalid value";
         }
         break;
+
       case "GET /student/module":
         if (
           event.queryStringParameters != null &&

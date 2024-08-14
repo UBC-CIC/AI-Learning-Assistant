@@ -23,9 +23,9 @@ def llmresponsetestuniquename(prompt):
     
     bedrock_runtime = boto3.client('bedrock-runtime', 
         region_name='ca-central-1',
-        aws_access_key_id=
-        aws_secret_access_key=
-        aws_session_token=
+        aws_access_key_id="",
+        aws_secret_access_key="",
+        aws_session_token=''
     )
     kwargs = {
         "modelId": "meta.llama3-8b-instruct-v1:0",

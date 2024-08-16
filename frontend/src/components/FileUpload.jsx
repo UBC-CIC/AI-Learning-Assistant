@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import axios from "axios";
 import {
   Box,
   TextField,
@@ -12,27 +13,88 @@ import {
 } from "@mui/material";
 import { CloudUpload as CloudUploadIcon } from "@mui/icons-material";
 import DeleteIcon from "@mui/icons-material/Delete";
+import { ToastContainer, toast } from "react-toastify";
+
+import "react-toastify/dist/ReactToastify.css";
 
 const FileUpload = () => {
   const [moduleName, setModuleName] = useState("");
   const [concept, setConcept] = useState("");
   const [additionalContent, setAdditionalContent] = useState("");
   const [files, setFiles] = useState([]);
+  const [images, setImages] = useState([]);
   const [imagesWithText, setImagesWithText] = useState([]);
   const navigate = useNavigate();
   const { courseName } = useParams();
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
+
+  // todo: encode
+  const API_DOC_ENDPOINT =
+    "https://jfr5l5l0f5.execute-api.ca-central-1.amazonaws.com/default/getPresignedUrlTest";
+
+  const API_IMG_ENDPOINT =
+    "https://b1erczku4c.execute-api.ca-central-1.amazonaws.com/default/getPresignedUrlImages";
+
+  const handleDocUpload = async () => {
+    const f = files[0];
+
+    // GET request: presigned URL
+    const response = await axios({
+      method: "GET",
+      url: API_DOC_ENDPOINT,
+      params: { fileName: f.name },
+    });
+
+    // PUT request: upload file to S3
+    const result = await fetch(response.data.uploadURL, {
+      method: "PUT",
+      body: f["file"],
+    });
+  };
+
+  const handleImageUpload = async () => {
+    const f = files[0];
+
+    // GET request: presigned URL
+    const response = await axios({
+      method: "GET",
+      url: API_IMG_ENDPOINT,
+      params: { fileName: f.name },
+    });
+
+    // PUT request: upload file to S3
+    const result = await fetch(response.data.uploadURL, {
+      method: "PUT",
+      body: f["file"],
+    });
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+
+    try {
+      for (const file of files) {
+        if (file.type.startsWith("image/")) {
+          await handleImageUpload(file);
+        } else if (file.type.startsWith("application/")) {
+          await handleDocUpload(file);
+        } else {
+          console.error(`Unsupported file type: ${file.type}`);
+        }
+      }
+
+      // Add any additional logic needed after uploads
+      console.log("All files uploaded successfully");
+      toast.success("All files uploaded successfully");
+    } catch (error) {
+      console.error("Error during file uploads:", error);
+      toast.error("Error uploading files.");
+    }
+  };
 
   const handleFileChange = (event) => {
     setFiles([...files, ...Array.from(event.target.files)]);
-  };
-
-  const handleSubmit = (event) => {
-    event.preventDefault();
-    // Handle form submission logic here
-    console.log("Module Name:", moduleName);
-    console.log("Concept:", concept);
-    console.log("Additional Content:", additionalContent);
-    console.log("Files and images:", files, imagesWithText);
   };
 
   const handleBackClick = () => {
@@ -178,15 +240,10 @@ const FileUpload = () => {
               <Grid container spacing={2} key={img.id}>
                 <Grid item xs={12}>
                   <input
+                    accept="image/jpeg"
                     type="file"
                     sx={{ paddingLeft: 3 }}
-                    onChange={(e) =>
-                      handleImageWithTextChange(
-                        index,
-                        "image",
-                        e.target.files[0]
-                      )
-                    }
+                    onChange={handleFileChange}
                   />
                 </Grid>
 
@@ -228,11 +285,13 @@ const FileUpload = () => {
             color="primary"
             width="20%"
             sx={{ mt: 2, justifyContent: "left" }}
+            onClick={handleSubmit}
           >
             Submit
           </Button>
         </Grid>
       </Grid>
+      <ToastContainer />
     </Box>
   );
 };

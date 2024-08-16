@@ -26,9 +26,9 @@ const createData = (name, email) => {
 };
 
 const initialRows = [
-  createData("john doe", "john.doe@example.com"),
-  createData("jane smith", "jane.smith@example.com"),
-  createData("bob jognson", "bob.johnson@example.com"),
+  createData("aurora c", "auroraxc4@gmail.com"),
+  createData("Jane Smith", "jane.smith@example.com"),
+  createData("Bob Johnson", "bob.johnson@example.com"),
 ];
 
 export const ViewStudents = ({ courseName, course_id }) => {

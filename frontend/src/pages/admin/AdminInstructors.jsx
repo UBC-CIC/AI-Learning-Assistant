@@ -153,33 +153,37 @@ export const AdminInstructors = ({ setSelectedInstructor }) => {
 
   return (
     <div>
-      <Box component="main" sx={{ flexGrow: 1, p: 3, marginTop: 1 }}>
+      <Box component="main" sx={{ flexGrow: 1, p: 2, marginTop: 0.5 }}>
         <Toolbar />
         <Typography
           color="black"
           fontStyle="semibold"
           textAlign="left"
-          variant="h6"
+          variant="body1"
         >
           Manage Instructors
         </Typography>
-        <Paper sx={{ width: "170%", overflow: "hidden", marginTop: 2 }}>
+        <Paper sx={{ width: "150%", overflow: "hidden", marginTop: 1 }}>
           <TableContainer>
             <TextField
               label="Search by User"
               variant="outlined"
               value={searchQuery}
               onChange={handleSearchChange}
-              sx={{ margin: 2, width: "95%", alignContent: "left" }}
+              sx={{ margin: 1, width: "90%", alignContent: "left" }}
+              InputProps={{ sx: { fontSize: 12 } }}
+              InputLabelProps={{ sx: { fontSize: 12 } }}
             />
             <Table aria-label="user table">
               {!loading ? (
                 <>
                   <TableHead>
                     <TableRow>
-                      <TableCell sx={{ width: "35%" }}>First Name</TableCell>
-                      <TableCell>Last Name</TableCell>
-                      <TableCell>Email</TableCell>
+                      <TableCell sx={{ width: "30%", fontSize: 12 }}>
+                        First Name
+                      </TableCell>
+                      <TableCell sx={{ fontSize: 12 }}>Last Name</TableCell>
+                      <TableCell sx={{ fontSize: 12 }}>Email</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -191,12 +195,12 @@ export const AdminInstructors = ({ setSelectedInstructor }) => {
                       .map((row, index) => (
                         <TableRow
                           key={index}
-                          onClick={() => handleRowClick({row})}
+                          onClick={() => handleRowClick({ row })}
                           style={{ cursor: "pointer" }}
                         >
-                          <TableCell>{row.user}</TableCell>
-                          <TableCell>{row.last}</TableCell>
-                          <TableCell>{row.email}</TableCell>
+                          <TableCell sx={{ fontSize: 12 }}>{row.user}</TableCell>
+                          <TableCell sx={{ fontSize: 12 }}>{row.last}</TableCell>
+                          <TableCell sx={{ fontSize: 12 }}>{row.email}</TableCell>
                         </TableRow>
                       ))}
                   </TableBody>
@@ -204,7 +208,6 @@ export const AdminInstructors = ({ setSelectedInstructor }) => {
               ) : (
                 <>loading...</>
               )}
-
               <TableFooter>
                 <TableRow>
                   <TablePagination
@@ -215,6 +218,7 @@ export const AdminInstructors = ({ setSelectedInstructor }) => {
                     page={page}
                     onPageChange={handleChangePage}
                     onRowsPerPageChange={handleChangeRowsPerPage}
+                    sx={{ fontSize: 12 }}
                   />
                 </TableRow>
               </TableFooter>
@@ -224,6 +228,7 @@ export const AdminInstructors = ({ setSelectedInstructor }) => {
       </Box>
     </div>
   );
+  
 };
 
 export default AdminInstructors;

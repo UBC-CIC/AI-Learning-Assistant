@@ -98,86 +98,91 @@ export const AdminCourses = ({ setSelectedCourse }) => {
 
   return (
     <div>
-      <Box component="main" sx={{ flexGrow: 1, p: 3, marginTop: 1 }}>
-        <Toolbar />
-        <Typography
-          color="black"
-          fontStyle="semibold"
-          textAlign="left"
-          variant="h6"
-        >
-          Courses
-        </Typography>
-        <Paper sx={{ width: "170%", overflow: "hidden", marginTop: 2 }}>
-          <TableContainer>
-            <TextField
-              label="Search by User"
-              variant="outlined"
-              value={searchQuery}
-              onChange={handleSearchChange}
-              sx={{ margin: 2, width: "95%", alignContent: "left" }}
-            />
-            <Table aria-label="user table">
-              {!loading ? (
-                <>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell sx={{ width: "35%" }}>Course</TableCell>
-                      <TableCell>Course Access Code</TableCell>
-                      <TableCell>Status</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {filteredRows
-                      .slice(
-                        page * rowsPerPage,
-                        page * rowsPerPage + rowsPerPage
-                      )
-                      .map((row, index) => (
-                        <TableRow
-                          key={index}
-                          onClick={() => handleCourseClick({row})}
-                          style={{ cursor: "pointer" }}
-                        >
-                          <TableCell>{row.course}</TableCell>
-                          <TableCell>{row.instructor}</TableCell>
-                          <TableCell>
-                            <Button
-                              variant="contained"
-                              color={
-                                row.status === "true"
-                                  ? "primary"
-                                  : "secondary"
-                              }
-                            >
-                              {row.status === "true" ? "Active" : "Inactive"}
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                  </TableBody>
-                </>
-              ) : (
-                <>loading...</>
-              )}
-              <TableFooter>
+  <Box component="main" sx={{ flexGrow: 1, p: 2, marginTop: 0.5 }}>
+    <Toolbar />
+    <Typography
+      color="black"
+      fontStyle="semibold"
+      textAlign="left"
+      variant="body1"
+    >
+      Courses
+    </Typography>
+    <Paper sx={{ width: "150%", overflow: "hidden", marginTop: 1 }}>
+      <TableContainer>
+        <TextField
+          label="Search by User"
+          variant="outlined"
+          value={searchQuery}
+          onChange={handleSearchChange}
+          sx={{ margin: 1, width: "90%", alignContent: "left" }}
+          InputProps={{ sx: { fontSize: 12 } }}
+          InputLabelProps={{ sx: { fontSize: 12 } }}
+        />
+        <Table aria-label="user table">
+          {!loading ? (
+            <>
+              <TableHead>
                 <TableRow>
-                  <TablePagination
-                    rowsPerPageOptions={[5, 10, 25]}
-                    component="div"
-                    count={filteredRows.length}
-                    rowsPerPage={rowsPerPage}
-                    page={page}
-                    onPageChange={handleChangePage}
-                    onRowsPerPageChange={handleChangeRowsPerPage}
-                  />
+                  <TableCell sx={{ width: "30%", fontSize: 12 }}>Course</TableCell>
+                  <TableCell sx={{ fontSize: 12 }}>Course Access Code</TableCell>
+                  <TableCell sx={{ fontSize: 12 }}>Status</TableCell>
                 </TableRow>
-              </TableFooter>
-            </Table>
-          </TableContainer>
-        </Paper>
-      </Box>
-    </div>
+              </TableHead>
+              <TableBody>
+                {filteredRows
+                  .slice(
+                    page * rowsPerPage,
+                    page * rowsPerPage + rowsPerPage
+                  )
+                  .map((row, index) => (
+                    <TableRow
+                      key={index}
+                      onClick={() => handleCourseClick({ row })}
+                      style={{ cursor: "pointer" }}
+                    >
+                      <TableCell sx={{ fontSize: 12 }}>{row.course}</TableCell>
+                      <TableCell sx={{ fontSize: 12 }}>{row.instructor}</TableCell>
+                      <TableCell>
+                        <Button
+                          variant="contained"
+                          color={
+                            row.status === "true"
+                              ? "primary"
+                              : "secondary"
+                          }
+                          sx={{ fontSize: 10, padding: "4px 8px" }}
+                        >
+                          {row.status === "true" ? "Active" : "Inactive"}
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+              </TableBody>
+            </>
+          ) : (
+            <>loading...</>
+          )}
+          <TableFooter>
+            <TableRow>
+              <TablePagination
+                rowsPerPageOptions={[5, 10, 25]}
+                component="div"
+                count={filteredRows.length}
+                rowsPerPage={rowsPerPage}
+                page={page}
+                onPageChange={handleChangePage}
+                onRowsPerPageChange={handleChangeRowsPerPage}
+                sx={{ fontSize: 12 }}
+              />
+            </TableRow>
+          </TableFooter>
+        </Table>
+      </TableContainer>
+    </Paper>
+  </Box>
+</div>
+
   );
 };
 

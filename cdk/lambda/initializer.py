@@ -117,6 +117,7 @@ def handler(event, context):
             CREATE TABLE IF NOT EXISTS "Sessions" (
             "session_id" uuid PRIMARY KEY DEFAULT (uuid_generate_v4()),
             "student_module_id" uuid,
+            "session_name" varchar,
             "session_context_embeddings" float[],
             "last_accessed" timestamp
             );
@@ -171,7 +172,7 @@ def handler(event, context):
 
             ALTER TABLE "Sessions" ADD FOREIGN KEY ("student_module_id") REFERENCES "Student_Modules" ("student_module_id") ON DELETE CASCADE ON UPDATE CASCADE;
 
-            ALTER TABLE "Messages" ADD FOREIGN KEY ("session_id") REFERENCES "Sessions" ("session_id");
+            ALTER TABLE "Messages" ADD FOREIGN KEY ("session_id") REFERENCES "Sessions" ("session_id") ON DELETE CASCADE ON UPDATE CASCADE;
 
             DO $$
             BEGIN

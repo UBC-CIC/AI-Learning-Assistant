@@ -114,26 +114,8 @@ function App() {
     <Router>
       <Routes>
         <Route path="/" element={user ? <Navigate to="/home" /> : <Login />} />
-        <Route
-          path="/student_chat*"
-          element={
-            <StudentChat
-              course={course}
-              module={module}
-              setModule={setModule}
-            />
-          }
-        />
-        <Route
-          path="/student_course*"
-          element={
-            <CourseView
-              course={course}
-              setModule={setModule}
-              setCourse={setCourse}
-            />
-          }
-        />
+        <Route path="/student_chat/*" element={<StudentChat course = {course} module = {module} setModule={setModule} setCourse = {setCourse}/>} />
+        <Route path="/student_course/*" element={<CourseView course = {course} setModule = {setModule} setCourse = {setCourse}/>} />
         <Route path="/home" element={getHomePage()} />
         <Route path="/course/*" element={<InstructorHomepage />} />
       </Routes>

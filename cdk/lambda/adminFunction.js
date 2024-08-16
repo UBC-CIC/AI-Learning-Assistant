@@ -162,15 +162,16 @@ exports.handler = async (event) => {
             console.log(newCourse);
             const courseId = newCourse[0].course_id;
             console.log(courseId);
-            // Create the dynamic table [Course_Id]_RAG_segmented_vectors
-            // await sqlConnectionTableCreator`
-            //     CREATE TABLE IF NOT EXISTS '${courseId}_rag_segmented_vectors' (
-            //         chunk_id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
-            //         course_id uuid,
-            //         file_id uuid,
-            //         vectors float[]
-            //     );
-            // `;
+
+            // Create the dynamic table [Course_Id]
+            await sqlConnectionTableCreator`
+                CREATE TABLE IF NOT EXISTS "${courseId}" (
+                    chunk_id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+                    course_id uuid,
+                    file_id uuid,
+                    vectors float[]
+                );
+            `;
 
             response.body = JSON.stringify(newCourse[0]);
           } catch (err) {
@@ -181,45 +182,6 @@ exports.handler = async (event) => {
         } else {
           response.statusCode = 400;
           response.body = "Missing required parameters";
-        }
-        break;
-        if (
-          event.body != null &&
-          event.body.user_email &&
-          event.body.course_id
-        ) {
-          const { user_email, course_id } = JSON.parse(event.body);
-
-          // SQL query to check if the user has instructor role
-          const user = await sqlConnectionTableCreator`
-                  SELECT user_email
-                  FROM "Users"
-                  WHERE user_email = ${user_email} AND roles @> ARRAY['instructor']::varchar[];
-                `;
-
-          if (user.length === 0) {
-            response.statusCode = 404;
-            response.body = JSON.stringify({
-              error: "User not found or user is not an instructor.",
-            });
-          } else {
-            // SQL query to create the enrolment
-            const enrolment = await sqlConnectionTableCreator`
-                    INSERT INTO "Enrolments" (enrolment_id, user_email, course_id, enrolment_type, course_completion_percentage, time_spent, time_enroled)
-                    VALUES (uuid_generate_v4(), ${user_email}, ${course_id}, 'instructor', 0, 0, CURRENT_TIMESTAMP)
-                    RETURNING enrolment_id, user_email, course_id;
-                  `;
-
-            response.body = JSON.stringify({
-              message: "Enrolment created successfully.",
-              enrolment: enrolment[0],
-            });
-          }
-        } else {
-          response.statusCode = 400;
-          response.body = JSON.stringify({
-            error: "user_email and course_id are required",
-          });
         }
         break;
       case "GET /admin/courseInstructors":

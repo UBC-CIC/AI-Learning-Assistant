@@ -9,6 +9,7 @@ import "react-toastify/dist/ReactToastify.css";
 // MUI
 import {
   Card,
+  CardActions,
   CardContent,
   Button,
   Typography,
@@ -24,9 +25,9 @@ import {
   TextField,
 } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
-import { getCurrentUser } from 'aws-amplify/auth';
+import { getCurrentUser } from "aws-amplify/auth";
 
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from "react-router-dom";
 // MUI theming
 const { palette } = createTheme();
 const { augmentColor } = palette;
@@ -38,8 +39,7 @@ const theme = createTheme({
   },
 });
 
-export const StudentHomepage = ({setCourse}) => {
-
+export const StudentHomepage = ({ setCourse }) => {
   const navigate = useNavigate();
 
   const [courses, setCourses] = useState([]);
@@ -50,12 +50,12 @@ export const StudentHomepage = ({setCourse}) => {
     sessionStorage.clear();
     sessionStorage.setItem("course", JSON.stringify(course));
     navigate(`/student_course`);
-  }
+  };
 
   const handleJoin = async (code) => {
     try {
       const session = await fetchAuthSession();
-      const {signInDetails } = await getCurrentUser();
+      const { signInDetails } = await getCurrentUser();
 
       var token = session.tokens.idToken.toString();
       const response = await fetch(
@@ -122,20 +122,18 @@ export const StudentHomepage = ({setCourse}) => {
   };
 
   useEffect(() => {
-    sessionStorage.removeItem('course')
-    sessionStorage.removeItem('module')
+    sessionStorage.removeItem("course");
+    sessionStorage.removeItem("module");
     const fetchCourses = async () => {
       try {
         const session = await fetchAuthSession();
-        const {signInDetails } = await getCurrentUser();
+        const { signInDetails } = await getCurrentUser();
 
         var token = session.tokens.idToken.toString();
         const response = await fetch(
           `${
             import.meta.env.VITE_API_ENDPOINT
-          }student/course?email=${encodeURIComponent(
-            signInDetails.loginId
-          )}`,
+          }student/course?email=${encodeURIComponent(signInDetails.loginId)}`,
           {
             method: "GET",
             headers: {
@@ -160,112 +158,155 @@ export const StudentHomepage = ({setCourse}) => {
 
   return (
     <ThemeProvider theme={theme}>
-      <div>
-        <StudentHeader />
-        <Container>
-          <Grid
-            container
-            direction="row"
-            // justifyContent="space-evenly"
-            alignItems="flex-start"
-            wrap="nowrap"
-            columns={12}
+      <StudentHeader />
+      <Container
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "flex-start",
+          alignItems: "stretch",
+          width: "100%",
+          maxWidth: "100%",
+          pb: 0,
+        }}
+      >
+        <Stack
+          sx={{
+            flex: 1,
+            width: "100%",
+            maxWidth: "100%",
+          }}
+        >
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              width: "calc(100% - 210px)", 
+              paddingLeft: 5,
+              paddingRight: 5,
+            }}
           >
-            <Grid item xs={6}>
-              <Stack>
-                <Typography
-                  component="h1"
-                  variant="h5"
-                  color="black"
-                  sx={{ fontWeight: "500", mb: 2 }}
-                  paddingLeft={3}
-                  textAlign="left"
-                >
-                  Courses
-                  <Button
-                    sx={{ ml: 40 }}
-                    variant="outlined"
-                    onClick={handleClickOpen}
-                  >
-                    +
-                  </Button>
-                </Typography>
-                <Box
-                  paddingLeft={3}
-                  sx={{
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "flex-start",
-                  }}
-                >
-                  {courses.map((course, index) => (
-                    <Card
-                      key={index}
-                      sx={{
-                        maxWidth: 1000,
-                        minWidth: 500,
-                        bgcolor: "bg",
-                      }}
-                    >
-                      <CardContent>
-                        <Grid container alignItems="center">
-                          <Grid item xs={8}>
-                            <Typography
-                              variant="h6"
-                              component="div"
-                              sx={{ textAlign: "left", fontWeight: "medium" }}
-                            >
-                              {course.course_department} {course.course_number}
-                            </Typography>
-                          </Grid>
-                          <Grid item xs={4} sx={{ textAlign: "right" }}>
-                            <Button
-                              size="small"
-                              sx={{
-                                bgcolor: "purple",
-                                color: "white",
-                                ":hover": { bgcolor: "purple" },
-                              }}
-                              onClick={()=>enterCourse(course)}
-                            >
-                              Continue
-                            </Button>
-                          </Grid>
-                        </Grid>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </Box>
-              </Stack>
-            </Grid>
-
-            <Grid item xs={6}>
-              <Box
-                paddingLeft={2}
+            <Typography
+              component="h1"
+              variant="h5"
+              color="black"
+              sx={{
+                fontWeight: "500",
+                mb: 2,
+                display: "flex",
+                alignItems: "center",
+                fontSize: "1.5rem",
+              }}
+              textAlign="left"
+            >
+              Courses
+            </Typography>
+            <Button
+              sx={{
+                alignSelf: "flex-end",
+                variant: "outlined",
+                borderColor: "black", 
+                color: "black", 
+                borderWidth: "1px",
+                marginLeft: "auto", 
+                "&:hover": {
+                  bgcolor: "white", 
+                  borderColor: "black",
+                },
+              }}
+              onClick={handleClickOpen}
+            >
+              +
+            </Button>
+          </Box>
+          <Box
+            paddingLeft={3}
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "flex-start",
+              width: "100%",
+              height: "calc(90vh - 100px)", // Adjust height to accommodate header and other elements
+              overflowY: "auto", // Enable vertical scrolling
+              overflowX: "hidden", // Hide horizontal overflow
+            }}
+          >
+            {courses.map((course, index) => (
+              <Card
+                key={index}
                 sx={{
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "flex-start",
-                  justifyContent: "left",
+                  mb: 1, // Margin between cards (removed bottom margin)
+                  width: "calc(100% - 255px)", // Slightly less than full width (considering margins)
+                  maxWidth: "calc(100% - 255px)", // Ensure it doesn't exceed container width
+                  minWidth: "calc(100% - 255px)", // Ensure it occupies slightly less than full width
+                  minHeight: "120px", // Reduced height
+                  bgcolor: "transparent",
+                  background: `linear-gradient(10deg, rgb(83.137% 92.157% 99.608%) 0%, rgb(83.213% 92.029% 99.612%) 6.25%, rgb(83.436% 91.649% 99.623%) 12.5%, rgb(83.798% 91.033% 99.641%) 18.75%, rgb(84.286% 90.204% 99.665%) 25%, rgb(84.88% 89.194% 99.695%) 31.25%, rgb(85.558% 88.041% 99.729%) 37.5%, rgb(86.294% 86.791% 99.766%) 43.75%, rgb(87.059% 85.49% 99.804%) 50%, rgb(87.824% 84.19% 99.842%) 56.25%, rgb(88.56% 82.939% 99.879%) 62.5%, rgb(89.238% 81.786% 99.913%) 68.75%, rgb(89.832% 80.776% 99.943%) 75%, rgb(90.319% 79.947% 99.967%) 81.25%, rgb(90.682% 79.331% 99.985%) 87.5%, rgb(90.905% 78.952% 99.996%) 93.75%, rgb(90.98% 78.824% 100%) 100% )`,
                 }}
               >
-                <Typography
-                  component="h1"
-                  variant="h5"
-                  color="black"
-                  sx={{ fontWeight: "500", mb: 2 }}
-                  paddingLeft={0}
-                  paddingTop={0}
-                  textAlign="right"
+                <CardContent sx={{ height: "50%" }}>
+                  <Grid container alignItems="center">
+                    <Grid item xs={8}>
+                      <Typography
+                        variant="h6"
+                        component="div"
+                        sx={{
+                          textAlign: "left",
+                          fontWeight: "600",
+                          fontSize: "1.25rem",
+                        }} // Reduced font size
+                      >
+                        {course.course_department} {course.course_number}
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        sx={{ textAlign: "left", mt: 1, fontSize: "1rem" }} // Reduced font size
+                      >
+                        {course.course_name} {/* Add course description here */}
+                      </Typography>
+                    </Grid>
+                    <Grid
+                      item
+                      xs={4}
+                      sx={{
+                        display: "flex",
+                        alignItems: "flex-end",
+                        justifyContent: "flex-end",
+                      }}
+                    >
+                      {/* Empty grid item to push the button to the bottom right */}
+                    </Grid>
+                  </Grid>
+                </CardContent>
+                <CardActions
+                  sx={{
+                    display: "flex",
+                    justifyContent: "flex-end",
+                    p: 1,
+                    pr: 2, // Reduced padding
+                    height: "50%", // Padding for the right
+                  }}
                 >
-                  Your progress
-                </Typography>
-                <Skeleton variant="rectangular" width={500} height={100} />
-              </Box>
-            </Grid>
-          </Grid>
-        </Container>
-      </div>
+                  <Button
+                    size="small"
+                    sx={{
+                      bgcolor: "#5536DA",
+                      p: 1,
+                      color: "white",
+                      fontWeight: "light",
+                      ":hover": { bgcolor: "purple" },
+                    }}
+                    onClick={() => enterCourse(course)}
+                  >
+                    Continue
+                  </Button>
+                </CardActions>
+              </Card>
+            ))}
+          </Box>
+        </Stack>
+      </Container>
       <Dialog
         open={open}
         onClose={handleClose}
@@ -315,6 +356,7 @@ export const StudentHomepage = ({setCourse}) => {
       />
     </ThemeProvider>
   );
+  
 };
 
 export default StudentHomepage;

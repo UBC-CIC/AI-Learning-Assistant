@@ -7,74 +7,6 @@ import { FaInfoCircle } from "react-icons/fa";
 
 import { Button, Stepper, Step, StepLabel } from "@mui/material";
 import { useNavigate } from "react-router-dom";
-const sampleData = [
-  {
-    concept_id: "1aaf566b-6800-48f6-91ac-67e43bf86c9b",
-    concept_name: "Concept A",
-    module_id: "9fe8ae5f-08b6-4bb3-b632-f4200c8bf4d5",
-    module_name: "Module 1",
-    module_number: 1,
-    module_score: 75,
-    last_accessed: null,
-    module_context_embedding: null,
-    student_module_id: null,
-  },
-  {
-    concept_id: "1aaf566b-6800-48f6-91ac-67e43bf86c9b",
-    concept_name: "Concept A",
-    module_id: "4bd1e3ea-5189-44bc-bafa-6da8fa9a8217",
-    module_name: "Module 2",
-    module_number: 2,
-    module_score: 75,
-    last_accessed: null,
-    module_context_embedding: null,
-    student_module_id: null,
-  },
-  {
-    concept_id: "81188f5f-566d-498d-b835-6dd020f9e01b",
-    concept_name: "Concept B",
-    module_id: "8e789fea-516a-4122-9b65-96a00c0bb7af",
-    module_name: "Basic Algorithms",
-    module_number: 1,
-    module_score: 0,
-    last_accessed: null,
-    module_context_embedding: null,
-    student_module_id: null,
-  },
-  {
-    concept_id: "81188f5f-566d-498d-b835-6dd020f9e01b",
-    concept_name: "Concept B",
-    module_id: "cf6f187e-a9e2-44c2-9607-eefa1039862a",
-    module_name: "Advanced Algorithms",
-    module_number: 2,
-    module_score: 0,
-    last_accessed: null,
-    module_context_embedding: null,
-    student_module_id: null,
-  },
-  {
-    concept_id: "81188f5f-566d-498d-b835-6dd020f9e01b",
-    concept_name: "Concept B",
-    module_id: "4bd1e3ea-5189-44bc-bafa-6da8fa9a8217",
-    module_name: "Data Structures",
-    module_number: 3,
-    module_score: 0,
-    last_accessed: null,
-    module_context_embedding: null,
-    student_module_id: null,
-  },
-  {
-    concept_id: "2aaf566b-6800-48f6-91ac-67e43bf86c9b",
-    concept_name: "Concept C",
-    module_id: "9fe8ae5f-08b6-4bb3-b632-f4200c8bf4d5",
-    module_name: "Introduction to Algorithms",
-    module_number: 1,
-    module_score: 100,
-    last_accessed: null,
-    module_context_embedding: null,
-    student_module_id: null,
-  },
-];
 // Function to calculate the color based on the average score
 const calculateColor = (score) => {
   if (score === null) {
@@ -133,7 +65,6 @@ export const CourseView = ({ course, setModule, setCourse }) => {
   console.log(course);
   const [concepts, setConcepts] = useState([]);
   const [data, setData] = useState([]);
-
   const navigate = useNavigate();
   const enterModule = (module) => {
     setModule(module);
@@ -169,6 +100,7 @@ export const CourseView = ({ course, setModule, setCourse }) => {
         );
         if (response.ok) {
           const data = await response.json();
+          console.log(data)
           setData(data);
           setConcepts(getUniqueConceptNames(data));
         } else {
@@ -181,7 +113,7 @@ export const CourseView = ({ course, setModule, setCourse }) => {
     fetchCoursePage();
   }, [course]);
   useEffect(() => {
-    sessionStorage.removeItem("module")
+    sessionStorage.removeItem("module");
     const storedCourse = sessionStorage.getItem("course");
     if (storedCourse) {
       setCourse(JSON.parse(storedCourse));
@@ -193,11 +125,11 @@ export const CourseView = ({ course, setModule, setCourse }) => {
   return (
     <div className="bg-[#F8F9FD] w-screen h-screen">
       <div>
-        <header className="bg-[#F8F9FD] p-4 flex justify-between items-center max-h-20">
-          <div className="text-black text-4xl font-roboto font-semibold p-4 flex flex-row">
+        <header className="bg-[#F8F9FD] p-2 flex justify-between items-center max-h-20">
+          <div className="text-black text-xl font-roboto font-semibold p-2 flex flex-row">
             <img
               onClick={() => handleBack()}
-              className="mt-1 mr-2 w-8 h-8 cursor-pointer"
+              className="mt-1 mr-2 w-6 h-6 cursor-pointer"
               src="./ArrowCircleDownRounded.png"
               alt="back"
             />
@@ -205,75 +137,104 @@ export const CourseView = ({ course, setModule, setCourse }) => {
           </div>
         </header>
         <div className="flex flex-col">
-          <div className="text-black text-start text-2xl font-roboto font-semibold p-4 ml-8">
+          <div className="text-black text-start text-lg font-roboto font-semibold p-2 ml-4">
             Learning Journey
           </div>
-          <div className="p-4 ml-8 flex flex-row justify-center gap-x-80">
+          <div className="p-2 ml-4 flex flex-row justify-center gap-x-20">
             {concepts.map((concept, index) => (
               <div key={index} className="flex flex-col items-center">
                 <div
-                  className="flex items-center justify-center w-12 h-12 text-white font-bold rounded-full mb-2"
+                  className="flex items-center justify-center w-8 h-8 text-white font-bold rounded-full mb-2"
                   style={{
                     backgroundColor: calculateColor(concept.average_score),
                   }}
                 >
                   {concept.average_score === 100 ? (
-                    <span className="text-2xl">
+                    <span className="text-xl">
                       <BiCheck />
-                    </span> // Checkmark for full score
+                    </span>
                   ) : (
                     index + 1
                   )}
                 </div>
-                <div className="text-black text-start text-lg font-roboto">
+                <div className="text-black text-start text-sm font-roboto">
                   {concept.concept_name}
                 </div>
               </div>
             ))}
           </div>
-          <div className="text-black text-start text-2xl font-roboto font-semibold p-4 ml-8">
+          <div className="text-black text-start text-lg font-roboto font-semibold p-2 ml-4">
             Modules
           </div>
-          <div className=" flex flex-row justify-between text-black text-xl ml-32 font-semibold">
-            <div>Module</div>
-            <div className="flex flex-row gap-x-[180px] mr-[390px]">
-              <div className="py-2">Progress</div>
-              <div className="pr-4 py-2">Completion</div>
-              <div className=" px-4 py-2">Review</div>
-            </div>
-          </div>
-          <div className="flex flex-col mt-8 gap-y-8 max-h-[300px] overflow-auto">
-            {data.map((entry, index) => (
-              <div key={entry.module_id + index}>
-                <div className=" flex flex-row justify-between text-black text-lg ml-32 font-light">
-                  <div className="flex flex-row gap-2">
-                    <FaInfoCircle style={{ marginTop: "6px" }} />
-                    {entry.module_name}
-                  </div>
-                  <div className="flex flex-row gap-x-48 mr-[390px]">
-                    <div>{entry.module_score}%</div>
+          <div className="flex justify-center items-center">
+            <table className="text-left w-8/12 mx-auto text-xs mt-4">
+              <thead className="bg-white flex text-black w-full">
+                <tr className="flex w-full mb-2">
+                  <th className="p-1 w-1/4">Module</th>
+                  <th className="p-1 w-1/4 text-center">Score</th>
+                  <th className="p-1 w-1/4 text-center">Completion</th>
+                  <th className="p-1 w-1/4 mr-4 text-center">Review</th>
+                </tr>
+              </thead>
+              <tbody className="bg-[#FAF9F6] flex flex-col items-center justify-between overflow-y-scroll w-full h-[40vh]">
+                {data.map((entry, index) => (
+                  <tr
+                    key={entry.module_id + index}
+                    className="flex w-full mb-2 text-black text-center"
+                  >
+                    <td className="p-1 w-1/4 flex flex-row gap-1 items-center">
+                      <FaInfoCircle className="text-xs" />
+                      <span className="text-xs">{entry.module_name}</span>
+                    </td>
                     {entry.module_score === 100 ? (
-                      <div className="bg-[#2E7D32] text-white text-light px-4 py-2 rounded">
-                        Complete
-                      </div>
+                      <>
+                        <td className="p-1 w-1/4 text-xs text-center">
+                          {entry.module_score}%
+                        </td>
+                        <td className="p-1 w-1/4 text-xs text-center">
+                          <span
+                            className="bg-[#2E7D32] text-white text-light rounded px-2 py-1"
+                            style={{ display: "inline-block" }}
+                          >
+                            Complete
+                          </span>
+                        </td>
+                      </>
                     ) : (
-                      <div className="px-4 py-2">Incomplete</div>
+                      <>
+                        <td className="p-1 w-1/4 text-xs text-center">
+                          {entry.module_score}%
+                        </td>
+                        <td className="p-1 w-1/4 text-xs text-center">
+                          Incomplete
+                        </td>
+                      </>
                     )}
-                    <button
-                      className="bg-[#9747FF] text-white px-4 rounded py-2 hover:bg-purple-700"
-                      onClick={() => enterModule(entry)}
-                    >
-                      Review
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
+                    <td className="p-1 w-1/4 text-xs text-center">
+                      <button
+                        className={`bg-[#9747FF] text-white px-2 py-1 rounded hover:bg-purple-700 ${
+                          entry.module_score === 0
+                            ? "opacity-50 cursor-not-allowed"
+                            : ""
+                        }`}
+                        onClick={() =>
+                          entry.module_score !== 0 && enterModule(entry)
+                        }
+                        disabled={entry.module_score === 0}
+                      >
+                        Review
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
     </div>
   );
+  
+  
 };
-
 export default CourseView;

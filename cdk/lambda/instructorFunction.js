@@ -41,25 +41,26 @@ exports.handler = async (event) => {
           const instructorEmail = event.queryStringParameters.email;
 
           try {
-            // Query to get courses where the instructor is enrolled
-            data = await sqlConnection`
-              SELECT "Courses".*
-              FROM "Enrolments"
-              JOIN "Courses" ON "Enrolments".course_id = "Courses".course_id
-              WHERE "Enrolments".user_email = ${instructorEmail}
-              AND "Enrolments".enrolment_type = 'instructor'
-              ORDER BY "Courses".course_name, "Courses".course_id;
-            `;
+            // Query to get all courses where the instructor is enrolled
+            const data = await sqlConnection`
+          SELECT c.*
+          FROM "Enrolments" e
+          JOIN "Courses" c ON e.course_id = c.course_id
+          WHERE e.user_email = ${instructorEmail}
+          AND e.enrolment_type = 'instructor'
+          ORDER BY c.course_name, c.course_id;
+        `;
 
+            response.statusCode = 200;
             response.body = JSON.stringify(data);
           } catch (err) {
             response.statusCode = 500;
-            console.log(err);
+            console.error(err);
             response.body = JSON.stringify({ error: "Internal server error" });
           }
         } else {
           response.statusCode = 400;
-          response.body = "email is required";
+          response.body = JSON.stringify({ error: "email is required" });
         }
         break;
       case "GET /instructor/analytics":
@@ -412,7 +413,7 @@ exports.handler = async (event) => {
     response.statusCode = 400;
     response.body = JSON.stringify(error.message);
   }
-  console.log(response)
+  console.log(response);
 
   return response;
 };

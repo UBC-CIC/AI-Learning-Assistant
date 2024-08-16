@@ -11,7 +11,7 @@ import {
   AccordionDetails,
   LinearProgress,
   Grid,
-  IconButton,
+  Paper,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import {
@@ -26,29 +26,27 @@ import {
 
 // Example data for the line chart
 const engagementData = [
-  { module: "Module 1", engagement: 400 },
-  { module: "Module 2", engagement: 300 },
-  { module: "Module 3", engagement: 200 },
-  { module: "Module 4", engagement: 278 },
-  { module: "Module 5", engagement: 189 },
+  { module: "Module 1: ", Engagement: 400 },
+  { module: "Module 2", Engagement: 300 },
+  { module: "Module 3", Engagement: 200 },
 ];
 
 // Example data for modules
 const modulesData = [
   {
-    name: "Module 1",
+    name: "Module 1: Introduction",
     averageGrade: 75,
     engagementDetails: "High engagement in week 1.",
     mostAskedConcepts: "Concept A, Concept B",
   },
   {
-    name: "Module 2",
+    name: "Module 2: Basics",
     averageGrade: 85,
     engagementDetails: "Moderate engagement in week 2.",
     mostAskedConcepts: "Concept C, Concept D",
   },
   {
-    name: "Module 3",
+    name: "Module 3: Advanced Topics",
     averageGrade: 90,
     engagementDetails: "Low engagement in week 3.",
     mostAskedConcepts: "Concept E, Concept F",
@@ -107,37 +105,44 @@ const InstructorAnalytics = ({ courseName, course_id }) => {
       >
         {courseName}
       </Typography>
-      <Box mb={4}>
-        <Typography color="black" textAlign="left" paddingLeft={10}>
-          Student Engagement
-        </Typography>
-        <LineChart
-          width={600}
-          height={300}
-          data={engagementData}
-          margin={{
-            top: 5,
-            right: 30,
-            left: 20,
-            bottom: 5,
-          }}
-        >
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="module" />
-          <YAxis />
-          <Tooltip />
-          <Legend />
-          <Line
-            type="monotone"
-            dataKey="engagement"
-            stroke="#8884d8"
-            activeDot={{ r: 8 }}
-          />
-        </LineChart>
-      </Box>
+      <Paper>
+        <Box mb={4}>
+          <Typography
+            color="black"
+            textAlign="left"
+            paddingLeft={10}
+            padding={2}
+          >
+            Student Engagement
+          </Typography>
+          <LineChart
+            width={600}
+            height={300}
+            data={engagementData}
+            margin={{
+              top: 5,
+              right: 30,
+              left: 20,
+              bottom: 5,
+            }}
+          >
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="module" />
+            <YAxis />
+            <Tooltip />
+            <Legend />
+            <Line
+              type="monotone"
+              dataKey="Engagement"
+              stroke="#8884d8"
+              activeDot={{ r: 8 }}
+            />
+          </LineChart>
+        </Box>
+      </Paper>
 
       <Tabs value={value} onChange={handleChange} aria-label="grade tabs">
-        <Tab label="Grades" />
+        <Tab label="Insights" />
       </Tabs>
 
       {value === 0 && (

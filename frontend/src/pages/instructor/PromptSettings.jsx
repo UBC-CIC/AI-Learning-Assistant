@@ -29,7 +29,7 @@ const PromptSettings = ({ courseName, course_id }) => {
           overflowY: "scroll",
         }}
       >
-        <Box mb={2} sx={{ flexGrow: 1, p: 3, textAlign: "left" }}>
+        <Box mb={1} sx={{ flexGrow: 1, p: 3, textAlign: "left" }}>
           <Typography
             color="black"
             fontStyle="semibold"
@@ -40,13 +40,22 @@ const PromptSettings = ({ courseName, course_id }) => {
             {courseName} Prompt Settings
           </Typography>
           <Typography variant="h8">
-            example and brief explanation of how it works
+            Changes to the prompt will be applied to the LLM for this specific
+            course.
           </Typography>
           <TextField
             fullWidth
             multiline
-            rows={4}
-            value="Here is an example prompt:"
+            rows={6}
+            value={`client = anthropic.Client(api_key="YOUR_API_KEY")
+            response = client.messages.create(
+                model="claude-2.1",
+                system="Respond only in Spanish.", # <-- system prompt
+                messages=[
+                    {"role": "user", "content": "Hello, Claude!"} # <-- user prompt
+                ]
+            )
+            print(response.message)`}
             InputProps={{
               readOnly: true,
             }}
@@ -55,12 +64,12 @@ const PromptSettings = ({ courseName, course_id }) => {
           />
         </Box>
 
-        <Box mb={2} sx={{ flexGrow: 1, p: 3, textAlign: "left" }}>
+        <Box mb={1} sx={{ flexGrow: 1, p: 3, textAlign: "left" }}>
           <Typography variant="h6">Your Prompt</Typography>
           <TextField
             fullWidth
             multiline
-            rows={4}
+            rows={6}
             value={userPrompt}
             onChange={(e) => setUserPrompt(e.target.value)}
             variant="outlined"

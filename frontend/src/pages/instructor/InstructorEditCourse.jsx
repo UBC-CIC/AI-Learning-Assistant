@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext, createContext } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
+import AWS from "aws-sdk";
 import {
   TextField,
   Button,
@@ -19,7 +20,7 @@ import PageContainer from "../Container";
 const sampleModule = {
   id: "1",
   name: "Introduction to Course",
-  description: "Overview of the course.",
+  concept: "Overview of the course.",
   content: "This is the content of the module.",
   files: [
     { id: "file1", name: "file1.pdf" },
@@ -110,9 +111,9 @@ const InstructorEditCourse = () => {
         />
 
         <TextField
-          label="Description"
-          name="description"
-          value={module.description}
+          label="Concept"
+          name="concept"
+          value={module.concept}
           onChange={handleInputChange}
           fullWidth
           margin="normal"
@@ -153,7 +154,7 @@ const InstructorEditCourse = () => {
                   type="file"
                   multiple
                   hidden
-                  onChange={handleFileChange}
+                  onChange={(e) => handleFileUpload(e.target.files)}
                 />
                 <IconButton
                   color="primary"
@@ -209,7 +210,7 @@ const InstructorEditCourse = () => {
               <Grid item xs={12}>
                 <input
                   type="file"
-                  sx={{ paddingLeft: 3 }}
+                  sx={{ paddingLeft: 10 }}
                   onChange={(e) =>
                     handleImageWithTextChange(index, "image", e.target.files[0])
                   }
@@ -236,6 +237,7 @@ const InstructorEditCourse = () => {
             variant="contained"
             color="primary"
             onClick={handleAddImageWithText}
+            sx={{ margin: 2 }}
           >
             Add Another
           </Button>

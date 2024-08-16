@@ -1,7 +1,7 @@
 import "./App.css";
 // amplify
 import { Amplify } from "aws-amplify";
-import { getCurrentUser, fetchAuthSession } from "aws-amplify/auth";
+import { getCurrentUser, fetchAuthSession, decodeJWT } from "aws-amplify/auth";
 import "@aws-amplify/ui-react/styles.css";
 // react-router
 import {
@@ -18,7 +18,6 @@ import StudentChat from "./pages/student/StudentChat";
 import AdminHomepage from "./pages/admin/AdminHomepage";
 import InstructorHomepage from "./pages/instructor/InstructorHomepage";
 import CourseView from "./pages/student/CourseView";
-// functions
 
 Amplify.configure({
   API: {
@@ -74,7 +73,6 @@ function App() {
   //   getCognitoUser();
   // }, []);
 
-
   useEffect(() => {
     const fetchAuthData = async () => {
       try {
@@ -87,7 +85,6 @@ function App() {
             "auth token payload",
             tokens.accessToken.payload["cognito:groups"]
           );
-          // console.log("user", user);
           console.log(userGroup);
         }
       } catch (error) {
@@ -105,16 +102,15 @@ function App() {
     ) {
       return <AdminHomepage />;
     } else if (userGroup && userGroup.includes("instructor")) {
-      return <InstructorHomepage/>;
+      return <InstructorHomepage />;
     } else if (userGroup && userGroup.includes("student")) {
-      return <StudentHomepage setCourse = {setCourse}/>;
+      return <StudentHomepage setCourse={setCourse} />;
     } else {
       return <Login />;
     }
   };
 
   return (
-
     <Router>
       <Routes>
         <Route path="/" element={user ? <Navigate to="/home" /> : <Login />} />
@@ -123,7 +119,8 @@ function App() {
         <Route path="/home" element={getHomePage()} />
         <Route path="/course/*" element={<InstructorHomepage />} />
       </Routes>
-    </Router>  );
+    </Router>
+  );
 }
 
 export default App;

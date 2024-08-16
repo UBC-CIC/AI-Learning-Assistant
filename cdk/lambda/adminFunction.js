@@ -165,7 +165,7 @@ exports.handler = async (event) => {
 
             // Create the dynamic table [Course_Id]
             await sqlConnectionTableCreator`
-                CREATE TABLE IF NOT EXISTS "${courseId}" (
+                CREATE TABLE IF NOT EXISTS ${ sqlConnectionTableCreator(courseId)} (
                     chunk_id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
                     course_id uuid,
                     file_id uuid,

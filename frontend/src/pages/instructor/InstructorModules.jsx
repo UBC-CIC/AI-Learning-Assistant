@@ -21,12 +21,14 @@ const InstructorModules = ({ courseName, course_id }) => {
   const modules = [
     {
       id: "1",
-      name: "Introduction to Course",
+      concept: "Introduction",
+      name: "Module 1: Introduction",
     },
-    { id: "2", name: "Module 1: Basics" },
+    { id: "2", concept: "Basics", name: "Module 2: Basics" },
     {
       id: "3",
-      name: "Module 2: Advanced Topics",
+      concept: "Advanced",
+      name: "Module 3: Advanced Topics",
     },
   ];
   const [accessCode, setAccessCode] = useState("111111");
@@ -64,6 +66,7 @@ const InstructorModules = ({ courseName, course_id }) => {
           <TableHead>
             <TableRow>
               <TableCell>Module Name</TableCell>
+              <TableCell>Concept</TableCell>
               <TableCell>Actions</TableCell>
             </TableRow>
           </TableHead>
@@ -71,6 +74,7 @@ const InstructorModules = ({ courseName, course_id }) => {
             {modules.map((module) => (
               <TableRow key={module.id}>
                 <TableCell>{module.name}</TableCell>
+                <TableCell>{module.concept}</TableCell>
                 <TableCell>
                   <Button
                     variant="contained"
@@ -101,7 +105,14 @@ const InstructorModules = ({ courseName, course_id }) => {
           Create New Module
         </Button>
       </Box>
-      <Box sx={{ marginTop: 2, display: "flex-end" }}>
+      <Paper
+        sx={{
+          marginTop: 5,
+          display: "flex-start",
+          p: 5,
+          width: "50%",
+        }}
+      >
         <Typography variant="subtitle1" color="black">
           Access Code: {accessCode}
         </Typography>
@@ -112,7 +123,7 @@ const InstructorModules = ({ courseName, course_id }) => {
         >
           Generate New Access Code
         </Button>
-      </Box>
+      </Paper>
     </Box>
   );
 };

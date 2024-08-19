@@ -87,38 +87,14 @@ paths:
       operationId: student_text_generation_POST
       parameters:
         - in: query
-          name: user_email
+          name: input_value
           required: false
-          description: email of the user
-          schema:
-            type: string
-        - in: query
-          name: username
-          required: false
-          description: username of the user
-          schema:
-            type: string
-        - in: query
-          name: first_name
-          required: false
-          description: first name of the user
-          schema:
-            type: string
-        - in: query
-          name: last_name
-          required: false
-          description: last name of the user
-          schema:
-            type: string
-        - in: query
-          name: preferred_name
-          required: false
-          description: preferred name of the user
+          description: input value for testing
           schema:
             type: string
       responses:
         "200":
-          description: Student Created
+          description: Response with generated array and input value
         "400":
           description: Bad Request
         "401":
@@ -131,7 +107,7 @@ paths:
         - studentAuthorizer: []
       x-amazon-apigateway-integration:
         uri:
-          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${studentFunction.Arn}/invocations"
+          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${TextGenLambdaDockerFunc.Arn}/invocations"
         passthroughBehavior: "when_no_match"
         httpMethod: "POST"
         type: "aws_proxy"

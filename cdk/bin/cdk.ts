@@ -8,7 +8,6 @@ import { DatabaseStack } from '../lib/database-stack';
 import { DBFlowStack } from '../lib/dbFlow-stack';
 import { DynamoStack } from '../lib/llm-stack';
 import { VpcStack } from '../lib/vpc-stack';
-import { DockerLambdaStack } from '../lib/docker-lambda-stack';
 const app = new cdk.App();
 
 const env = { 
@@ -23,4 +22,3 @@ const apiStack = new ApiGatewayStack(app, 'ApiGatewayStack', dbStack, vpcStack, 
 const dbFlowStack = new DBFlowStack(app, 'DBFlowStack', vpcStack, dbStack, apiStack, { env });
 const amplifyStack = new AmplifyStack(app, 'AmplifyStack',apiStack, { env });
 const dataStack = new DataIngestionStack(app, 'DataIngestionStack', { env });
-const dockerLambdaStack = new DockerLambdaStack(app, 'DockerLambdaStack', vpcStack, dbStack, { env });

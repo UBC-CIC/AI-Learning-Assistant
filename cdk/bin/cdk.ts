@@ -10,7 +10,7 @@ import { DynamoStack } from '../lib/llm-stack';
 import { VpcStack } from '../lib/vpc-stack';
 import { DockerLambdaStack } from '../lib/docker-lambda-stack';
 const app = new cdk.App();
-// Define environment settings
+
 const env = { 
   account: process.env.CDK_DEFAULT_ACCOUNT, 
   region: process.env.CDK_DEFAULT_REGION 

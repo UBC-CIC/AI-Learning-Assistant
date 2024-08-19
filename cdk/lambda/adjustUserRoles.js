@@ -54,5 +54,4 @@ exports.handler = async (event) => {
     console.log(err);
     return event;
   }
-  return event;
 };

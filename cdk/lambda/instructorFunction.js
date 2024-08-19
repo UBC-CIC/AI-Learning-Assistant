@@ -71,144 +71,157 @@ exports.handler = async (event) => {
           const courseId = event.queryStringParameters.course_id;
 
           try {
-            // Query to get the number of message creations per course module
+            // Query to get the number of message creations per Course_Module
             const messageCreations = await sqlConnection`
-        SELECT
-          "Course_Modules".module_id,
-          "Course_Modules".module_name,
-          COUNT("User_Engagement_Log".log_id) AS message_count
-        FROM
-          "User_Engagement_Log"
-        JOIN
-          "Enrolments" ON "User_Engagement_Log".enrolment_id = "Enrolments".enrolment_id
-        JOIN
-          "Course_Modules" ON "User_Engagement_Log".module_id = "Course_Modules".module_id
-        WHERE
-          "User_Engagement_Log".engagement_type = 'message_creation'
-          AND "Enrolments".course_id = ${courseId}
-        GROUP BY
-          "Course_Modules".module_id, "Course_Modules".module_name;
-      `;
+                SELECT cm.module_id, cm.module_name, COUNT(m.message_id) AS message_count, cm.module_number, cc.concept_number
+                FROM "Course_Modules" cm
+                JOIN "Course_Concepts" cc ON cm.concept_id = cc.concept_id
+                LEFT JOIN "Student_Modules" sm ON cm.module_id = sm.course_module_id
+                LEFT JOIN "Sessions" s ON sm.student_module_id = s.student_module_id
+                LEFT JOIN "Messages" m ON s.session_id = m.session_id
+                WHERE cc.course_id = ${courseId}
+                GROUP BY cm.module_id, cc.concept_number
+                ORDER BY cc.concept_number ASC, cm.module_number ASC;
+              `;
 
-            // Query to get the number of module accesses per module
+            // Query to get the number of module accesses per Course_Module
             const moduleAccesses = await sqlConnection`
-        SELECT
-          "Course_Modules".module_id,
-          "Course_Modules".module_name,
-          COUNT("User_Engagement_Log".log_id) AS access_count
-        FROM
-          "User_Engagement_Log"
-        JOIN
-          "Enrolments" ON "User_Engagement_Log".enrolment_id = "Enrolments".enrolment_id
-        JOIN
-          "Course_Modules" ON "User_Engagement_Log".module_id = "Course_Modules".module_id
-        WHERE
-          "User_Engagement_Log".engagement_type = 'module_access'
-          AND "Enrolments".course_id = ${courseId}
-        GROUP BY
-          "Course_Modules".module_id, "Course_Modules".module_name;
-      `;
+                SELECT cm.module_id, cm.module_name, COUNT(sm.student_module_id) AS access_count, cm.module_number, cc.concept_number
+                FROM "Course_Modules" cm
+                JOIN "Course_Concepts" cc ON cm.concept_id = cc.concept_id
+                LEFT JOIN "Student_Modules" sm ON cm.module_id = sm.course_module_id
+                WHERE cc.course_id = ${courseId} AND sm.last_accessed IS NOT NULL
+                GROUP BY cm.module_id, cc.concept_number
+                ORDER BY cc.concept_number ASC, cm.module_number ASC;
+              `;
 
-            // Query to get the average score for each course module over all student modules
+            // Query to get the average score over all Student_Modules in the course
             const averageScores = await sqlConnection`
-        SELECT
-          "Course_Modules".module_id,
-          "Course_Modules".module_name,
-          AVG("Student_Modules".module_score) AS average_score
-        FROM
-          "Student_Modules"
-        JOIN
-          "Course_Modules" ON "Student_Modules".course_module_id = "Course_Modules".module_id
-        WHERE
-          "Course_Modules".course_id = ${courseId}
-        GROUP BY
-          "Course_Modules".module_id, "Course_Modules".module_name;
-      `;
+                SELECT cm.module_id, cm.module_name, AVG(sm.module_score) AS average_score, cm.module_number, cc.concept_number
+                FROM "Course_Modules" cm
+                JOIN "Course_Concepts" cc ON cm.concept_id = cc.concept_id
+                LEFT JOIN "Student_Modules" sm ON cm.module_id = sm.course_module_id
+                WHERE cc.course_id = ${courseId}
+                GROUP BY cm.module_id, cc.concept_number
+                ORDER BY cc.concept_number ASC, cm.module_number ASC;
+              `;
 
-            response.body = JSON.stringify({
-              messageCreations,
-              moduleAccesses,
-              averageScores,
+            // Combine all data into a single response, already ordered by concept_number and module_number
+            const analyticsData = messageCreations.map((module) => {
+              const accesses =
+                moduleAccesses.find(
+                  (ma) => ma.module_id === module.module_id
+                ) || {};
+              const scores =
+                averageScores.find((as) => as.module_id === module.module_id) ||
+                {};
+
+              return {
+                module_id: module.module_id,
+                module_name: module.module_name,
+                concept_number: module.concept_number,
+                module_number: module.module_number,
+                message_count: module.message_count,
+                access_count: accesses.access_count || 0,
+                average_score: scores.average_score || 0,
+              };
             });
+
+            response.statusCode = 200;
+            response.body = JSON.stringify(analyticsData);
           } catch (err) {
             response.statusCode = 500;
-            console.log(err);
+            console.error(err);
             response.body = JSON.stringify({ error: "Internal server error" });
           }
         } else {
           response.statusCode = 400;
-          response.body = "course_id is required";
+          response.body = JSON.stringify({ error: "course_id is required" });
         }
         break;
       case "POST /instructor/create_concept":
         if (
           event.queryStringParameters != null &&
           event.queryStringParameters.course_id &&
-          event.body
+          event.queryStringParameters.concept_number
         ) {
+          const courseId = event.queryStringParameters.course_id;
+          const conceptNumber = event.queryStringParameters.concept_number;
+          const { concept_name } = JSON.parse(event.body);
+
+          if (!concept_name) {
+            response.statusCode = 400;
+            response.body = JSON.stringify({
+              error: "concept_name is required",
+            });
+            break;
+          }
+
           try {
-            const course_id = event.queryStringParameters.course_id;
-            const { concept_name } = JSON.parse(event.body);
-
-            // Insert new concept into Course_Concepts table
-            const newConcept = await sqlConnection`
-                INSERT INTO "Course_Concepts" (concept_id, course_id, concept_name)
-                VALUES (uuid_generate_v4(), ${course_id}, ${concept_name})
-                RETURNING *;
-              `;
+            // Insert the new concept into the Course_Concepts table using uuid_generate_v4() for concept_id
             await sqlConnection`
-              INSERT INTO "User_Engagement_Log" (log_id, user_email, course_id, module_id, enrolment_id, timestamp, engagement_type)
-              VALUES (uuid_generate_v4(), ${event.requestContext.authorizer.email}, ${course_id}, null, null, CURRENT_TIMESTAMP, 'instructor_created_concept')
-            `;
+                        INSERT INTO "Course_Concepts" (
+                            "concept_id", "course_id", "concept_number", "concept_name"
+                        ) VALUES (
+                            uuid_generate_v4(), ${courseId}, ${conceptNumber}, ${concept_name}
+                        );
+                    `;
 
-            response.body = JSON.stringify(newConcept[0]);
+            response.statusCode = 201;
+            response.body = JSON.stringify({
+              message: "Concept created successfully",
+            });
           } catch (err) {
             response.statusCode = 500;
-            console.log(err);
+            console.error(err);
             response.body = JSON.stringify({ error: "Internal server error" });
           }
         } else {
           response.statusCode = 400;
-          response.body = "course_id or request body is missing";
+          response.body = JSON.stringify({
+            error: "course_id and concept_number are required",
+          });
         }
         break;
       case "PUT /instructor/edit_concept":
         if (
           event.queryStringParameters != null &&
           event.queryStringParameters.concept_id &&
-          event.queryStringParameters.instructor_email &&
-          event.body
+          event.queryStringParameters.concept_number
         ) {
+          const conceptId = event.queryStringParameters.concept_id;
+          const conceptNumber = event.queryStringParameters.concept_number;
+          const { concept_name } = JSON.parse(event.body);
+
           try {
-            const concept_id = event.queryStringParameters.concept_id;
-            const instructor_email =
-              event.queryStringParameters.instructor_email;
-            const { concept_name } = JSON.parse(event.body);
+            // Update the concept's name and number
+            const result = await sqlConnection`
+                      UPDATE "Course_Concepts"
+                      SET
+                          concept_name = ${concept_name},
+                          concept_number = ${conceptNumber}
+                      WHERE
+                          concept_id = ${conceptId}
+                      RETURNING *;
+                  `;
 
-            // Update concept name in Course_Concepts table
-            const updatedConcept = await sqlConnection`
-                UPDATE "Course_Concepts"
-                SET concept_name = ${concept_name}
-                WHERE concept_id = ${concept_id}
-                RETURNING *;
-              `;
-            // Insert into User Engagement Log
-            await sqlConnection`
-              INSERT INTO "User_Engagement_Log" (log_id, user_email, course_id, module_id, enrolment_id, timestamp, engagement_type)
-              VALUES (uuid_generate_v4(), ${instructor_email}, (
-                  SELECT course_id FROM "Course_Concepts" WHERE concept_id = ${concept_id}
-              ), null, null, CURRENT_TIMESTAMP, 'instructor_edited_concept')
-            `;
-
-            response.body = JSON.stringify(updatedConcept[0]);
+            if (result.length > 0) {
+              response.statusCode = 200;
+              response.body = JSON.stringify(result[0]);
+            } else {
+              response.statusCode = 404;
+              response.body = JSON.stringify({ error: "Concept not found" });
+            }
           } catch (err) {
             response.statusCode = 500;
-            console.log(err);
+            console.error(err);
             response.body = JSON.stringify({ error: "Internal server error" });
           }
         } else {
           response.statusCode = 400;
-          response.body = "concept_id or request body is missing";
+          response.body = JSON.stringify({
+            error: "concept_id and concept_number are required",
+          });
         }
         break;
       case "POST /instructor/create_module":
@@ -231,15 +244,15 @@ exports.handler = async (event) => {
 
             // Insert new module into Course_Modules table
             const newModule = await sqlConnection`
-                  INSERT INTO "Course_Modules" (module_id, concept_id, course_id, module_name, module_number)
-                  VALUES (uuid_generate_v4(), ${concept_id}, ${course_id}, ${module_name}, ${module_number})
-                  RETURNING *;
-                `;
+                INSERT INTO "Course_Modules" (module_id, concept_id, module_name, module_number)
+                VALUES (uuid_generate_v4(), ${concept_id}, ${module_name}, ${module_number})
+                RETURNING *;
+              `;
 
             // Insert into User Engagement Log
             await sqlConnection`
                   INSERT INTO "User_Engagement_Log" (log_id, user_email, course_id, module_id, enrolment_id, timestamp, engagement_type)
-                  VALUES (uuid_generate_v4(), ${instructor_email}, ${course_id}, (SELECT module_id FROM "Course_Modules" WHERE module_name = ${module_name}), null, CURRENT_TIMESTAMP, 'instructor_created_module')
+                  VALUES (uuid_generate_v4(), ${instructor_email}, ${course_id}, ${newModule[0].module_id}, null, CURRENT_TIMESTAMP, 'instructor_created_module')
                 `;
 
             response.body = JSON.stringify(newModule[0]);
@@ -258,37 +271,51 @@ exports.handler = async (event) => {
         if (
           event.queryStringParameters != null &&
           event.queryStringParameters.module_id &&
-          event.queryStringParameters.instructor_email &&
-          event.body
+          event.queryStringParameters.module_number &&
+          event.queryStringParameters.instructor_email
         ) {
-          try {
-            const { module_id, instructor_email } = event.queryStringParameters;
-            const { module_name, module_number } = JSON.parse(event.body);
+          const { module_id, module_number, instructor_email } =
+            event.queryStringParameters;
+          const { module_name } = JSON.parse(event.body || "{}");
 
-            // Update module details in Course_Modules table
-            const updatedModule = await sqlConnection`
-                  UPDATE "Course_Modules"
-                  SET module_name = ${module_name}, module_number = ${module_number}
-                  WHERE module_id = ${module_id}
-                  RETURNING *;
-                `;
+          if (module_name) {
+            try {
+              // Update the module in the Course_Modules table
+              await sqlConnection`
+                UPDATE "Course_Modules"
+                SET module_name = ${module_name}, module_number = ${module_number}
+                WHERE module_id = ${module_id};
+              `;
 
-            // Insert into User Engagement Log
-            await sqlConnection`
+              // Insert into User Engagement Log
+              await sqlConnection`
                   INSERT INTO "User_Engagement_Log" (log_id, user_email, course_id, module_id, enrolment_id, timestamp, engagement_type)
-                  VALUES (uuid_generate_v4(), ${instructor_email}, (SELECT course_id FROM "Course_Modules" WHERE module_id = ${module_id}), ${module_id}, null, CURRENT_TIMESTAMP, 'instructor_edited_module')
+                  VALUES (uuid_generate_v4(), ${instructor_email}, NULL, ${module_id}, NULL, CURRENT_TIMESTAMP, 'instructor_edited_module');
                 `;
 
-            response.body = JSON.stringify(updatedModule[0]);
-          } catch (err) {
-            response.statusCode = 500;
-            console.log(err);
-            response.body = JSON.stringify({ error: "Internal server error" });
+              response.statusCode = 200;
+              response.body = JSON.stringify({
+                message: "Module updated successfully",
+              });
+            } catch (err) {
+              response.statusCode = 500;
+              console.error(err);
+              response.body = JSON.stringify({
+                error: "Internal server error",
+              });
+            }
+          } else {
+            response.statusCode = 400;
+            response.body = JSON.stringify({
+              error: "module_name is required in the body",
+            });
           }
         } else {
           response.statusCode = 400;
-          response.body =
-            "module_id, instructor_email, or request body is missing";
+          response.body = JSON.stringify({
+            error:
+              "module_id, module_number, or instructor_email is missing in query string parameters",
+          });
         }
         break;
       case "PUT /instructor/prompt":
@@ -333,27 +360,27 @@ exports.handler = async (event) => {
           event.queryStringParameters != null &&
           event.queryStringParameters.course_id
         ) {
-          try {
-            const { course_id } = event.queryStringParameters;
+          const { course_id } = event.queryStringParameters;
 
-            // Fetch student , username, and user_email enrolled in the course
-            const studentsData = await sqlConnection`
-                SELECT "Users".username, Users.user_email
-                FROM "Users"
-                JOIN "Enrolments" ON "Users".user_email = "Enrolments".user_email
-                WHERE "Enrolments".course_id = ${course_id}
-                  AND "Enrolments".enrolment_type = 'student';
+          try {
+            // Query to get all students enrolled in the given course
+            const enrolledStudents = await sqlConnection`
+                SELECT u.user_email, u.username, u.first_name, u.last_name
+                FROM "Enrolments" e
+                JOIN "Users" u ON e.user_email = u.user_email
+                WHERE e.course_id = ${course_id} AND e.enrolment_type = 'student';
               `;
 
-            response.body = JSON.stringify(studentsData);
+            response.statusCode = 200;
+            response.body = JSON.stringify(enrolledStudents);
           } catch (err) {
             response.statusCode = 500;
-            console.log(err);
+            console.error(err);
             response.body = JSON.stringify({ error: "Internal server error" });
           }
         } else {
           response.statusCode = 400;
-          response.body = "course_id is required";
+          response.body = JSON.stringify({ error: "course_id is required" });
         }
         break;
       case "DELETE /instructor/delete_student":
@@ -403,6 +430,151 @@ exports.handler = async (event) => {
           response.statusCode = 400;
           response.body =
             "course_id, user_email, and instructor_email are required";
+        }
+        break;
+      case "GET /instructor/view_modules":
+        if (
+          event.queryStringParameters != null &&
+          event.queryStringParameters.course_id
+        ) {
+          const { course_id } = event.queryStringParameters;
+
+          try {
+            // Query to get all modules for the given course
+            const courseModules = await sqlConnection`
+        SELECT cm.module_id, cm.module_name, cm.module_number, cc.concept_name, cc.concept_number
+        FROM "Course_Modules" cm
+        JOIN "Course_Concepts" cc ON cm.concept_id = cc.concept_id
+        WHERE cc.course_id = ${course_id}
+        ORDER BY cc.concept_number ASC, cm.module_number ASC;
+      `;
+
+            response.statusCode = 200;
+            response.body = JSON.stringify(courseModules);
+          } catch (err) {
+            response.statusCode = 500;
+            console.error(err);
+            response.body = JSON.stringify({ error: "Internal server error" });
+          }
+        } else {
+          response.statusCode = 400;
+          response.body = JSON.stringify({ error: "course_id is required" });
+        }
+        break;
+      case "GET /instructor/view_concepts":
+        if (
+          event.queryStringParameters != null &&
+          event.queryStringParameters.course_id
+        ) {
+          const courseId = event.queryStringParameters.course_id;
+
+          try {
+            // Query to get all concepts for the given course
+            const concepts = await sqlConnection`
+                SELECT concept_id, concept_name, concept_number
+                FROM "Course_Concepts"
+                WHERE course_id = ${courseId}
+                ORDER BY concept_number ASC;
+              `;
+
+            response.statusCode = 200;
+            response.body = JSON.stringify(concepts);
+          } catch (err) {
+            response.statusCode = 500;
+            console.error(err);
+            response.body = JSON.stringify({ error: "Internal server error" });
+          }
+        } else {
+          response.statusCode = 400;
+          response.body = JSON.stringify({ error: "course_id is required" });
+        }
+        break;
+      case "DELETE /instructor/delete_concept":
+        if (
+          event.queryStringParameters != null &&
+          event.queryStringParameters.concept_id
+        ) {
+          const conceptId = event.queryStringParameters.concept_id;
+
+          try {
+            // Delete the concept from the Course_Concepts table
+            await sqlConnection`
+                DELETE FROM "Course_Concepts"
+                WHERE concept_id = ${conceptId};
+              `;
+
+            response.statusCode = 200;
+            response.body = JSON.stringify({
+              message: "Concept deleted successfully",
+            });
+          } catch (err) {
+            response.statusCode = 500;
+            console.error(err);
+            response.body = JSON.stringify({ error: "Internal server error" });
+          }
+        } else {
+          response.statusCode = 400;
+          response.body = JSON.stringify({ error: "concept_id is required" });
+        }
+        break;
+      case "DELETE /instructor/delete_module":
+        if (
+          event.queryStringParameters != null &&
+          event.queryStringParameters.module_id
+        ) {
+          const moduleId = event.queryStringParameters.module_id;
+
+          try {
+            // Delete the module from the Course_Modules table
+            await sqlConnection`
+                DELETE FROM "Course_Modules"
+                WHERE module_id = ${moduleId};
+              `;
+
+            response.statusCode = 200;
+            response.body = JSON.stringify({
+              message: "Module deleted successfully",
+            });
+          } catch (err) {
+            response.statusCode = 500;
+            console.error(err);
+            response.body = JSON.stringify({ error: "Internal server error" });
+          }
+        } else {
+          response.statusCode = 400;
+          response.body = JSON.stringify({ error: "module_id is required" });
+        }
+        break;
+      case "GET /instructor/get_prompt":
+        if (
+          event.queryStringParameters != null &&
+          event.queryStringParameters.course_id
+        ) {
+          try {
+            const { course_id } = event.queryStringParameters;
+
+            // Retrieve the system prompt from the Courses table
+            const coursePrompt = await sqlConnection`
+                    SELECT system_prompt 
+                    FROM "Courses"
+                    WHERE course_id = ${course_id};
+                  `;
+
+            if (coursePrompt.length > 0) {
+              response.statusCode = 200;
+              response.body = JSON.stringify(coursePrompt[0]);
+            } else {
+              response.statusCode = 404;
+              response.body = JSON.stringify({ error: "Course not found" });
+            }
+          } catch (err) {
+            response.statusCode = 500;
+            console.error(err);
+            response.body = JSON.stringify({ error: "Internal server error" });
+          }
+        } else {
+          response.statusCode = 400;
+          response.body = "course_id is missing";
         }
         break;
 

@@ -6,7 +6,7 @@ import {
   useParams,
   useLocation,
 } from "react-router-dom";
-import { fetchAuthSession, fetchUserAttributes } from "aws-amplify/auth";
+import { fetchAuthSession, getCurrentUser } from "aws-amplify/auth";
 import {
   Typography,
   Box,
@@ -93,12 +93,11 @@ const InstructorHomepage = () => {
       try {
         const session = await fetchAuthSession();
         var token = session.tokens.idToken.toString();
-        const userAtrributes = await fetchUserAttributes();
-        const email = userAtrributes.email;
+        const { signInDetails } = await getCurrentUser();
         const response = await fetch(
           `${
             import.meta.env.VITE_API_ENDPOINT
-          }instructor/courses?email=${encodeURIComponent(email)}`,
+          }instructor/courses?email=${encodeURIComponent(signInDetails.loginId)}`,
           {
             method: "GET",
             headers: {
@@ -174,15 +173,15 @@ const InstructorHomepage = () => {
               >
                 Courses
               </Typography>
-              <Paper sx={{ width: "100%", overflow: "hidden", marginTop: 2 }}>
-                <TableContainer>
-                  <TextField
-                    label="Search by Course"
-                    variant="outlined"
-                    value={searchQuery}
-                    onChange={handleSearchChange}
-                    sx={{ margin: 2, width: "95%", alignContent: "left" }}
-                  />
+              <Paper sx={{ width: "80%", overflow: "hidden", margin: "0 auto", padding: 2 }}>
+                <TextField
+                  label="Search by Course"
+                  variant="outlined"
+                  value={searchQuery}
+                  onChange={handleSearchChange}
+                  sx={{ width: "100%", marginBottom: 2 }}
+                />
+                <TableContainer sx={{ width: "100%" }}>
                   <Table aria-label="course table">
                     <TableHead>
                       <TableRow>
@@ -252,6 +251,8 @@ const InstructorHomepage = () => {
       />
     </Routes>
   );
+  
+  
 };
 
 export default InstructorHomepage;

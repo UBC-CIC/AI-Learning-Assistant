@@ -43,35 +43,6 @@ function App() {
   const [userInfo, setUserInfo] = useState({});
   const [course, setCourse] = useState(null);
   const [module, setModule] = useState(null);
-  //get user info and render page based on role
-
-  // useEffect(() => {
-  //   async function getUserInfo(email) {
-  //     try {
-  //       const userInformation = await getUser(email);
-  //       setUserInfo(userInformation);
-  //       console.log("user info", userInformation);
-  //     } catch (error) {
-  //       console.log("Error getting user:", error);
-  //     }
-  //   }
-
-  //   async function getCognitoUser() {
-  //     try {
-  //       const currentUser = await getCurrentUser();
-  //       setUser(currentUser);
-  //       console.log(currentUser.signInDetails.loginId, "is signed in");
-  //       getUserInfo(currentUser.signInDetails.loginId);
-  //       <Navigate to="/home" />;
-  //     } catch (error) {
-  //       setUser(null);
-  //       console.log("Error getting user:", error);
-  //       <Navigate to="/" />;
-  //     }
-  //   }
-
-  //   getCognitoUser();
-  // }, []);
 
   useEffect(() => {
     const fetchAuthData = async () => {

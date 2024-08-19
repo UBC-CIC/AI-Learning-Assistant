@@ -133,7 +133,8 @@ def handler(event, context):
             CREATE TABLE IF NOT EXISTS "Course_Concepts" (
             "concept_id" uuid PRIMARY KEY DEFAULT (uuid_generate_v4()),
             "course_id" uuid,
-            "concept_name" varchar
+            "concept_name" varchar,
+            "concept_number" integer
             );
 
             CREATE TABLE IF NOT EXISTS "User_Engagement_Log" (
@@ -146,13 +147,13 @@ def handler(event, context):
             "engagement_type" varchar
             );
 
-            ALTER TABLE "User_Engagement_Log" ADD FOREIGN KEY ("enrolment_id") REFERENCES "Enrolments" ("enrolment_id");
+            ALTER TABLE "User_Engagement_Log" ADD FOREIGN KEY ("enrolment_id") REFERENCES "Enrolments" ("enrolment_id"); ON DELETE CASCADE ON UPDATE CASCADE;
 
-            ALTER TABLE "User_Engagement_Log" ADD FOREIGN KEY ("user_email") REFERENCES "Users" ("user_email");
+            ALTER TABLE "User_Engagement_Log" ADD FOREIGN KEY ("user_email") REFERENCES "Users" ("user_email"); ON DELETE CASCADE ON UPDATE CASCADE;
 
             ALTER TABLE "User_Engagement_Log" ADD FOREIGN KEY ("course_id") REFERENCES "Courses" ("course_id") ON DELETE CASCADE ON UPDATE CASCADE;
 
-            ALTER TABLE "User_Engagement_Log" ADD FOREIGN KEY ("module_id") REFERENCES "Course_Modules" ("module_id");
+            ALTER TABLE "User_Engagement_Log" ADD FOREIGN KEY ("module_id") REFERENCES "Course_Modules" ("module_id") ON DELETE CASCADE ON UPDATE CASCADE;
 
             ALTER TABLE "Course_Concepts" ADD FOREIGN KEY ("course_id") REFERENCES "Courses" ("course_id") ON DELETE CASCADE ON UPDATE CASCADE;
 

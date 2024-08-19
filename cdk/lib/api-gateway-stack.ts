@@ -784,5 +784,32 @@ export class ApiGatewayStack extends cdk.Stack {
     apiGW_authorizationFunction_instructor.overrideLogicalId(
       "instructorLambdaAuthorizer"
     );
+    
+    /**
+     *
+     * Create Lambda with container image for text generation workflow in RAG pipeline
+     */
+    const dockerFunc = new lambda.DockerImageFunction(this, "TextGenLambdaDockerFunc", {
+      code: lambda.DockerImageCode.fromImageAsset("./text_generation"),
+      memorySize: 512,
+      timeout: cdk.Duration.seconds(300),
+      vpc: vpcStack.vpc, // Pass the VPC
+      functionName: "TextGenLambdaDockerFunc",
+      environment: {
+        SM_DB_CREDENTIALS: db.secretPathUser.secretName, // Database User Credentials
+        RDS_PROXY_ENDPOINT: db.rdsProxyEndpoint, // RDS Proxy Endpoint
+      },
+    });
+
+    // Override the Logical ID of the Lambda Function to get ARN in OpenAPI
+    const cfnDockerFunc = dockerFunc.node.defaultChild as lambda.CfnFunction;
+    cfnDockerFunc.overrideLogicalId("TextGenLambdaDockerFunc");
+
+    // Add the permission to the Lambda function's policy to allow API Gateway access
+    dockerFunc.addPermission("AllowApiGatewayInvoke", {
+      principal: new iam.ServicePrincipal("apigateway.amazonaws.com"),
+      action: "lambda:InvokeFunction",
+      sourceArn: `arn:aws:execute-api:${this.region}:${this.account}:${this.api.restApiId}/*/*/student*`,
+    });
   }
 }

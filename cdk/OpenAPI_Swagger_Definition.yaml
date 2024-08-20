@@ -1983,7 +1983,182 @@ paths:
         passthroughBehavior: "when_no_match"
         httpMethod: "POST"
         type: "aws_proxy"
-  
+  /instructor/generate_access_code:
+    options:
+      summary: CORS support
+      description: |
+        Enable CORS by returning correct headers
+      responses:
+        200:
+          $ref: "#/components/responses/Success"
+      x-amazon-apigateway-integration:
+        type: mock
+        requestTemplates:
+          application/json: |
+            {
+              "statusCode" : 200
+            }
+        responses:
+          default:
+            statusCode: "200"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key'"
+              method.response.header.Access-Control-Allow-Methods: "'*'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+            responseTemplates:
+              application/json: |
+                {}
+    put:
+      tags:
+        - Instructor
+      summary: Generate a new access code for a course
+      operationId: instructor_generate_access_code_PUT
+      parameters:
+        - in: query
+          name: course_id
+          required: true
+          description: The ID of the course
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Access code generated successfully
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "429":
+          description: Too Many Requests
+        "500":
+          description: Internal Server Error
+      security:
+        - instructorAuthorizer: []
+      x-amazon-apigateway-integration:
+        uri:
+          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${instructorFunction.Arn}/invocations"
+        passthroughBehavior: "when_no_match"
+        httpMethod: "POST"
+        type: "aws_proxy"
+  /instructor/get_access_code:
+    options:
+        summary: CORS support
+        description: |
+          Enable CORS by returning correct headers
+        responses:
+          200:
+            $ref: "#/components/responses/Success"
+        x-amazon-apigateway-integration:
+          type: mock
+          requestTemplates:
+            application/json: |
+              {
+                "statusCode" : 200
+              }
+          responses:
+            default:
+              statusCode: "200"
+              responseParameters:
+                method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key'"
+                method.response.header.Access-Control-Allow-Methods: "'*'"
+                method.response.header.Access-Control-Allow-Origin: "'*'"
+              responseTemplates:
+                application/json: |
+                  {}
+    get:
+      tags:
+        - Instructor
+      summary: Get the access code for a course
+      operationId: instructor_get_access_code_GET
+      parameters:
+        - in: query
+          name: course_id
+          required: true
+          description: The ID of the course
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Access code retrieved successfully
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "429":
+          description: Too Many Requests
+        "500":
+          description: Internal Server Error
+      security:
+        - instructorAuthorizer: []
+      x-amazon-apigateway-integration:
+        uri:
+          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${instructorFunction.Arn}/invocations"
+        passthroughBehavior: "when_no_match"
+        httpMethod: "POST"
+        type: "aws_proxy"
+  /instructor/view_student_messages:
+    options:
+      summary: CORS support
+      description: |
+        Enable CORS by returning correct headers
+      responses:
+        200:
+          $ref: "#/components/responses/Success"
+      x-amazon-apigateway-integration:
+        type: mock
+        requestTemplates:
+          application/json: |
+            {
+              "statusCode" : 200
+            }
+        responses:
+          default:
+            statusCode: "200"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key'"
+              method.response.header.Access-Control-Allow-Methods: "'*'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+            responseTemplates:
+              application/json: |
+                {}
+    get:
+      tags:
+        - Instructor
+      summary: Get all messages for a specific student in a specific course
+      operationId: instructor_view_student_messages_GET
+      parameters:
+        - in: query
+          name: course_id
+          required: true
+          description: The ID of the course
+          schema:
+            type: string
+        - in: query
+          name: student_email
+          required: true
+          description: The email of the student
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Messages retrieved successfully
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "429":
+          description: Too Many Requests
+        "500":
+          description: Internal Server Error
+      security:
+        - instructorAuthorizer: []
+      x-amazon-apigateway-integration:
+        uri:
+          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${instructorFunction.Arn}/invocations"
+        passthroughBehavior: "when_no_match"
+        httpMethod: "POST"
+        type: "aws_proxy"
+
+
   /admin/instructors:
     options:
       summary: CORS support

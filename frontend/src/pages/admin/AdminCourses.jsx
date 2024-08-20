@@ -173,7 +173,10 @@ export const AdminCourses = ({ setSelectedCourse }) => {
                 page={page}
                 onPageChange={handleChangePage}
                 onRowsPerPageChange={handleChangeRowsPerPage}
-                sx={{ fontSize: 12 }}
+                sx={{
+                  fontSize: 12,
+                  minWidth: 400,
+                }}
               />
             </TableRow>
           </TableFooter>

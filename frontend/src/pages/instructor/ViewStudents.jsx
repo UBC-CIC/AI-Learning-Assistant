@@ -26,9 +26,7 @@ const createData = (name, email) => {
 };
 
 const initialRows = [
-  createData("aurora c", "auroraxc4@gmail.com"),
-  createData("Jane Smith", "jane.smith@example.com"),
-  createData("Bob Johnson", "bob.johnson@example.com"),
+  createData("loading...", "loading..."),
 ];
 
 export const ViewStudents = ({ courseName, course_id }) => {
@@ -37,6 +35,7 @@ export const ViewStudents = ({ courseName, course_id }) => {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [loading, setLoading] = useState(false);
+
   const navigate = useNavigate();
 
   console.log(course_id);
@@ -61,7 +60,11 @@ export const ViewStudents = ({ courseName, course_id }) => {
         );
         if (response.ok) {
           const data = await response.json();
-          console.log("Students in course:", data);
+          const formattedData = data.map((student) => {
+            return createData(`${student.first_name} ${student.last_name}`,student.user_email)
+          })
+          setRows(formattedData);
+          console.log("Students in course:", formattedData);
         } else {
           console.error("Failed to fetch students:", response.statusText);
         }
@@ -89,10 +92,9 @@ export const ViewStudents = ({ courseName, course_id }) => {
   const filteredRows = rows.filter((row) =>
     row.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
-
   const handleRowClick = (student) => {
     navigate(`/course/${course_id}/student/${student.name}`, {
-      state: { student },
+      state: { course_id, student },
     });
   };
 

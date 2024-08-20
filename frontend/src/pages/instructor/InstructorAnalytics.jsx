@@ -24,46 +24,16 @@ import {
   Legend,
 } from "recharts";
 
-// Example data for the line chart
-const engagementData = [
-  { module: "Module 1: ", Engagement: 400 },
-  { module: "Module 2", Engagement: 300 },
-  { module: "Module 3", Engagement: 200 },
-];
-
-// Example data for modules
-const modulesData = [
-  {
-    name: "Module 1: Introduction",
-    averageGrade: 75,
-    engagementDetails: "High engagement in week 1.",
-    mostAskedConcepts: "Concept A, Concept B",
-  },
-  {
-    name: "Module 2: Basics",
-    averageGrade: 85,
-    engagementDetails: "Moderate engagement in week 2.",
-    mostAskedConcepts: "Concept C, Concept D",
-  },
-  {
-    name: "Module 3: Advanced Topics",
-    averageGrade: 90,
-    engagementDetails: "Low engagement in week 3.",
-    mostAskedConcepts: "Concept E, Concept F",
-  },
-];
-
 const InstructorAnalytics = ({ courseName, course_id }) => {
   const [value, setValue] = useState(0);
-  console.log("course name", courseName);
-  console.log("course id", course_id);
+  const [graphData, setGraphData] = useState([]);
+  const [data, setData] = useState([]);
 
-  // retrieve analytics data
   useEffect(() => {
     const fetchAnalytics = async () => {
       try {
         const session = await fetchAuthSession();
-        var token = session.tokens.idToken.toString();
+        const token = session.tokens.idToken.toString();
         const response = await fetch(
           `${
             import.meta.env.VITE_API_ENDPOINT
@@ -77,8 +47,16 @@ const InstructorAnalytics = ({ courseName, course_id }) => {
           }
         );
         if (response.ok) {
-          const data = await response.json();
-          console.log("Course analytics:", data);
+          const analytics_data = await response.json();
+          console.log(analytics_data)
+          setData(analytics_data);
+          const graphDataFormatted = analytics_data.map((module) => ({
+            module: module.module_name,
+            Messages: module.message_count,
+          }));
+          setGraphData(graphDataFormatted);
+
+          console.log("Course analytics:", graphDataFormatted);
         } else {
           console.error("Failed to fetch analytics:", response.statusText);
         }
@@ -88,7 +66,7 @@ const InstructorAnalytics = ({ courseName, course_id }) => {
     };
 
     fetchAnalytics();
-  }, []);
+  }, [course_id]);
 
   const handleChange = (event, newValue) => {
     setValue(newValue);
@@ -113,13 +91,13 @@ const InstructorAnalytics = ({ courseName, course_id }) => {
             paddingLeft={10}
             padding={2}
           >
-            Student Engagement
+            Message Count
           </Typography>
           <LineChart
             width={600}
             height={300}
-            data={engagementData}
-            margin={{
+            data={graphData}
+            margin={{ 
               top: 5,
               right: 30,
               left: 20,
@@ -133,7 +111,7 @@ const InstructorAnalytics = ({ courseName, course_id }) => {
             <Legend />
             <Line
               type="monotone"
-              dataKey="Engagement"
+              dataKey="Messages"
               stroke="#8884d8"
               activeDot={{ r: 8 }}
             />
@@ -147,10 +125,10 @@ const InstructorAnalytics = ({ courseName, course_id }) => {
 
       {value === 0 && (
         <Box mt={2}>
-          {modulesData.map((module, index) => (
+          {data.map((module, index) => (
             <Accordion key={index}>
               <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                <Typography>{module.name}</Typography>
+                <Typography>{module.module_name}</Typography>
               </AccordionSummary>
               <AccordionDetails>
                 <Box width="100%">
@@ -162,20 +140,24 @@ const InstructorAnalytics = ({ courseName, course_id }) => {
                   >
                     <Grid item width="80%">
                       <Typography textAlign="right">
-                        Average Grade: 91%
+                        Average Grade: {module.average_score}%
                       </Typography>
                       <LinearProgress
                         variant="determinate"
-                        value={module.averageGrade}
+                        value={module.average_score}
                       />
                     </Grid>
                     <Grid item>
-                      <Typography>Engagement Details</Typography>
-                      <Typography>{module.engagementDetails}</Typography>
+                      <Typography>Message Count</Typography>
+                      <Typography>{module.message_count}</Typography>
                     </Grid>
                     <Grid item>
-                      <Typography>Most Asked Concepts</Typography>
-                      <Typography>{module.mostAskedConcepts}</Typography>
+                      <Typography>Access Count</Typography>
+                      <Typography>{module.access_count}</Typography>
+                    </Grid>
+                    <Grid item>
+                      <Typography>Completion Percentage</Typography>
+                      <Typography>{module.perfect_score_percentage}</Typography>
                     </Grid>
                   </Grid>
                 </Box>

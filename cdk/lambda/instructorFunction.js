@@ -29,6 +29,15 @@ exports.handler = async (event) => {
     return name.toLowerCase().replace(/\s+/g, "_");
   };
 
+  function generateAccessCode() {
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    let code = "";
+    for (let i = 0; i < 16; i++) {
+      code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return code.match(/.{1,4}/g).join("-");
+  }
+
   let data;
   try {
     const pathData = event.httpMethod + " " + event.resource;
@@ -71,42 +80,50 @@ exports.handler = async (event) => {
           const courseId = event.queryStringParameters.course_id;
 
           try {
-            // Query to get the number of message creations per Course_Module
+            // Query to get all modules and their message counts
             const messageCreations = await sqlConnection`
-                SELECT cm.module_id, cm.module_name, COUNT(m.message_id) AS message_count, cm.module_number, cc.concept_number
-                FROM "Course_Modules" cm
-                JOIN "Course_Concepts" cc ON cm.concept_id = cc.concept_id
-                LEFT JOIN "Student_Modules" sm ON cm.module_id = sm.course_module_id
-                LEFT JOIN "Sessions" s ON sm.student_module_id = s.student_module_id
-                LEFT JOIN "Messages" m ON s.session_id = m.session_id
-                WHERE cc.course_id = ${courseId}
-                GROUP BY cm.module_id, cc.concept_number
-                ORDER BY cc.concept_number ASC, cm.module_number ASC;
-              `;
-
-            // Query to get the number of module accesses per Course_Module
+                      SELECT cm.module_id, cm.module_name, COUNT(m.message_id) AS message_count, cm.module_number, cc.concept_number
+                      FROM "Course_Modules" cm
+                      JOIN "Course_Concepts" cc ON cm.concept_id = cc.concept_id
+                      LEFT JOIN "Student_Modules" sm ON cm.module_id = sm.course_module_id
+                      LEFT JOIN "Sessions" s ON sm.student_module_id = s.student_module_id
+                      LEFT JOIN "Messages" m ON s.session_id = m.session_id
+                      WHERE cc.course_id = ${courseId}
+                      GROUP BY cm.module_id, cm.module_name, cm.module_number, cc.concept_number
+                      ORDER BY cc.concept_number ASC, cm.module_number ASC;
+                  `;
+            // Query to get the number of module accesses using User_Engagement_Log
             const moduleAccesses = await sqlConnection`
-                SELECT cm.module_id, cm.module_name, COUNT(sm.student_module_id) AS access_count, cm.module_number, cc.concept_number
-                FROM "Course_Modules" cm
-                JOIN "Course_Concepts" cc ON cm.concept_id = cc.concept_id
-                LEFT JOIN "Student_Modules" sm ON cm.module_id = sm.course_module_id
-                WHERE cc.course_id = ${courseId} AND sm.last_accessed IS NOT NULL
-                GROUP BY cm.module_id, cc.concept_number
-                ORDER BY cc.concept_number ASC, cm.module_number ASC;
-              `;
+              SELECT cm.module_id, COUNT(uel.log_id) AS access_count
+              FROM "Course_Modules" cm
+              JOIN "Course_Concepts" cc ON cm.concept_id = cc.concept_id
+              LEFT JOIN "User_Engagement_Log" uel ON cm.module_id = uel.module_id
+              WHERE cc.course_id = ${courseId} AND uel.engagement_type = 'module access'
+              GROUP BY cm.module_id;
+            `;
 
-            // Query to get the average score over all Student_Modules in the course
+            // Query to get the average score for each module
             const averageScores = await sqlConnection`
-                SELECT cm.module_id, cm.module_name, AVG(sm.module_score) AS average_score, cm.module_number, cc.concept_number
-                FROM "Course_Modules" cm
-                JOIN "Course_Concepts" cc ON cm.concept_id = cc.concept_id
-                LEFT JOIN "Student_Modules" sm ON cm.module_id = sm.course_module_id
-                WHERE cc.course_id = ${courseId}
-                GROUP BY cm.module_id, cc.concept_number
-                ORDER BY cc.concept_number ASC, cm.module_number ASC;
-              `;
+                      SELECT cm.module_id, AVG(sm.module_score) AS average_score
+                      FROM "Course_Modules" cm
+                      JOIN "Course_Concepts" cc ON cm.concept_id = cc.concept_id
+                      LEFT JOIN "Student_Modules" sm ON cm.module_id = sm.course_module_id
+                      WHERE cc.course_id = ${courseId}
+                      GROUP BY cm.module_id;
+                  `;
 
-            // Combine all data into a single response, already ordered by concept_number and module_number
+            // Query to get the percentage of perfect scores for each module
+            const perfectScores = await sqlConnection`
+                      SELECT cm.module_id, 
+                             COUNT(CASE WHEN sm.module_score = 100 THEN 1 END) * 100.0 / COUNT(sm.student_module_id) AS perfect_score_percentage
+                      FROM "Course_Modules" cm
+                      JOIN "Course_Concepts" cc ON cm.concept_id = cc.concept_id
+                      LEFT JOIN "Student_Modules" sm ON cm.module_id = sm.course_module_id
+                      WHERE cc.course_id = ${courseId}
+                      GROUP BY cm.module_id;
+                  `;
+
+            // Combine all data into a single response, ensuring all modules are included
             const analyticsData = messageCreations.map((module) => {
               const accesses =
                 moduleAccesses.find(
@@ -115,15 +132,20 @@ exports.handler = async (event) => {
               const scores =
                 averageScores.find((as) => as.module_id === module.module_id) ||
                 {};
+              const perfectScore =
+                perfectScores.find((ps) => ps.module_id === module.module_id) ||
+                {};
 
               return {
                 module_id: module.module_id,
                 module_name: module.module_name,
                 concept_number: module.concept_number,
                 module_number: module.module_number,
-                message_count: module.message_count,
+                message_count: module.message_count || 0,
                 access_count: accesses.access_count || 0,
-                average_score: scores.average_score || 0,
+                average_score: parseFloat(scores.average_score) || 0,
+                perfect_score_percentage:
+                  parseFloat(perfectScore.perfect_score_percentage) || 0,
               };
             });
 
@@ -139,6 +161,7 @@ exports.handler = async (event) => {
           response.body = JSON.stringify({ error: "course_id is required" });
         }
         break;
+
       case "POST /instructor/create_concept":
         if (
           event.queryStringParameters != null &&
@@ -577,7 +600,102 @@ exports.handler = async (event) => {
           response.body = "course_id is missing";
         }
         break;
+      case "GET /instructor/view_student_messages":
+        if (
+          event.queryStringParameters != null &&
+          event.queryStringParameters.student_email &&
+          event.queryStringParameters.course_id
+        ) {
+          const studentEmail = event.queryStringParameters.student_email;
+          const courseId = event.queryStringParameters.course_id;
 
+          try {
+            // Query to get the student's messages for a specific course
+            const messages = await sqlConnection`
+              SELECT m.message_content, m.time_sent, m.student_sent
+              FROM "Messages" m
+              JOIN "Sessions" s ON m.session_id = s.session_id
+              JOIN "Student_Modules" sm ON s.student_module_id = sm.student_module_id
+              JOIN "Enrolments" e ON sm.enrolment_id = e.enrolment_id
+              WHERE e.user_email = ${studentEmail}
+              AND e.course_id = ${courseId}
+              ORDER BY m.time_sent;
+            `;
+
+            response.statusCode = 200;
+            response.body = JSON.stringify(messages);
+          } catch (err) {
+            response.statusCode = 500;
+            console.error(err);
+            response.body = JSON.stringify({ error: "Internal server error" });
+          }
+        } else {
+          response.statusCode = 400;
+          response.body = JSON.stringify({
+            error: "student_email and course_id are required",
+          });
+        }
+        break;
+      case "PUT /instructor/generate_access_code":
+        if (
+          event.queryStringParameters != null &&
+          event.queryStringParameters.course_id
+        ) {
+          const courseId = event.queryStringParameters.course_id;
+
+          try {
+            const newAccessCode = generateAccessCode();
+
+            // Update the access code in the Courses table
+            const updatedCourse = await sqlConnection`
+              UPDATE "Courses"
+              SET course_access_code = ${newAccessCode}
+              WHERE course_id = ${courseId}
+              RETURNING *;
+            `;
+
+            response.statusCode = 200;
+            response.body = JSON.stringify({
+              message: "Access code generated successfully",
+              access_code: newAccessCode,
+            });
+          } catch (err) {
+            response.statusCode = 500;
+            console.error(err);
+            response.body = JSON.stringify({ error: "Internal server error" });
+          }
+        } else {
+          response.statusCode = 400;
+          response.body = JSON.stringify({ error: "course_id is required" });
+        }
+        break;
+      case "GET /instructor/get_access_code":
+        if (
+          event.queryStringParameters != null &&
+          event.queryStringParameters.course_id
+        ) {
+          const courseId = event.queryStringParameters.course_id;
+
+          try {
+            // Query to get the access code
+            const accessCode = await sqlConnection`
+        SELECT course_access_code
+        FROM "Courses"
+        WHERE course_id = ${courseId};
+      `;
+
+            response.statusCode = 200;
+            response.body = JSON.stringify(accessCode[0]);
+          } catch (err) {
+            response.statusCode = 500;
+            console.error(err);
+            response.body = JSON.stringify({ error: "Internal server error" });
+          }
+        } else {
+          response.statusCode = 400;
+          response.body = JSON.stringify({ error: "course_id is required" });
+        }
+        break;
       default:
         throw new Error(`Unsupported route: "${pathData}"`);
     }

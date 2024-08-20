@@ -63,7 +63,7 @@ const CourseDetails = () => {
           <InstructorAnalytics courseId={courseId} course_id={course_id} />
         );
       case "InstructorEditCourse":
-        return <InstructorModules courseId={courseId} />;
+        return <InstructorModules courseId={courseId} course_id={course_id}/>;
       case "PromptSettings":
         return <PromptSettings courseId={courseId} />;
       case "ViewStudents":

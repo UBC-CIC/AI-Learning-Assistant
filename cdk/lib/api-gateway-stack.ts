@@ -76,9 +76,20 @@ export class ApiGatewayStack extends cdk.Stack {
       description: "Lambda layer containing the psycopg2 Python library",
     });
 
+    /**
+     *
+     * Create ShortUUID layer for GeneratePreSignedURLFunc Lambda Function
+     */
+    const shortUuidLayer = new LayerVersion(this, "shortUuidLambdaLayer", {
+      code: Code.fromAsset("./layers/shortuuid_layer.zip"),
+      compatibleRuntimes: [Runtime.PYTHON_3_9],
+      description: "Lambda layer containing the shortuuid Python library",
+    });
+
     this.layerList["psycopg2"] = psycopgLayer;
     this.layerList["postgres"] = postgres;
     this.layerList["jwt"] = jwt;
+    this.layerList["shortuuid"] = shortUuidLayer;
 
     // Create Cognito user pool
 
@@ -845,6 +856,7 @@ export class ApiGatewayStack extends cdk.Stack {
         REGION: this.region,
       },
       functionName: "GeneratePreSignedURLFunc",
+      layers: [this.layerList["shortuuid"]],
     });
 
     // Override the Logical ID of the Lambda Function to get ARN in OpenAPI

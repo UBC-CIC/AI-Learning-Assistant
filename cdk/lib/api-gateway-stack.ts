@@ -832,5 +832,37 @@ export class ApiGatewayStack extends cdk.Stack {
       // When deleting the stack, need to empty the Bucket and delete it manually
       removalPolicy: cdk.RemovalPolicy.RETAIN,
     });
+
+    // Create the Lambda function for generating presigned URLs
+    const generatePreSignedURL = new lambda.Function(this, "GeneratePreSignedURLFunc", {
+      runtime: lambda.Runtime.PYTHON_3_9,
+      code: lambda.Code.fromAsset("lambda"),
+      handler: "generatePreSignedURL.lambda_handler",
+      timeout: Duration.seconds(300),
+      memorySize: 128,
+      environment: {
+        BUCKET: dataIngestionBucket.bucketName,
+        REGION: this.region,
+      },
+      functionName: "GeneratePreSignedURLFunc",
+    });
+
+    // Override the Logical ID of the Lambda Function to get ARN in OpenAPI
+    const cfnGeneratePreSignedURL = generatePreSignedURL.node.defaultChild as lambda.CfnFunction;
+    cfnGeneratePreSignedURL.overrideLogicalId("GeneratePreSignedURLFunc");
+
+    // Grant the Lambda function the necessary permissions
+    dataIngestionBucket.grantReadWrite(generatePreSignedURL);
+    generatePreSignedURL.addToRolePolicy(new iam.PolicyStatement({
+      actions: ["s3:PutObject", "s3:GetObject"],
+      resources: [dataIngestionBucket.bucketArn, `${dataIngestionBucket.bucketArn}/*`],
+    }));
+
+    // Add the permission to the Lambda function's policy to allow API Gateway access
+    generatePreSignedURL.addPermission("AllowApiGatewayInvoke", {
+      principal: new iam.ServicePrincipal("apigateway.amazonaws.com"),
+      action: "lambda:InvokeFunction",
+      sourceArn: `arn:aws:execute-api:${this.region}:${this.account}:${this.api.restApiId}/*/*/instructor*`,
+    });
   }
 }

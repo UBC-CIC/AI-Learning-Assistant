@@ -34,6 +34,7 @@ import ViewStudents from "./ViewStudents";
 import InstructorModules from "./InstructorModules";
 import InstructorNewModule from "./InstructorNewModule";
 import StudentDetails from "./StudentDetails";
+import InstructorNewConcept from "./InstructorNewConcept";
 
 // course details page
 const CourseDetails = () => {
@@ -245,6 +246,7 @@ const InstructorHomepage = () => {
         element={<InstructorEditCourse />}
       />
       <Route path=":courseName/new-module" element={<InstructorNewModule />} />
+      <Route path=":courseName/new-concept" element={<InstructorNewConcept />} />
       <Route
         path=":courseName/student/:studentId"
         element={<StudentDetails />}

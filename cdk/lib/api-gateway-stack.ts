@@ -811,5 +811,26 @@ export class ApiGatewayStack extends cdk.Stack {
       action: "lambda:InvokeFunction",
       sourceArn: `arn:aws:execute-api:${this.region}:${this.account}:${this.api.restApiId}/*/*/student*`,
     });
+
+    // Create S3 Bucket to handle documents and images for each course
+    const dataIngestionBucket = new s3.Bucket(this, "AILADataIngestionBucket", {
+      bucketName: "aila-data-ingestion-bucket",
+      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
+      cors: [
+        {
+          allowedHeaders: ["*"],
+          allowedMethods: [
+            s3.HttpMethods.GET,
+            s3.HttpMethods.PUT,
+            s3.HttpMethods.HEAD,
+            s3.HttpMethods.POST,
+            s3.HttpMethods.DELETE,
+          ],
+          allowedOrigins: ["*"],
+        },
+      ],
+      // When deleting the stack, need to empty the Bucket and delete it manually
+      removalPolicy: cdk.RemovalPolicy.RETAIN,
+    });
   }
 }

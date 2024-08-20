@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   Table,
@@ -13,10 +13,12 @@ import {
   Toolbar,
   Typography,
 } from "@mui/material";
+import { fetchAuthSession } from "aws-amplify/auth";
 
 const InstructorModules = ({ courseName, course_id }) => {
   const navigate = useNavigate();
-
+  console.log('course_name',courseName)
+  console.log(course_id)
   // Sample data for modules
   const modules = [
     {
@@ -31,7 +33,36 @@ const InstructorModules = ({ courseName, course_id }) => {
       name: "Module 3: Advanced Topics",
     },
   ];
-  const [accessCode, setAccessCode] = useState("111111");
+  const [accessCode, setAccessCode] = useState("loading...");
+  useEffect(() => {
+    const fetchCode = async () => {
+      try {
+        const session = await fetchAuthSession();
+        var token = session.tokens.idToken.toString();
+        const response = await fetch(
+          `${import.meta.env.VITE_API_ENDPOINT}instructor/get_access_code?course_id=${encodeURIComponent(course_id)}`,
+          {
+            method: "GET",
+            headers: {
+              Authorization: token,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+        if (response.ok) {
+          const data = await response.json();
+          console.log(data);
+          setAccessCode(data.course_access_code);
+        } else {
+          console.error("Failed to fetch courses:", response.statusText);
+        }
+      } catch (error) {
+        console.error("Error fetching courses:", error);
+      }
+    };
+
+    fetchCode();
+  },[])
 
   const handleEditClick = (moduleId) => {
     navigate(`/course/${courseName}/edit-module/${moduleId}`);
@@ -41,10 +72,35 @@ const InstructorModules = ({ courseName, course_id }) => {
     navigate(`/course/${courseName}/new-module`);
   };
 
-  const handleGenerateAccessCode = () => {
-    // replace with randomized logic to generate code
-    const newAccessCode = Math.floor(100000 + Math.random()).toString();
-    setAccessCode(newAccessCode);
+  const handleCreateConceptClick = () => {
+    navigate(`/course/${courseName}/new-concept`);
+  };
+
+
+  const handleGenerateAccessCode = async () => {
+    try {
+      const session = await fetchAuthSession();
+      var token = session.tokens.idToken.toString();
+      const response = await fetch(
+        `${import.meta.env.VITE_API_ENDPOINT}instructor/generate_access_code?course_id=${encodeURIComponent(course_id)}`,
+        {
+          method: "PUT",
+          headers: {
+            Authorization: token,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      if (response.ok) {
+        const data = await response.json();
+        console.log(data);
+        setAccessCode(data.access_code);
+      } else {
+        console.error("Failed to fetch courses:", response.statusText);
+      }
+    } catch (error) {
+      console.error("Error fetching courses:", error);
+    }
   };
 
   return (

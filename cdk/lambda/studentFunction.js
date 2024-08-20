@@ -201,7 +201,6 @@ exports.handler = async (event) => {
           response.body = "Invalid value";
         }
         break;
-
       case "GET /student/module":
         if (
           event.queryStringParameters != null &&

@@ -35,6 +35,7 @@ import InstructorModules from "./InstructorModules";
 import InstructorNewModule from "./InstructorNewModule";
 import StudentDetails from "./StudentDetails";
 import InstructorNewConcept from "./InstructorNewConcept";
+import InstructorConcepts from "./InstructorConcepts";
 
 // course details page
 const CourseDetails = () => {
@@ -55,6 +56,10 @@ const CourseDetails = () => {
       case "InstructorEditCourse":
         return (
           <InstructorModules courseName={courseName} course_id={course_id} />
+        );
+      case "InstructorEditConcepts":
+        return (
+          <InstructorConcepts courseName={courseName} course_id={course_id} />
         );
       case "PromptSettings":
         return <PromptSettings courseName={courseName} course_id={course_id} />;
@@ -98,7 +103,9 @@ const InstructorHomepage = () => {
         const response = await fetch(
           `${
             import.meta.env.VITE_API_ENDPOINT
-          }instructor/courses?email=${encodeURIComponent(signInDetails.loginId)}`,
+          }instructor/courses?email=${encodeURIComponent(
+            signInDetails.loginId
+          )}`,
           {
             method: "GET",
             headers: {
@@ -148,7 +155,7 @@ const InstructorHomepage = () => {
 
   const handleRowClick = (courseName, course_id) => {
     navigate(`/course/${courseName}`, { state: { course_id } });
-   // console.log("state", state);
+    // console.log("state", state);
   };
 
   return (
@@ -174,7 +181,14 @@ const InstructorHomepage = () => {
               >
                 Courses
               </Typography>
-              <Paper sx={{ width: "80%", overflow: "hidden", margin: "0 auto", padding: 2 }}>
+              <Paper
+                sx={{
+                  width: "80%",
+                  overflow: "hidden",
+                  margin: "0 auto",
+                  padding: 2,
+                }}
+              >
                 <TextField
                   label="Search by Course"
                   variant="outlined"
@@ -246,15 +260,16 @@ const InstructorHomepage = () => {
         element={<InstructorEditCourse />}
       />
       <Route path=":courseName/new-module" element={<InstructorNewModule />} />
-      <Route path=":courseName/new-concept" element={<InstructorNewConcept />} />
+      <Route
+        path=":courseName/new-concept"
+        element={<InstructorNewConcept />}
+      />
       <Route
         path=":courseName/student/:studentId"
         element={<StudentDetails />}
       />
     </Routes>
   );
-  
-  
 };
 
 export default InstructorHomepage;

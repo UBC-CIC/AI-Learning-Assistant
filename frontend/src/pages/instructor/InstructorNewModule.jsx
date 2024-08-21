@@ -11,7 +11,7 @@ export const InstructorNewModule = ({ courseId }) => {
   return (
     <PageContainer>
       <Box component="main" sx={{ flexGrow: 1, p: 3, overflow: "auto" }}>
-        <Typography
+        <Typography 
           color="black"
           fontStyle="semibold"
           textAlign="left"

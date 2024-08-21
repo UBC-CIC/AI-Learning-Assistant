@@ -13,7 +13,7 @@ import {
   useMaterialReactTable,
 } from 'material-react-table';
 
-const InstructorModules = ({ courseName, course_id }) => {
+const InstructorConcepts = ({ courseName, course_id }) => {
   const navigate = useNavigate();
   const [data, setData] = useState([]);
   const [accessCode, setAccessCode] = useState("loading...");
@@ -248,4 +248,4 @@ const InstructorModules = ({ courseName, course_id }) => {
   );
 };
 
-export default InstructorModules;
+export default InstructorConcepts;

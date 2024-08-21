@@ -1,7 +1,6 @@
 import os, json
 import boto3
 from botocore.config import Config
-import shortuuid
 from aws_lambda_powertools import Logger
 
 BUCKET = os.environ["BUCKET"]
@@ -37,6 +36,7 @@ def lambda_handler(event, context):
     course_name = query_params.get("course_name", "")
     file_type = query_params.get("file_type", "")  # PDF or JPG
     file_name = query_params.get("file_name", "")
+    txt_file_name = query_params.get("txt_file_name", "")
 
     if not course_name:
         return {
@@ -50,41 +50,52 @@ def lambda_handler(event, context):
             'body': json.dumps('Missing required parameter: file_name')
         }
 
+    txt_key = None
+    
     if file_type == 'pdf':
         key = f"{course_name}/documents/{file_name}.pdf"
         content_type = "application/pdf"
     elif file_type == 'jpg':
         key = f"{course_name}/images/{file_name}.jpg"
         content_type = "image/jpeg"
+        txt_key = f"{course_name}/images/{file_name}.txt" if txt_file_name else None
     else:
         return {
             'statusCode': 400,
             'body': json.dumps('Unsupported file type')
         }
 
-    exists = s3_key_exists(BUCKET, key)
-
     logger.info({
         "course_name": course_name,
         "file_type": file_type,
         "file_name": file_name,
-        "exists": exists,
+        "txt_file_name": txt_file_name,
     })
 
-    if exists:
-        suffix = shortuuid.ShortUUID().random(length=4)
-        key = f"{course_name}/{file_type}/{file_name}-{suffix}.{file_type}"
+    presigned_urls = {
+        "file_presignedurl": s3.generate_presigned_url(
+            ClientMethod="put_object",
+            Params={
+                "Bucket": BUCKET,
+                "Key": key,
+                "ContentType": content_type,
+            },
+            ExpiresIn=300,
+            HttpMethod="PUT",
+        )
+    }
 
-    presigned_url = s3.generate_presigned_url(
-        ClientMethod="put_object",
-        Params={
-            "Bucket": BUCKET,
-            "Key": key,
-            "ContentType": content_type,
-        },
-        ExpiresIn=300,
-        HttpMethod="PUT",
-    )
+    if txt_key:
+        presigned_urls["txt_presignedurl"] = s3.generate_presigned_url(
+            ClientMethod="put_object",
+            Params={
+                "Bucket": BUCKET,
+                "Key": txt_key,
+                "ContentType": "text/plain",
+            },
+            ExpiresIn=300,
+            HttpMethod="PUT",
+        )
 
     return {
         "statusCode": 200,
@@ -94,5 +105,5 @@ def lambda_handler(event, context):
             "Access-Control-Allow-Origin": "*",
             "Access-Control-Allow-Methods": "*",
         },
-        "body": json.dumps({"presignedurl": presigned_url, "key": key}),
+        "body": json.dumps({"presignedurl": presigned_urls}),
     }

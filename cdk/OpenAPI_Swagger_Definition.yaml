@@ -1043,11 +1043,16 @@ paths:
           description: Type of file (pdf or jpg)
           schema:
             type: string
-          enum: [pdf, jpg]
         - in: query
           name: file_name
           required: true
           description: Name of the file
+          schema:
+            type: string
+        - in: query
+          name: txt_file_name
+          required: false
+          description: Name of the txt file accompanying the image
           schema:
             type: string
       responses:
@@ -1058,11 +1063,15 @@ paths:
               schema:
                 type: object
                 properties:
-                  presignedurl:
-                    type: string
-                  key:
-                    type: string
-                    description: S3 key where the file will be stored
+                  presignedurls:
+                    type: array
+                    description: List of presigned URLs of either only a single URL for documents of 2 URLs for images and their txt files 
+                    items:
+                      type: object
+                      properties:
+                        url:
+                          type: string
+                          description: Presigned URL
         "400":
           description: Bad Request
         "401":

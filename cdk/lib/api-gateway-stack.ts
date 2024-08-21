@@ -76,9 +76,20 @@ export class ApiGatewayStack extends cdk.Stack {
       description: "Lambda layer containing the psycopg2 Python library",
     });
 
+    /**
+     *
+     * Create ShortUUID layer for GeneratePreSignedURLFunc Lambda Function
+     */
+    const shortUuidLayer = new LayerVersion(this, "shortUuidLambdaLayer", {
+      code: Code.fromAsset("./layers/shortuuid_layer.zip"),
+      compatibleRuntimes: [Runtime.PYTHON_3_9],
+      description: "Lambda layer containing the shortuuid Python library",
+    });
+
     this.layerList["psycopg2"] = psycopgLayer;
     this.layerList["postgres"] = postgres;
     this.layerList["jwt"] = jwt;
+    this.layerList["shortuuid"] = shortUuidLayer;
 
     // Create Cognito user pool
 
@@ -833,6 +844,8 @@ export class ApiGatewayStack extends cdk.Stack {
       removalPolicy: cdk.RemovalPolicy.RETAIN,
     });
 
+    const powertoolsLayer = lambda.LayerVersion.fromLayerVersionArn(this, 'PowertoolsLayer', `arn:aws:lambda:${this.region}:017000801446:layer:AWSLambdaPowertoolsPythonV2:78`);
+
     // Create the Lambda function for generating presigned URLs
     const generatePreSignedURL = new lambda.Function(this, "GeneratePreSignedURLFunc", {
       runtime: lambda.Runtime.PYTHON_3_9,
@@ -845,6 +858,7 @@ export class ApiGatewayStack extends cdk.Stack {
         REGION: this.region,
       },
       functionName: "GeneratePreSignedURLFunc",
+      layers: [this.layerList["shortuuid"], powertoolsLayer],
     });
 
     // Override the Logical ID of the Lambda Function to get ARN in OpenAPI

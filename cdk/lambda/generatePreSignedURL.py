@@ -25,9 +25,30 @@ def s3_key_exists(bucket, key):
 
 @logger.inject_lambda_context(log_event=True)
 def lambda_handler(event, context):
-    course_name = event["queryStringParameters"]["course_name"]
-    file_type = event["queryStringParameters"]["file_type"]  # PDF or JPG
-    file_name = event["queryStringParameters"]["file_name"]
+    # Use .get() to safely extract query string parameters
+    query_params = event.get("queryStringParameters", {})
+
+    if not query_params:
+        return {
+            'statusCode': 400,
+            'body': json.dumps('Missing queries to generate pre-signed URL')
+        }
+
+    course_name = query_params.get("course_name", "")
+    file_type = query_params.get("file_type", "")  # PDF or JPG
+    file_name = query_params.get("file_name", "")
+
+    if not course_name:
+        return {
+            'statusCode': 400,
+            'body': json.dumps('Missing required parameter: course_name')
+        }
+    
+    if not file_name:
+        return {
+            'statusCode': 400,
+            'body': json.dumps('Missing required parameter: file_name')
+        }
 
     if file_type == 'pdf':
         key = f"{course_name}/documents/{file_name}.pdf"

@@ -1638,6 +1638,12 @@ paths:
           description: Email of the instructor updating the module
           schema:
             type: string
+        - in: query
+          name: module_number
+          required: true
+          description: New number for the module being updated
+          schema:
+            type: integer
       requestBody:
         required: true
         content:

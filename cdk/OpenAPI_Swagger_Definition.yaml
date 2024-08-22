@@ -1038,6 +1038,12 @@ paths:
           schema:
             type: string
         - in: query
+          name: module_name
+          required: true
+          description: Name of the module
+          schema:
+            type: string
+        - in: query
           name: file_type
           required: true
           description: Type of file (pdf or jpg)

@@ -5,8 +5,9 @@ import { getCurrentUser } from "aws-amplify/auth";
 import { BiCheck } from "react-icons/bi";
 import { FaInfoCircle } from "react-icons/fa";
 
-import { Button, Stepper, Step, StepLabel } from "@mui/material";
+import { Button, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper } from "@mui/material";
 import { useNavigate } from "react-router-dom";
+
 // Function to calculate the color based on the average score
 const calculateColor = (score) => {
   if (score === null) {
@@ -100,7 +101,7 @@ export const CourseView = ({ course, setModule, setCourse }) => {
         );
         if (response.ok) {
           const data = await response.json();
-          console.log(data)
+          console.log(data);
           setData(data);
           setConcepts(getUniqueConceptNames(data));
         } else {
@@ -112,6 +113,7 @@ export const CourseView = ({ course, setModule, setCourse }) => {
     };
     fetchCoursePage();
   }, [course]);
+  
   useEffect(() => {
     sessionStorage.removeItem("module");
     const storedCourse = sessionStorage.getItem("course");
@@ -119,9 +121,11 @@ export const CourseView = ({ course, setModule, setCourse }) => {
       setCourse(JSON.parse(storedCourse));
     }
   }, [setCourse]);
+
   if (!course) {
     return <div>Loading...</div>; // Or any placeholder UI
   }
+
   return (
     <div className="bg-[#F8F9FD] w-screen h-screen">
       <div>
@@ -167,74 +171,71 @@ export const CourseView = ({ course, setModule, setCourse }) => {
             Modules
           </div>
           <div className="flex justify-center items-center">
-            <table className="text-left w-8/12 mx-auto text-xs mt-4">
-              <thead className="bg-white flex text-black w-full">
-                <tr className="flex w-full mb-2">
-                  <th className="p-1 w-1/4">Module</th>
-                  <th className="p-1 w-1/4 text-center">Score</th>
-                  <th className="p-1 w-1/4 text-center">Completion</th>
-                  <th className="p-1 w-1/4 mr-4 text-center">Review</th>
-                </tr>
-              </thead>
-              <tbody className="bg-[#FAF9F6] flex flex-col items-center justify-between overflow-y-scroll w-full h-[40vh]">
-                {data.map((entry, index) => (
-                  <tr
-                    key={entry.module_id + index}
-                    className="flex w-full mb-2 text-black text-center"
-                  >
-                    <td className="p-1 w-1/4 flex flex-row gap-1 items-center">
-                      <FaInfoCircle className="text-xs" />
-                      <span className="text-xs">{entry.module_name}</span>
-                    </td>
-                    {entry.module_score === 100 ? (
-                      <>
-                        <td className="p-1 w-1/4 text-xs text-center">
-                          {entry.module_score}%
-                        </td>
-                        <td className="p-1 w-1/4 text-xs text-center">
-                          <span
-                            className="bg-[#2E7D32] text-white text-light rounded px-2 py-1"
-                            style={{ display: "inline-block" }}
-                          >
-                            Complete
-                          </span>
-                        </td>
-                      </>
-                    ) : (
-                      <>
-                        <td className="p-1 w-1/4 text-xs text-center">
-                          {entry.module_score}%
-                        </td>
-                        <td className="p-1 w-1/4 text-xs text-center">
-                          Incomplete
-                        </td>
-                      </>
-                    )}
-                    <td className="p-1 w-1/4 text-xs text-center">
-                      <button
-                        className={`bg-[#9747FF] text-white px-2 py-1 rounded hover:bg-purple-700 ${
-                          entry.module_score === 0
-                            ? "opacity-50 cursor-not-allowed"
-                            : ""
-                        }`}
-                        onClick={() =>
-                          entry.module_score !== 0 && enterModule(entry)
-                        }
-                        disabled={entry.module_score === 0}
-                      >
-                        Review
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <TableContainer
+              component={Paper}
+              sx={{
+                width: '80%', // Set width to control size
+                maxHeight: 400, // Set max height for scrolling
+                overflowY: 'auto',
+                marginX: 2, // Add left and right margins
+              }}
+            >
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Module</TableCell>
+                    <TableCell>Completion</TableCell>
+                    <TableCell>Review</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {data.map((entry, index) => (
+                    <TableRow
+                      key={entry.module_id + index}
+                    >
+                      <TableCell>
+                        <div className="flex flex-row gap-1 items-center">
+                          <FaInfoCircle className="text-xs" />
+                          <span className="text-xs">{entry.module_name}</span>
+                        </div>
+                      </TableCell>
+                      {entry.module_score === 100 ? (
+                        <>
+                          <TableCell>
+                            <span
+                              className="bg-[#2E7D32] text-white text-light rounded px-2 py-1"
+                              style={{ display: "inline-block" }}
+                            >
+                              Complete
+                            </span>
+                          </TableCell>
+                        </>
+                      ) : (
+                        <>
+                          <TableCell>Incomplete</TableCell>
+                        </>
+                      )}
+                      <TableCell>
+                        <Button
+                          variant="contained"
+                          color="primary"
+                          onClick={() =>
+                            enterModule(entry)
+                          }
+                        >
+                          Review
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
           </div>
         </div>
       </div>
     </div>
   );
-  
-  
 };
+
 export default CourseView;

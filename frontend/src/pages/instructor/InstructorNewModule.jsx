@@ -1,31 +1,362 @@
-import React from "react";
-import { useState } from "react";
-import FileUpload from "../../components/FileUpload";
-import InstructorSidebar from "./InstructorSidebar";
+import React, { useState, useEffect, useContext, createContext } from "react";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
+import AWS from "aws-sdk";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import { fetchAuthSession } from "aws-amplify/auth";
+import { getCurrentUser } from "aws-amplify/auth";
+import {
+  TextField,
+  Button,
+  Paper,
+  Typography,
+  IconButton,
+  Grid,
+  Card,
+  CardContent,
+  Box,
+  Toolbar,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+} from "@mui/material";
+import DeleteIcon from "@mui/icons-material/Delete";
+import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import PageContainer from "../Container";
-import InstructorHeader from "../../components/InstructorHeader";
-// MUI
-import { Typography, Box, AppBar, Toolbar, Paper } from "@mui/material";
-
 export const InstructorNewModule = ({ courseId }) => {
+  const [newFiles, setNewFiles] = useState([]);
+  const [files, setFiles] = useState([]);
+  const [imagesWithText, setImagesWithText] = useState([]);
+  const navigate = useNavigate();
+  const [moduleName, setModuleName] = useState("");
+  const [concept, setConcept] = useState("");
+  const [allConcepts, setAllConcept] = useState([]);
+  const location = useLocation();
+  const { data, course_id } = location.state || {};
+  const [nextModuleNumber, setNextModuleNumber] = useState(data.length + 1);
+  const handleBackClick = () => {
+    window.history.back();
+  };
+
+  useEffect(() => {
+    const fetchConcepts = async () => {
+      try {
+        const session = await fetchAuthSession();
+        var token = session.tokens.idToken.toString();
+        const response = await fetch(
+          `${
+            import.meta.env.VITE_API_ENDPOINT
+          }instructor/view_concepts?course_id=${encodeURIComponent(course_id)}`,
+          {
+            method: "GET",
+            headers: {
+              Authorization: token,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+        if (response.ok) {
+          const conceptData = await response.json();
+          setAllConcept(conceptData);
+        } else {
+          console.error("Failed to fetch courses:", response.statusText);
+        }
+      } catch (error) {
+        console.error("Error fetching courses:", error);
+      }
+    };
+    fetchConcepts();
+  }, [courseId]);
+
+  const handleInputChange = (e) => {
+    setModuleName(e.target.value);
+  };
+
+  const handleConceptInputChange = (e) => {
+    console.log(e);
+    setConcept(e.target.value);
+  };
+
+  const handleFileUpload = (e) => {
+    setFiles([...files, ...Array.from(event.target.files)]);
+  };
+
+  const handleRemoveFile = (fileId) => {
+    const updatedFiles = files.filter((file) => file.id !== fileId);
+    setFiles(updatedFiles);
+  };
+
+  const handleRemoveNewFile = (index) => {
+    setFiles(files.filter((_, i) => i !== index));
+  };
+
+  const handleImageWithTextChange = (index, field, value) => {
+    const updatedImages = [...imagesWithText];
+    updatedImages[index][field] = value;
+    setImagesWithText(updatedImages);
+  };
+
+  const handleAddImageWithText = () => {
+    setImagesWithText([
+      ...imagesWithText,
+      { id: Date.now(), image: "", text: "" },
+    ]);
+  };
+
+  const handleRemoveImageWithText = (id) => {
+    const updatedImages = imagesWithText.filter((img) => img.id !== id);
+    setImagesWithText(updatedImages);
+  };
+
+  const handleSave = async () => {
+    const selectedConcept = allConcepts.find((c) => c.concept_name === concept);
+    try {
+      const session = await fetchAuthSession();
+      const token = session.tokens.idToken.toString();
+      const { signInDetails } = await getCurrentUser();
+      console.log(
+        "sign in details",
+        course_id,
+        selectedConcept.concept_id,
+        nextModuleNumber,
+        moduleName,
+        signInDetails.loginId
+      );
+      const response = await fetch(
+        `${
+          import.meta.env.VITE_API_ENDPOINT
+        }instructor/create_module?course_id=${encodeURIComponent(
+          course_id
+        )}&concept_id=${encodeURIComponent(
+          selectedConcept.concept_id
+        )}&module_name=${encodeURIComponent(
+          moduleName
+        )}&module_number=${encodeURIComponent(
+          nextModuleNumber
+        )}&instructor_email=${encodeURIComponent(signInDetails.loginId)}`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: token,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      if (!response.ok) {
+        console.error(`Failed to create module`, response.statusText);
+        toast.error("Module Creation Failed", {
+          position: "top-center",
+          autoClose: 1000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: "colored",
+        });
+      } else {
+        const updatedModule = await response.json();
+        console.log(`Updated module ${updatedModule.module_id} successfully.`);
+        toast.success("Module Created Successfully", {
+          position: "top-center",
+          autoClose: 1000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: "colored",
+        });
+      }
+    } catch (error) {
+      console.error("Error saving changes:", error);
+    }
+    setNextModuleNumber(nextModuleNumber + 1);
+  };
   return (
     <PageContainer>
-      <Box component="main" sx={{ flexGrow: 1, p: 3, overflow: "auto" }}>
-        <Typography 
-          color="black"
-          fontStyle="semibold"
-          textAlign="left"
-          variant="h6"
+      <Paper style={{ padding: 25, width: "100%", overflow: "auto" }}>
+        <Typography variant="h6">Create Module </Typography>
+
+        <TextField
+          label="Module Name"
+          name="name"
+          value={moduleName}
+          onChange={handleInputChange}
+          fullWidth
+          margin="normal"
+        />
+
+        <FormControl fullWidth margin="normal">
+          <InputLabel id="concept-select-label">Concept</InputLabel>
+          <Select
+            labelId="concept-select-label"
+            id="concept-select"
+            value={concept}
+            onChange={handleConceptInputChange}
+            label="Concept"
+            sx={{ textAlign: "left" }}
+          >
+            {allConcepts.map((concept) => (
+              <MenuItem key={concept.concept_id} value={concept.concept_name}>
+                {concept.concept_name}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+
+        <Box sx={{ border: 1, borderRadius: 3, borderColor: "grey.400", p: 1 }}>
+          <Typography variant="h6" sx={{ p: 1 }}>
+            Existing Files
+          </Typography>
+          {files.map((file) => (
+            <div key={file.id}>
+              <Typography variant="body2">{file.name}</Typography>
+              <IconButton onClick={() => handleRemoveFile(file.id)}>
+                <DeleteIcon />
+              </IconButton>
+            </div>
+          ))}
+          <Grid item xs={12}>
+            <Card
+              variant="outlined"
+              component="label"
+              sx={{ textAlign: "center", p: 0, cursor: "pointer" }}
+            >
+              <CardContent>
+                <input
+                  accept="application/pdf"
+                  type="file"
+                  multiple
+                  hidden
+                  onChange={(e) => handleFileUpload(e.target.files)}
+                />
+                <IconButton
+                  color="primary"
+                  aria-label="upload files"
+                  component="span"
+                >
+                  <CloudUploadIcon sx={{ fontSize: 40 }} />
+                </IconButton>
+                <Typography variant="body1" color="textSecondary">
+                  Click to upload file
+                </Typography>
+              </CardContent>
+            </Card>
+            {files.length > 0 && (
+              <Box mt={2}>
+                <Typography variant="body2">
+                  <strong>Selected Files:</strong>
+                </Typography>
+                <ul>
+                  {files.map((file, index) => (
+                    <li key={index}>
+                      {file.name}
+                      <Button
+                        onClick={() => handleRemoveNewFile(index)}
+                        color="error"
+                        sx={{ ml: 2 }}
+                      >
+                        Remove
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
+              </Box>
+            )}
+          </Grid>
+        </Box>
+
+        <Box
+          sx={{
+            border: 1,
+            borderRadius: 3,
+            borderColor: "grey.400",
+            p: 1,
+            marginY: 2,
+          }}
         >
-          {courseId}
-        </Typography>
-        <Typography variant="h6" color="black" textAlign="center" padding={1}>
-          Create new module
-        </Typography>
-        <Paper sx={{ width: "100%", overflow: "hidden", marginTop: 1 }}>
-          <FileUpload />
-        </Paper>
-      </Box>
+          <Typography variant="h6" style={{ marginTop: 16 }} sx={{ p: 1 }}>
+            Images with Text
+          </Typography>
+
+          {imagesWithText.map((img, index) => (
+            <Grid container spacing={2} key={img.id}>
+              <Grid item xs={12}>
+                <input
+                  type="file"
+                  sx={{ paddingLeft: 10 }}
+                  onChange={(e) =>
+                    handleImageWithTextChange(index, "image", e.target.files[0])
+                  }
+                />
+              </Grid>
+
+              <Grid item xs={12}>
+                <TextField
+                  label="Text"
+                  value={img.text}
+                  onChange={(e) =>
+                    handleImageWithTextChange(index, "text", e.target.value)
+                  }
+                  sx={{ width: "50%" }}
+                  margin="normal"
+                />
+                <IconButton onClick={() => handleRemoveImageWithText(img.id)}>
+                  <DeleteIcon />
+                </IconButton>
+              </Grid>
+            </Grid>
+          ))}
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={handleAddImageWithText}
+            sx={{ margin: 2 }}
+          >
+            Add Another
+          </Button>
+        </Box>
+
+        <Grid container spacing={2} style={{ marginTop: 16 }}>
+          <Grid item xs={4}>
+            <Box display="flex" gap={6}>
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={handleBackClick}
+                sx={{ width: "30%" }}
+              >
+                Cancel
+              </Button>
+            </Box>
+          </Grid>
+          <Grid item xs={4}></Grid>
+          <Grid item xs={4}>
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={handleSave}
+              style={{ width: "30%" }}
+            >
+              Save
+            </Button>
+          </Grid>
+        </Grid>
+      </Paper>
+      <ToastContainer
+        position="top-center"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="colored"
+      />
     </PageContainer>
   );
 };

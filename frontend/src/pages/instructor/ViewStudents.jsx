@@ -25,9 +25,7 @@ const createData = (name, email) => {
   return { name, email };
 };
 
-const initialRows = [
-  createData("loading...", "loading..."),
-];
+const initialRows = [createData("loading...", "loading...")];
 
 export const ViewStudents = ({ courseName, course_id }) => {
   const [rows, setRows] = useState(initialRows);
@@ -35,11 +33,43 @@ export const ViewStudents = ({ courseName, course_id }) => {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [loading, setLoading] = useState(false);
+  const [accessCode, setAccessCode] = useState("loading...");
 
   const navigate = useNavigate();
 
   console.log(course_id);
+  useEffect(() => {
+    const fetchCode = async () => {
+      try {
+        const session = await fetchAuthSession();
+        var token = session.tokens.idToken.toString();
+        const response = await fetch(
+          `${
+            import.meta.env.VITE_API_ENDPOINT
+          }instructor/get_access_code?course_id=${encodeURIComponent(
+            course_id
+          )}`,
+          {
+            method: "GET",
+            headers: {
+              Authorization: token,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+        if (response.ok) {
+          const codeData = await response.json();
+          setAccessCode(codeData.course_access_code);
+        } else {
+          console.error("Failed to fetch courses:", response.statusText);
+        }
+      } catch (error) {
+        console.error("Error fetching courses:", error);
+      }
+    };
 
+    fetchCode();
+  }, [course_id]);
   // retrieve analytics data
   useEffect(() => {
     const fetchStudents = async () => {
@@ -61,8 +91,11 @@ export const ViewStudents = ({ courseName, course_id }) => {
         if (response.ok) {
           const data = await response.json();
           const formattedData = data.map((student) => {
-            return createData(`${student.first_name} ${student.last_name}`,student.user_email)
-          })
+            return createData(
+              `${student.first_name} ${student.last_name}`,
+              student.user_email
+            );
+          });
           setRows(formattedData);
           console.log("Students in course:", formattedData);
         } else {
@@ -76,6 +109,35 @@ export const ViewStudents = ({ courseName, course_id }) => {
     fetchStudents();
   }, []);
 
+  const handleGenerateAccessCode = async () => {
+    try {
+      const session = await fetchAuthSession();
+      var token = session.tokens.idToken.toString();
+      const response = await fetch(
+        `${
+          import.meta.env.VITE_API_ENDPOINT
+        }instructor/generate_access_code?course_id=${encodeURIComponent(
+          course_id
+        )}`,
+        {
+          method: "PUT",
+          headers: {
+            Authorization: token,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      if (response.ok) {
+        const codeData = await response.json();
+        console.log(codeData);
+        setAccessCode(codeData.access_code);
+      } else {
+        console.error("Failed to fetch courses:", response.statusText);
+      }
+    } catch (error) {
+      console.error("Error fetching courses:", error);
+    }
+  };
   const handleSearchChange = (event) => {
     setSearchQuery(event.target.value);
   };
@@ -164,6 +226,25 @@ export const ViewStudents = ({ courseName, course_id }) => {
               </TableFooter>
             </Table>
           </TableContainer>
+        </Paper>
+        <Paper
+          sx={{
+            marginTop: 5,
+            display: "flex-start",
+            p: 5,
+            width: "100%",
+          }}
+        >
+          <Typography variant="subtitle1" color="black">
+            Access Code: {accessCode}
+          </Typography>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={handleGenerateAccessCode}
+          >
+            Generate New Access Code
+          </Button>
         </Paper>
       </Box>
     </div>

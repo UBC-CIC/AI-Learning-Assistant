@@ -144,6 +144,7 @@ export const StudentHomepage = ({ setCourse }) => {
         );
         if (response.ok) {
           const data = await response.json();
+          console.log('dta',data)
           setCourses(data);
         } else {
           console.error("Failed to fetch course:", response.statusText);

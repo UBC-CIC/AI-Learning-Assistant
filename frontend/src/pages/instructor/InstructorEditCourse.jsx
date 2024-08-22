@@ -1,6 +1,10 @@
 import React, { useState, useEffect, useContext, createContext } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import AWS from "aws-sdk";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import { fetchAuthSession } from "aws-amplify/auth";
+import { getCurrentUser } from "aws-amplify/auth";
 import {
   TextField,
   Button,
@@ -12,22 +16,14 @@ import {
   CardContent,
   Box,
   Toolbar,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import PageContainer from "../Container";
-
-const sampleModule = {
-  id: "1",
-  name: "Introduction to Course",
-  concept: "Overview of the course.",
-  content: "This is the content of the module.",
-  files: [
-    { id: "file1", name: "file1.pdf" },
-    { id: "file2", name: "file2.docx" },
-  ],
-  imagesWithText: [{ id: "img1", image: "", text: "Image description" }],
-};
 
 const InstructorEditCourse = () => {
   const { courseName, moduleId } = useParams();
@@ -37,34 +33,124 @@ const InstructorEditCourse = () => {
   const [imagesWithText, setImagesWithText] = useState([]);
   const navigate = useNavigate();
   const location = useLocation();
-  const { lastVisitedComponent } = location.state || {};
-
+  const { moduleData, course_id } = location.state || {};
+  const [moduleName, setModuleName] = useState("");
+  const [concept, setConcept] = useState("");
+  const [allConcepts, setAllConcept] = useState([]);
   const handleBackClick = () => {
-    navigate(`/course/${courseName}`, {
-      state: { courseName, lastVisitedComponent: "InstructorModules" },
-    });
+    window.history.back();
   };
 
   useEffect(() => {
-    if (moduleId === sampleModule.id) {
-      setModule(sampleModule);
-      setImagesWithText(sampleModule.imagesWithText);
+    if (moduleData) {
+      setModule(moduleData);
+      setModuleName(moduleData.module_name);
+      setConcept(moduleData.concept_name);
     }
-  }, [moduleId]);
+    const fetchConcepts = async () => {
+      try {
+        const session = await fetchAuthSession();
+        var token = session.tokens.idToken.toString();
+        const response = await fetch(
+          `${
+            import.meta.env.VITE_API_ENDPOINT
+          }instructor/view_concepts?course_id=${encodeURIComponent(course_id)}`,
+          {
+            method: "GET",
+            headers: {
+              Authorization: token,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+        if (response.ok) {
+          const conceptData = await response.json();
+          setAllConcept(conceptData);
+        } else {
+          console.error("Failed to fetch courses:", response.statusText);
+        }
+      } catch (error) {
+        console.error("Error fetching courses:", error);
+      }
+    };
+    fetchConcepts();
+  }, [moduleData]);
 
+  const handleDelete = async () => {
+    try {
+      const session = await fetchAuthSession();
+      var token = session.tokens.idToken.toString();
+      const response = await fetch(
+        `${
+          import.meta.env.VITE_API_ENDPOINT
+        }instructor/delete_module?module_id=${encodeURIComponent(
+          module.module_id
+        )}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: token,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      if (response.ok) {
+        toast.success("Successfully Deleted", {
+          position: "top-center",
+          autoClose: 1000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: "colored",
+        });
+        setTimeout(function () {
+          handleBackClick();
+        }, 1000);
+      } else {
+        console.error("Failed to delete module");
+        toast.error("Failed to delete module", {
+          position: "top-center",
+          autoClose: 1000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: "colored",
+        });
+      }
+    } catch (error) {
+      console.error("Failed to delete module");
+      toast.error("Failed to delete module", {
+        position: "top-center",
+        autoClose: 1000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "colored",
+      });
+    }
+  };
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setModule({ ...module, [name]: value });
+    setModuleName(e.target.value);
   };
 
-  const handleFileChange = (e) => {
+  const handleConceptInputChange = (e) => {
+    console.log(e);
+    setConcept(e.target.value);
+  };
+
+  const handleFileUpload = (e) => {
     setFiles([...files, ...Array.from(event.target.files)]);
   };
 
   const handleRemoveFile = (fileId) => {
-    // Implement file removal logic (API call)
-    const updatedFiles = module.files.filter((file) => file.id !== fileId);
-    setModule({ ...module, files: updatedFiles });
+    const updatedFiles = files.filter((file) => file.id !== fileId);
+    setFiles(updatedFiles);
   };
 
   const handleRemoveNewFile = (index) => {
@@ -89,9 +175,65 @@ const InstructorEditCourse = () => {
     setImagesWithText(updatedImages);
   };
 
-  const handleSave = () => {
-    // Save logic (include new files and images with text)
-    console.log("Module saved:", module, newFiles, imagesWithText);
+  const handleSave = async () => {
+    const selectedConcept = allConcepts.find((c) => c.concept_name === concept);
+
+    console.log(
+      "Module saved:",
+      module,
+      selectedConcept,
+      files,
+      imagesWithText
+    );
+    try {
+      const session = await fetchAuthSession();
+      var token = session.tokens.idToken.toString();
+      const { signInDetails } = await getCurrentUser();
+      const response = await fetch(
+        `${
+          import.meta.env.VITE_API_ENDPOINT
+        }instructor/edit_module?module_id=${encodeURIComponent(
+          module.module_id
+        )}&instructor_email=${encodeURIComponent(
+          signInDetails.loginId
+        )}&concept_id=${encodeURIComponent(selectedConcept.concept_id)}`,
+        {
+          method: "PUT",
+          headers: {
+            Authorization: token,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            module_name: moduleName,
+          }),
+        }
+      );
+      if (response.ok) {
+        toast.success("Module updated successfully", {
+          position: "top-center",
+          autoClose: 1000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: "colored",
+        });
+      } else {
+        toast.error("Module failed to update", {
+          position: "top-center",
+          autoClose: 1000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: "colored",
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching courses:", error);
+    }
   };
 
   if (!module) return <Typography>Loading...</Typography>;
@@ -99,42 +241,40 @@ const InstructorEditCourse = () => {
   return (
     <PageContainer>
       <Paper style={{ padding: 25, width: "100%", overflow: "auto" }}>
-        <Typography variant="h6">Edit Module {moduleId} </Typography>
+        <Typography variant="h6">Edit Module {module.module_name} </Typography>
 
         <TextField
           label="Module Name"
           name="name"
-          value={module.name}
+          value={moduleName}
           onChange={handleInputChange}
           fullWidth
           margin="normal"
         />
 
-        <TextField
-          label="Concept"
-          name="concept"
-          value={module.concept}
-          onChange={handleInputChange}
-          fullWidth
-          margin="normal"
-        />
-
-        <TextField
-          label="Content"
-          name="content"
-          value={module.content}
-          onChange={handleInputChange}
-          fullWidth
-          multiline
-          rows={6}
-          margin="normal"
-        />
+        <FormControl fullWidth margin="normal">
+          <InputLabel id="concept-select-label">Concept</InputLabel>
+          <Select
+            labelId="concept-select-label"
+            id="concept-select"
+            value={concept}
+            onChange={handleConceptInputChange}
+            label="Concept"
+            sx={{ textAlign: "left" }}
+          >
+            {allConcepts.map((concept) => (
+              <MenuItem key={concept.concept_id} value={concept.concept_name}>
+                {concept.concept_name}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
 
         <Box sx={{ border: 1, borderRadius: 3, borderColor: "grey.400", p: 1 }}>
           <Typography variant="h6" sx={{ p: 1 }}>
             Existing Files
           </Typography>
-          {module.files.map((file) => (
+          {files.map((file) => (
             <div key={file.id}>
               <Typography variant="body2">{file.name}</Typography>
               <IconButton onClick={() => handleRemoveFile(file.id)}>
@@ -244,29 +384,51 @@ const InstructorEditCourse = () => {
         </Box>
 
         <Grid container spacing={2} style={{ marginTop: 16 }}>
-          <Grid item xs={6}>
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={handleBackClick}
-              width="30%"
-              justifyContent="left"
-            >
-              Cancel
-            </Button>
+          <Grid item xs={4}>
+            <Box display="flex" gap={6}>
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={handleBackClick}
+                sx={{ width: "30%" }}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="contained"
+                color="error"
+                onClick={handleDelete}
+                sx={{ width: "30%" }}
+              >
+                Delete
+              </Button>
+            </Box>
           </Grid>
-          <Grid item xs={6}>
+          <Grid item xs={4}></Grid>
+          <Grid item xs={4}>
             <Button
               variant="contained"
               color="primary"
               onClick={handleSave}
-              width="30%"
+              style={{ width: "30%" }}
             >
               Save
             </Button>
           </Grid>
         </Grid>
       </Paper>
+      <ToastContainer
+        position="top-center"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="colored"
+      />
     </PageContainer>
   );
 };

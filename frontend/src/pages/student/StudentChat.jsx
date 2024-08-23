@@ -27,8 +27,7 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
       const token = authSession.tokens.idToken.toString();
       try {
         const response = await fetch(
-          `${
-            import.meta.env.VITE_API_ENDPOINT
+          `${import.meta.env.VITE_API_ENDPOINT
           }student/create_ai_message?session_id=${encodeURIComponent(
             session.session_id
           )}&email=${encodeURIComponent(
@@ -50,7 +49,6 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
 
         if (response.ok) {
           const data = await response.json();
-          console.log("Message created:", data);
           setMessages((prevItems) => [...prevItems, data[0]]);
         } else {
           console.error("Failed to retreive message:", response.statusText);
@@ -68,8 +66,6 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
       console.error("Session is not set. Cannot submit the message.");
       return;
     }
-    console.log(textareaRef.current.value);
-    console.log("Enter key pressed");
 
     const messageContent = textareaRef.current.value;
     const authSession = await fetchAuthSession();
@@ -77,8 +73,7 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
     const token = authSession.tokens.idToken.toString();
     try {
       const response = await fetch(
-        `${
-          import.meta.env.VITE_API_ENDPOINT
+        `${import.meta.env.VITE_API_ENDPOINT
         }student/create_message?session_id=${encodeURIComponent(
           session.session_id
         )}&email=${encodeURIComponent(
@@ -100,7 +95,6 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
 
       if (response.ok) {
         const data = await response.json();
-        console.log("Message created:", data);
         setMessages((prevItems) => [...prevItems, data[0]]);
         textareaRef.current.value = "";
 
@@ -154,8 +148,7 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
         const { signInDetails } = await getCurrentUser();
         const token = session.tokens.idToken.toString();
         const response = await fetch(
-          `${
-            import.meta.env.VITE_API_ENDPOINT
+          `${import.meta.env.VITE_API_ENDPOINT
           }student/module?email=${encodeURIComponent(
             signInDetails.loginId
           )}&course_id=${encodeURIComponent(
@@ -185,14 +178,9 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
   }, [course, module]); // Added course and module to dependency array
 
   const handleKeyDown = (event) => {
-    const textarea = textareaRef.current;
-    if (event.key === "Enter") {
-      if (event.shiftKey) {
-        // Allow new line if Shift+Enter is pressed
-        return;
-      }
-      event.preventDefault(); // Prevent the default behavior of adding a new line
-      handleSubmit(); // Call your function here
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
+      handleSubmit(); // Call the handleSubmit function when Enter is pressed
     }
   };
 
@@ -207,8 +195,7 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
       const { signInDetails } = await getCurrentUser();
       const token = session.tokens.idToken.toString();
       const response = await fetch(
-        `${
-          import.meta.env.VITE_API_ENDPOINT
+        `${import.meta.env.VITE_API_ENDPOINT
         }student/create_session?email=${encodeURIComponent(
           signInDetails.loginId
         )}&course_id=${encodeURIComponent(
@@ -227,29 +214,30 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
       if (response.ok) {
         const data = await response.json();
         setSessions((prevItems) => [...prevItems, data[0]]);
+        setSession(data[0])
+
       } else {
         console.error("Failed to create session:", response.statusText);
       }
     } catch (error) {
-      console.error("Error fetching session:", error);
+      console.error("Error fetching creating new chat:", error);
     }
   };
 
-  const handleDeleteSession = async (session) => {
+  const handleDeleteSession = async (sessionDelete) => {
     try {
       const authSession = await fetchAuthSession();
       const { signInDetails } = await getCurrentUser();
       const token = authSession.tokens.idToken.toString();
       const response = await fetch(
-        `${
-          import.meta.env.VITE_API_ENDPOINT
+        `${import.meta.env.VITE_API_ENDPOINT
         }student/delete_session?email=${encodeURIComponent(
           signInDetails.loginId
         )}&course_id=${encodeURIComponent(
           course.course_id
         )}&module_id=${encodeURIComponent(
           module.module_id
-        )}&session_id=${encodeURIComponent(session.session_id)}`,
+        )}&session_id=${encodeURIComponent(sessionDelete.session_id)}`,
         {
           method: "DELETE",
           headers: {
@@ -262,15 +250,18 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
         const data = await response.json();
         setSessions((prevSessions) =>
           prevSessions.filter(
-            (isession) => isession.session_id !== session.session_id
+            (isession) => isession.session_id !== sessionDelete.session_id
           )
         );
-        setMessages([]);
+        if (session.session_id === sessionDelete.session_id) {
+          const newSelectedSession = sessions[sessions.length - 1] || null;
+          setSession(newSelectedSession);
+        }
       } else {
         console.error("Failed to create session:", response.statusText);
       }
     } catch (error) {
-      console.error("Error fetching session:", error);
+      console.error("Error creating session:", error);
     }
   };
 
@@ -306,7 +297,7 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
         textarea.removeEventListener("keydown", handleKeyDown);
       }
     };
-  }, [textareaRef]);
+  }, [textareaRef.currrent, handleKeyDown]);
   useEffect(() => {
     const storedModule = sessionStorage.getItem("module");
     if (storedModule) {
@@ -321,40 +312,41 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
     }
   }, [setCourse]);
 
-  useEffect(() => {
-    const getMessages = async () => {
-      try {
-        const authSession = await fetchAuthSession();
-        const { signInDetails } = await getCurrentUser();
-        const token = authSession.tokens.idToken.toString();
-        const response = await fetch(
-          `${
-            import.meta.env.VITE_API_ENDPOINT
-          }student/get_messages?session_id=${encodeURIComponent(
-            session.session_id
-          )}`,
-          {
-            method: "GET",
-            headers: {
-              Authorization: token,
-              "Content-Type": "application/json",
-            },
-          }
-        );
-        if (response.ok) {
-          const data = await response.json();
-          setMessages(data);
-        } else {
-          console.error("Failed to retreive session:", response.statusText);
-          setMessages([]);
+  const getMessages = async () => {
+    try {
+      const authSession = await fetchAuthSession();
+      const { signInDetails } = await getCurrentUser();
+      const token = authSession.tokens.idToken.toString();
+      const response = await fetch(
+        `${import.meta.env.VITE_API_ENDPOINT
+        }student/get_messages?session_id=${encodeURIComponent(
+          session.session_id
+        )}`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: token,
+            "Content-Type": "application/json",
+          },
         }
-      } catch (error) {
-        console.error("Error fetching session:", error);
+      );
+      if (response.ok) {
+        const data = await response.json();
+        setMessages(data);
+      } else {
+        console.error("Failed to retreive session:", response.statusText);
         setMessages([]);
-        console.log("messages", messages);
       }
-    };
-    getMessages();
+    } catch (error) {
+      console.error("Error fetching session:", error);
+      setMessages([]);
+      console.log("messages", messages);
+    }
+  };
+  useEffect(() => {
+    if (session) {
+      getMessages();
+    }
   }, [session]);
 
   if (!module) {
@@ -413,6 +405,7 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
             ref={textareaRef}
             className="text-sm w-full outline-none bg-[#f2f0f0] text-black resize-none max-h-32 ml-2 mr-2"
             style={{ maxHeight: "8rem" }} // Adjust max height as needed
+            maxLength={2096}
           />
           <img
             onClick={handleSubmit}
@@ -469,6 +462,9 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
             label="Session Name"
             fullWidth
             variant="standard"
+            inputProps={{
+              maxLength: 35, // Set your desired character limit here
+            }}
           />
         </DialogContent>
         <DialogActions>

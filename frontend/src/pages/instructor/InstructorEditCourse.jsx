@@ -40,6 +40,24 @@ const InstructorEditCourse = () => {
   const handleBackClick = () => {
     window.history.back();
   };
+  // Function to handle file download
+  const handleDownloadFile = (file) => {
+    const url = window.URL.createObjectURL(new Blob([file]));
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", file.name);
+    document.body.appendChild(link);
+    link.click();
+    link.parentNode.removeChild(link);
+  };
+
+  useEffect(() => {
+    console.log(files);
+  }, [files]);
+
+  useEffect(() => {
+    console.log(imagesWithText);
+  }, [imagesWithText]);
 
   useEffect(() => {
     if (moduleData) {
@@ -144,12 +162,34 @@ const InstructorEditCourse = () => {
     setConcept(e.target.value);
   };
 
-  const handleFileUpload = (e) => {
-    setFiles([...files, ...Array.from(event.target.files)]);
-  };
+const handleFileUpload = (event) => {
+  const uploadedFiles = Array.from(event);
+  const existingFileNames = files.map((file) => file.name);
 
-  const handleRemoveFile = (fileId) => {
-    const updatedFiles = files.filter((file) => file.id !== fileId);
+  // Filter out files with names that already exist
+  const newFiles = uploadedFiles.filter(
+    (file) => !existingFileNames.includes(file.name)
+  );
+
+  if (newFiles.length < uploadedFiles.length) {
+    toast.error("Some files were not uploaded because they already exist.", {
+      position: "top-center",
+      autoClose: 2000,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+      progress: undefined,
+      theme: "colored",
+    });
+  }
+
+  setFiles([...files, ...newFiles]);
+};
+
+
+  const handleRemoveFile = (file_name) => {
+    const updatedFiles = files.filter((file) => file.name !== file_name);
     setFiles(updatedFiles);
   };
 
@@ -278,7 +318,14 @@ const InstructorEditCourse = () => {
           {files.map((file) => (
             <div key={file.id}>
               <Typography variant="body2">{file.name}</Typography>
-              <IconButton onClick={() => handleRemoveFile(file.id)}>
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={() => handleDownloadFile(file)}
+              >
+                Download
+              </Button>
+              <IconButton onClick={() => handleRemoveFile(file.name)}>
                 <DeleteIcon />
               </IconButton>
             </div>
@@ -291,7 +338,7 @@ const InstructorEditCourse = () => {
             >
               <CardContent>
                 <input
-                  accept="application/pdf"
+                  accept=".pdf,.docx,.pptx,.txt,.xlsx,.xps,.mobi,.cbz"
                   type="file"
                   multiple
                   hidden
@@ -351,7 +398,8 @@ const InstructorEditCourse = () => {
               <Grid item xs={12}>
                 <input
                   type="file"
-                  sx={{ paddingLeft: 10 }}
+                  accept=".bmp,.eps,.gif,.icns,.ico,.im,.jpeg,.jpg,.j2k,.jp2,.msp,.pcx,.png,.ppm,.pgm,.pbm,.sgi,.tga,.tiff,.tif,.webp,.xbm"
+                  style={{ paddingLeft: 10 }}
                   onChange={(e) =>
                     handleImageWithTextChange(index, "image", e.target.files[0])
                   }

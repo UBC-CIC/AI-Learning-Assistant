@@ -716,6 +716,42 @@ exports.handler = async (event) => {
           });
         }
         break;
+      case "PUT /student/update_session_name":
+        if (
+          event.queryStringParameters != null &&
+          event.queryStringParameters.session_id &&
+          event.body
+        ) {
+          try {
+            const { session_id } = event.queryStringParameters;
+            const { session_name } = JSON.parse(event.body);
+
+            // Update the session name
+            const updateResult = await sqlConnection`
+                UPDATE "Sessions"
+                SET session_name = ${session_name}
+                WHERE session_id = ${session_id}
+                RETURNING *;
+              `;
+
+            if (updateResult.length === 0) {
+              response.statusCode = 404;
+              response.body = JSON.stringify({ error: "Session not found" });
+              break;
+            }
+
+            response.statusCode = 200;
+            response.body = JSON.stringify(updateResult[0]);
+          } catch (err) {
+            console.error(err);
+            response.statusCode = 500;
+            response.body = JSON.stringify({ error: "Internal server error" });
+          }
+        } else {
+          response.statusCode = 400;
+          response.body = JSON.stringify({ error: "Invalid value" });
+        }
+        break;
 
       default:
         throw new Error(`Unsupported route: "${pathData}"`);

@@ -111,6 +111,80 @@ paths:
         passthroughBehavior: "when_no_match"
         httpMethod: "POST"
         type: "aws_proxy"
+  /student/update_session_name:
+    options:
+      summary: CORS support
+      description: |
+        Enable CORS by returning correct headers
+      responses:
+        200:
+          $ref: "#/components/responses/Success"
+      x-amazon-apigateway-integration:
+        type: mock
+        requestTemplates:
+          application/json: |
+            {
+              "statusCode" : 200
+            }
+        responses:
+          default:
+            statusCode: "200"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key'"
+              method.response.header.Access-Control-Allow-Methods: "'*'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+            responseTemplates:
+              application/json: |
+                {}
+    put:
+      tags:
+        - Student
+      summary: Update session name
+      operationId: student_update_session_name_PUT
+      parameters:
+        - in: query
+          name: session_id
+          required: true
+          description: ID of the session to update
+          schema:
+            type: string
+        - in: body
+          name: session_name
+          required: true
+          description: New name for the session
+          schema:
+            type: object
+            properties:
+              session_name:
+                type: string
+                description: New name for the session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                session_name:
+                  type: string
+                  description: New name for the session
+      responses:
+        "200":
+          description: Session name updated successfully
+        "400":
+          description: Bad Request
+        "404":
+          description: Session not found
+        "500":
+          description: Internal Server Error
+      security:
+        - studentAuthorizer: []
+      x-amazon-apigateway-integration:
+        uri:
+          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${studentFunction.Arn}/invocations"
+        passthroughBehavior: "when_no_match"
+        httpMethod: "POST"
+        type: "aws_proxy"
   /student/create_user:
     options:
       summary: CORS support
@@ -1005,6 +1079,8 @@ paths:
         passthroughBehavior: "when_no_match"
         httpMethod: "POST"
         type: "aws_proxy"
+
+
 
   /instructor/generate_presigned_url:
     options:

@@ -1038,9 +1038,9 @@ paths:
           schema:
             type: string
         - in: query
-          name: concept_name
+          name: module_id
           required: true
-          description: Name of the concept
+          description: ID of the module
           schema:
             type: string
         - in: query
@@ -1138,9 +1138,9 @@ paths:
           schema:
             type: string
         - in: query
-          name: concept_name
+          name: module_id
           required: true
-          description: Name of the concept
+          description: ID of the module
           schema:
             type: string
         - in: query

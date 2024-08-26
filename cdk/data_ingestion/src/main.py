@@ -16,7 +16,7 @@ def handler(event, context):
 
     # Parse the key to extract components
     try:
-        course_name, concept_name, module_name, _, file_name_with_extension = object_key.split('/')
+        course_name, module_name_with_id, _, file_name_with_extension = object_key.split('/')
         file_name, file_type = file_name_with_extension.rsplit('.', 1)
     except ValueError:
         logger.error("Unexpected key format: %s", object_key)
@@ -27,8 +27,7 @@ def handler(event, context):
 
     # Log the extracted components
     logger.info("Course Name: %s", course_name)
-    logger.info("Concept Name: %s", concept_name)
-    logger.info("Module Name: %s", module_name)
+    logger.info("Module Name: %s", module_name_with_id)
     logger.info("File Name: %s", file_name)
     logger.info("File Type: %s", file_type)
 
@@ -36,8 +35,7 @@ def handler(event, context):
         'statusCode': 200,
         'body': json.dumps({
             'course_name': course_name,
-            'concept_name': concept_name,
-            'module_name': module_name,
+            'module_name': module_name_with_id,
             'file_name': file_name,
             'file_type': file_type
         })

@@ -1038,6 +1038,12 @@ paths:
           schema:
             type: string
         - in: query
+          name: concept_name
+          required: true
+          description: Name of the concept
+          schema:
+            type: string
+        - in: query
           name: module_name
           required: true
           description: Name of the module

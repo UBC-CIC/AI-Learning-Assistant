@@ -1,25 +1,16 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, {useEffect, useRef, useState } from "react";
 import AIMessage from "../../components/AIMessage";
 import Session from "../../components/Session";
 import StudentMessage from "../../components/StudentMessage";
 import { fetchAuthSession } from "aws-amplify/auth";
 import { getCurrentUser } from "aws-amplify/auth";
 import { useNavigate } from "react-router-dom";
-import TextField from "@mui/material/TextField";
-import Dialog from "@mui/material/Dialog";
-import DialogActions from "@mui/material/DialogActions";
-import DialogContent from "@mui/material/DialogContent";
-import DialogContentText from "@mui/material/DialogContentText";
-import DialogTitle from "@mui/material/DialogTitle";
-import Button from "@mui/material/Button";
 
 const StudentChat = ({ course, module, setModule, setCourse }) => {
   const textareaRef = useRef(null);
   const [sessions, setSessions] = useState([]);
   const [session, setSession] = useState(null);
   const [messages, setMessages] = useState([]);
-  const [open, setOpen] = React.useState(false);
-
   async function retrieveKnowledgeBase(message) {
     try {
       const authSession = await fetchAuthSession();
@@ -62,11 +53,12 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
   }
 
   const handleSubmit = async () => {
+    let new_session;
     if (!session) {
-      console.error("Session is not set. Cannot submit the message.");
-      return;
+      new_session = await handleNewChat();
+    } else {
+      new_session = session;
     }
-
     const messageContent = textareaRef.current.value;
     const authSession = await fetchAuthSession();
     const { signInDetails } = await getCurrentUser();
@@ -75,7 +67,7 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
       const response = await fetch(
         `${import.meta.env.VITE_API_ENDPOINT
         }student/create_message?session_id=${encodeURIComponent(
-          session.session_id
+          new_session.session_id
         )}&email=${encodeURIComponent(
           signInDetails.loginId
         )}&course_id=${encodeURIComponent(
@@ -124,14 +116,6 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
     } catch (error) {
       console.error("Error creating message:", error);
     }
-  };
-
-  const handleClickOpen = () => {
-    setOpen(true);
-  };
-
-  const handleClose = () => {
-    setOpen(false);
   };
 
   const navigate = useNavigate();
@@ -189,7 +173,7 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
     navigate(-1);
   };
 
-  const handleNewChat = async (session_name) => {
+  const handleNewChat = async () => {
     try {
       const session = await fetchAuthSession();
       const { signInDetails } = await getCurrentUser();
@@ -202,7 +186,7 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
           course.course_id
         )}&module_id=${encodeURIComponent(
           module.module_id
-        )}&session_name=${encodeURIComponent(session_name)}`,
+        )}&session_name=${encodeURIComponent("New chat")}`,
         {
           method: "POST",
           headers: {
@@ -215,7 +199,7 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
         const data = await response.json();
         setSessions((prevItems) => [...prevItems, data[0]]);
         setSession(data[0])
-
+        return data[0];
       } else {
         console.error("Failed to create session:", response.statusText);
       }
@@ -253,10 +237,8 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
             (isession) => isession.session_id !== sessionDelete.session_id
           )
         );
-        if (session.session_id === sessionDelete.session_id) {
-          const newSelectedSession = sessions[sessions.length - 1] || null;
-          setSession(newSelectedSession);
-        }
+        setSession(null)
+        setMessages([]);
       } else {
         console.error("Failed to create session:", response.statusText);
       }
@@ -366,7 +348,7 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
         </div>
         <button
           onClick={() => {
-            handleClickOpen();
+            handleNewChat();
           }}
           className="border border-black ml-8 mr-8 mt-0 mb-0 bg-transparent pt-1.5 pb-1.5"
         >
@@ -395,6 +377,7 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
                 setSession={setSession}
                 deleteSession={handleDeleteSession}
                 selectedSession={session}
+                setMessages={setMessages}
               />
             ))}
         </div>
@@ -433,45 +416,6 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
           AI Assistant 🌟
         </div>
       </div>
-      <Dialog
-        open={open}
-        onClose={handleClose}
-        PaperProps={{
-          component: "form",
-          onSubmit: (event) => {
-            event.preventDefault();
-            const formData = new FormData(event.currentTarget);
-            const formJson = Object.fromEntries(formData.entries());
-            const code = formJson.code;
-            handleNewChat(code);
-            handleClose();
-          },
-        }}
-      >
-        <DialogTitle>New Session</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            Please enter the name of your new session.
-          </DialogContentText>
-          <TextField
-            autoFocus
-            required
-            margin="dense"
-            id="name"
-            name="code"
-            label="Session Name"
-            fullWidth
-            variant="standard"
-            inputProps={{
-              maxLength: 35, // Set your desired character limit here
-            }}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleClose}>Cancel</Button>
-          <Button type="submit">Create</Button>
-        </DialogActions>
-      </Dialog>
     </div>
   );
 };

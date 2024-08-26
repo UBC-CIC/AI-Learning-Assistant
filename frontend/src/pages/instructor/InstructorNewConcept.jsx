@@ -103,6 +103,7 @@ const InstructorNewConcept = () => {
           onChange={handleInputChange}
           fullWidth
           margin="normal"
+          inputProps={{ maxLength: 50 }}
         />
 
         <Grid container spacing={2} style={{ marginTop: 16 }}>

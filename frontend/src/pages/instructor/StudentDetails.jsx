@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { useParams, useLocation } from "react-router-dom";
+import { useParams, useLocation, useNavigate } from "react-router-dom";
 import { fetchAuthSession, getCurrentUser } from "aws-amplify/auth";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -18,11 +18,15 @@ const formatMessages = (messages) => {
   // Helper function to format date as YY/MM/DD
   const formatDate = (dateString) => {
     const date = new Date(dateString);
-    if (isNaN(date.getTime())) return "Invalid Date"; // Handle invalid date
-    return `${date.getUTCFullYear().toString().slice(2)}-${(
-      "0" +
-      (date.getUTCMonth() + 1)
-    ).slice(-2)}/${("0" + date.getUTCDate()).slice(-2)}`;
+    if (isNaN(date.getTime())) return "Invalid Date"; 
+
+    return date
+      .toLocaleDateString(undefined, {
+        year: "2-digit",
+        month: "2-digit",
+        day: "2-digit",
+      })
+      .replace(/\//g, "-");
   };
 
   // Group messages by date
@@ -60,7 +64,8 @@ const StudentDetails = () => {
   const [chatHistory, setChatHistory] = useState(`
   loading...
   `);
-  const textFieldRef = useRef(null); // Create ref for TextField
+  const textFieldRef = useRef(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchHistory = async () => {
@@ -146,7 +151,6 @@ const StudentDetails = () => {
         }
       );
       if (response.ok) {
-
         toast.success("Student unenrolled successfully", {
           position: "top-center",
           autoClose: 1000,

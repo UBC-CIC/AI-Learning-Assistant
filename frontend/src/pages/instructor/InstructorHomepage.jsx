@@ -89,7 +89,12 @@ const CourseDetails = () => {
 };
 
 const InstructorHomepage = () => {
-  const [rows, setRows] = useState([]);
+  const [rows, setRows] = useState([{
+    course: "loading...",
+    date: "loading...",
+    status: "loading...",
+    id: "loading..."
+  }]);
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);

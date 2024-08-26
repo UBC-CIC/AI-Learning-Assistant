@@ -26,6 +26,9 @@ function generateAccessCode() {
   // Format the code into the pattern XXXX-XXXX-XXXX-XXXX
   return code.match(/.{1,4}/g).join("-");
 }
+
+
+
 function formatInstructors(instructorsArray) {
   return instructorsArray.map((instructor, index) => ({
     id: index + 1,
@@ -34,19 +37,24 @@ function formatInstructors(instructorsArray) {
   }));
 }
 
-export const AdminCreateCourse = ( {setSelectedComponent} ) => {
+export const AdminCreateCourse = ({ setSelectedComponent }) => {
   const [courseName, setCourseName] = useState("");
   const [coursePrompt, setCoursePrompt] = useState("");
   const [courseDepartment, setCourseDepartment] = useState("");
   const [courseCode, setCourseCode] = useState("");
   const [isActive, setIsActive] = useState(true);
-  const [tone, setTone] = useState("");
   const [selectedInstructors, setSelectedInstructors] = useState([]);
   const [instructors, setInstructors] = useState([]);
   const handleStatusChange = (event) => {
     setIsActive(event.target.checked);
   };
 
+  const handleCourseCodeChange = (e) => {
+    const value = e.target.value;
+    if (/^\d*$/.test(value)) { // This regex ensures only digits
+      setCourseCode(value);
+    }
+  };
   useEffect(() => {
     const fetchInstructors = async () => {
       try {
@@ -116,15 +124,16 @@ export const AdminCreateCourse = ( {setSelectedComponent} ) => {
           access_code
         )}&course_student_access=${encodeURIComponent(
           isActive
-        )}&system_prompt=${encodeURIComponent(
-          coursePrompt
-        )}&llm_tone=${encodeURIComponent(tone)}`,
+        )}`,
         {
           method: "POST",
           headers: {
             Authorization: token,
             "Content-Type": "application/json",
           },
+          body: JSON.stringify({
+            system_prompt: coursePrompt,
+          }),
         }
       );
       if (response.ok) {
@@ -142,13 +151,11 @@ export const AdminCreateCourse = ( {setSelectedComponent} ) => {
             progress: undefined,
             theme: "colored",
           });
-          setTimeout(function (){
-  
+          setTimeout(function () {
             setSelectedComponent("AdminCourses");
-                      
-          }, 1000)
+          }, 1000);
           return;
-      }
+        }
         for (const instructor of selectedInstructors) {
           console.log("course_id", course_id);
           console.log("instructor", instructor);
@@ -229,24 +236,6 @@ export const AdminCreateCourse = ( {setSelectedComponent} ) => {
   const handleChange = (event) => {
     setSelectedInstructors(event.target.value);
   };
-
-  const inputStyles = {
-    width: "100%",
-    margin: "8px 0",
-    padding: "8px",
-    backgroundColor: "white",
-    border: "1px solid #ccc",
-    borderRadius: "4px",
-    color: "black",
-  };
-
-  const labelStyles = {
-    marginBottom: "3px",
-    display: "block",
-    textAlign: "left",
-    color: "#000",
-    mx: "left",
-  };
   return (
     <>
       <Box sx={{ maxWidth: 500, mx: "left", mt: 7, p: 4, overflow: "auto" }}>
@@ -266,6 +255,7 @@ export const AdminCreateCourse = ( {setSelectedComponent} ) => {
             onChange={(e) => setCourseName(e.target.value)}
             margin="normal"
             backgroundColor="default"
+            inputProps={{ maxLength: 50 }}
           />
           <TextField
             fullWidth
@@ -275,6 +265,7 @@ export const AdminCreateCourse = ( {setSelectedComponent} ) => {
             margin="normal"
             multiline
             rows={4}
+            inputProps={{ maxLength: 60000 }}
           />
           <TextField
             fullWidth
@@ -283,22 +274,16 @@ export const AdminCreateCourse = ( {setSelectedComponent} ) => {
             onChange={(e) => setCourseDepartment(e.target.value)}
             margin="normal"
             backgroundColor="default"
+            inputProps={{ maxLength: 20 }}
           />
           <TextField
             fullWidth
-            label="Course Code"
+            label="Course Code (Numbers Only)"
             value={courseCode}
-            onChange={(e) => setCourseCode(e.target.value)}
+            onChange={handleCourseCodeChange}
             margin="normal"
             backgroundColor="default"
-          />
-          <TextField
-            fullWidth
-            label="LLM Tone"
-            value={tone}
-            onChange={(e) => setTone(e.target.value)}
-            margin="normal"
-            backgroundColor="default"
+            inputProps={{ maxLength: 10, min: 0, step: 1}}
           />
           <FormControl fullWidth sx={{ marginBottom: 2, marginTop: 2 }}>
             <InputLabel id="select-instructors-label">
@@ -339,7 +324,9 @@ export const AdminCreateCourse = ( {setSelectedComponent} ) => {
             </Select>
           </FormControl>
           <FormControlLabel
-            control={<Switch checked={isActive} onChange={handleStatusChange} />}
+            control={
+              <Switch checked={isActive} onChange={handleStatusChange} />
+            }
             label={isActive ? "Active" : "Inactive"}
             sx={{
               color: "black",

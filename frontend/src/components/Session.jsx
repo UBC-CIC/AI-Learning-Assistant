@@ -6,12 +6,14 @@ const Session = ({
   setSession,
   deleteSession,
   selectedSession,
+  setMessages,
 }) => {
   const isSelected =
     selectedSession && selectedSession.session_id === session.session_id;
 
   const handleSessionClick = () => {
     setSession(session);
+    setMessages([]);
   };
 
   const handleDeleteClick = (event) => {

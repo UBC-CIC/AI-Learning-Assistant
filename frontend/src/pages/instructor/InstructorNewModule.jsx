@@ -78,7 +78,7 @@ export const InstructorNewModule = ({ courseId }) => {
     setConcept(e.target.value);
   };
 
-  const handleFileUpload = (e) => {
+  const handleFileUpload = async (e) => {
     setFiles([...files, ...Array.from(event.target.files)]);
   };
 

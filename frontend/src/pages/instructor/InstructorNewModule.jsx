@@ -186,6 +186,7 @@ export const InstructorNewModule = ({ courseId }) => {
           onChange={handleInputChange}
           fullWidth
           margin="normal"
+          inputProps={{ maxLength: 50 }}
         />
 
         <FormControl fullWidth margin="normal">

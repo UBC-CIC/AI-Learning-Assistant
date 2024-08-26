@@ -114,14 +114,17 @@ exports.handler = async (event) => {
 
             // Query to get the percentage of perfect scores for each module
             const perfectScores = await sqlConnection`
-                      SELECT cm.module_id, 
-                             COUNT(CASE WHEN sm.module_score = 100 THEN 1 END) * 100.0 / COUNT(sm.student_module_id) AS perfect_score_percentage
-                      FROM "Course_Modules" cm
-                      JOIN "Course_Concepts" cc ON cm.concept_id = cc.concept_id
-                      LEFT JOIN "Student_Modules" sm ON cm.module_id = sm.course_module_id
-                      WHERE cc.course_id = ${courseId}
-                      GROUP BY cm.module_id;
-                  `;
+              SELECT cm.module_id, 
+                    CASE 
+                        WHEN COUNT(sm.student_module_id) = 0 THEN 0 
+                        ELSE COUNT(CASE WHEN sm.module_score = 100 THEN 1 END) * 100.0 / COUNT(sm.student_module_id)
+                    END AS perfect_score_percentage
+              FROM "Course_Modules" cm
+              JOIN "Course_Concepts" cc ON cm.concept_id = cc.concept_id
+              LEFT JOIN "Student_Modules" sm ON cm.module_id = sm.course_module_id
+              WHERE cc.course_id = ${courseId}
+              GROUP BY cm.module_id;
+          `;
 
             // Combine all data into a single response, ensuring all modules are included
             const analyticsData = messageCreations.map((module) => {
@@ -161,7 +164,6 @@ exports.handler = async (event) => {
           response.body = JSON.stringify({ error: "course_id is required" });
         }
         break;
-
       case "POST /instructor/create_concept":
         if (
           event.queryStringParameters != null &&
@@ -181,14 +183,29 @@ exports.handler = async (event) => {
           }
 
           try {
+            // Check if a concept with the same name already exists for the given course
+            const existingConcept = await sqlConnection`
+                SELECT * FROM "Course_Concepts"
+                WHERE course_id = ${courseId}
+                AND concept_name = ${concept_name};
+              `;
+
+            if (existingConcept.length > 0) {
+              response.statusCode = 400;
+              response.body = JSON.stringify({
+                error: "A concept with this name already exists in the course.",
+              });
+              break;
+            }
+
             // Insert the new concept into the Course_Concepts table using uuid_generate_v4() for concept_id
             await sqlConnection`
-                        INSERT INTO "Course_Concepts" (
-                            "concept_id", "course_id", "concept_number", "concept_name"
-                        ) VALUES (
-                            uuid_generate_v4(), ${courseId}, ${conceptNumber}, ${concept_name}
-                        );
-                    `;
+                INSERT INTO "Course_Concepts" (
+                  "concept_id", "course_id", "concept_number", "concept_name"
+                ) VALUES (
+                  uuid_generate_v4(), ${courseId}, ${conceptNumber}, ${concept_name}
+                );
+              `;
 
             response.statusCode = 201;
             response.body = JSON.stringify({
@@ -217,16 +234,31 @@ exports.handler = async (event) => {
           const { concept_name } = JSON.parse(event.body);
 
           try {
+            // Check if another concept with the same name already exists
+            const existingConcept = await sqlConnection`
+                SELECT * FROM "Course_Concepts"
+                WHERE concept_name = ${concept_name}
+                AND concept_id != ${conceptId};
+              `;
+
+            if (existingConcept.length > 0) {
+              response.statusCode = 400;
+              response.body = JSON.stringify({
+                error: "A concept with this name already exists.",
+              });
+              break;
+            }
+
             // Update the concept's name and number
             const result = await sqlConnection`
-                      UPDATE "Course_Concepts"
-                      SET
-                          concept_name = ${concept_name},
-                          concept_number = ${conceptNumber}
-                      WHERE
-                          concept_id = ${conceptId}
-                      RETURNING *;
-                  `;
+                UPDATE "Course_Concepts"
+                SET
+                  concept_name = ${concept_name},
+                  concept_number = ${conceptNumber}
+                WHERE
+                  concept_id = ${conceptId}
+                RETURNING *;
+              `;
 
             if (result.length > 0) {
               response.statusCode = 200;
@@ -256,28 +288,62 @@ exports.handler = async (event) => {
           event.queryStringParameters.module_number &&
           event.queryStringParameters.instructor_email
         ) {
+          const {
+            course_id,
+            concept_id,
+            module_name,
+            module_number,
+            instructor_email,
+          } = event.queryStringParameters;
+
           try {
-            const {
-              course_id,
-              concept_id,
-              module_name,
-              module_number,
-              instructor_email,
-            } = event.queryStringParameters;
+            // Check if a module with the same name already exists
+            const existingModule = await sqlConnection`
+                    SELECT * FROM "Course_Modules"
+                    WHERE concept_id = ${concept_id}
+                    AND module_name = ${module_name};
+                  `;
+
+            if (existingModule.length > 0) {
+              response.statusCode = 400;
+              response.body = JSON.stringify({
+                error:
+                  "A module with this name already exists in the given concept.",
+              });
+              break;
+            }
 
             // Insert new module into Course_Modules table
             const newModule = await sqlConnection`
-                INSERT INTO "Course_Modules" (module_id, concept_id, module_name, module_number)
-                VALUES (uuid_generate_v4(), ${concept_id}, ${module_name}, ${module_number})
-                RETURNING *;
-              `;
+                    INSERT INTO "Course_Modules" (module_id, concept_id, module_name, module_number)
+                    VALUES (uuid_generate_v4(), ${concept_id}, ${module_name}, ${module_number})
+                    RETURNING *;
+                  `;
 
             // Insert into User Engagement Log
             await sqlConnection`
-                  INSERT INTO "User_Engagement_Log" (log_id, user_email, course_id, module_id, enrolment_id, timestamp, engagement_type)
-                  VALUES (uuid_generate_v4(), ${instructor_email}, ${course_id}, ${newModule[0].module_id}, null, CURRENT_TIMESTAMP, 'instructor_created_module')
-                `;
+                    INSERT INTO "User_Engagement_Log" (log_id, user_email, course_id, module_id, enrolment_id, timestamp, engagement_type)
+                    VALUES (uuid_generate_v4(), ${instructor_email}, ${course_id}, ${newModule[0].module_id}, null, CURRENT_TIMESTAMP, 'instructor_created_module')
+                  `;
 
+            // Find all student enrolments for the given course_id
+            const enrolments = await sqlConnection`
+                    SELECT enrolment_id FROM "Enrolments"
+                    WHERE course_id = ${course_id}
+                    AND enrolment_type = 'student';
+                  `;
+
+            // Create Student_Module entries for each enrolment
+            await Promise.all(
+              enrolments.map(async (enrolment) => {
+                await sqlConnection`
+                      INSERT INTO "Student_Modules" (student_module_id, course_module_id, enrolment_id, module_score)
+                      VALUES (uuid_generate_v4(), ${newModule[0].module_id}, ${enrolment.enrolment_id}, 0);
+                    `;
+              })
+            );
+
+            response.statusCode = 201;
             response.body = JSON.stringify(newModule[0]);
           } catch (err) {
             response.statusCode = 500;
@@ -286,11 +352,13 @@ exports.handler = async (event) => {
           }
         } else {
           response.statusCode = 400;
-          response.body =
-            "course_id, concept_id, module_name, module_number, or instructor_email is missing";
+          response.body = JSON.stringify({
+            error:
+              "course_id, concept_id, module_name, module_number, or instructor_email is missing",
+          });
         }
         break;
-      case "PUT /instructor/edit_module":
+      case "PUT /instructor/reorder_module":
         if (
           event.queryStringParameters != null &&
           event.queryStringParameters.module_id &&
@@ -305,10 +373,78 @@ exports.handler = async (event) => {
             try {
               // Update the module in the Course_Modules table
               await sqlConnection`
-                UPDATE "Course_Modules"
-                SET module_name = ${module_name}, module_number = ${module_number}
-                WHERE module_id = ${module_id};
-              `;
+                  UPDATE "Course_Modules"
+                  SET module_name = ${module_name}, module_number = ${module_number}
+                  WHERE module_id = ${module_id};
+                `;
+
+              // Insert into User Engagement Log
+              await sqlConnection`
+                    INSERT INTO "User_Engagement_Log" (log_id, user_email, course_id, module_id, enrolment_id, timestamp, engagement_type)
+                    VALUES (uuid_generate_v4(), ${instructor_email}, NULL, ${module_id}, NULL, CURRENT_TIMESTAMP, 'instructor_edited_module');
+                  `;
+
+              response.statusCode = 200;
+              response.body = JSON.stringify({
+                message: "Module updated successfully",
+              });
+            } catch (err) {
+              response.statusCode = 500;
+              console.error(err);
+              response.body = JSON.stringify({
+                error: "Internal server error",
+              });
+            }
+          } else {
+            response.statusCode = 400;
+            response.body = JSON.stringify({
+              error: "module_name is required in the body",
+            });
+          }
+        } else {
+          response.statusCode = 400;
+          response.body = JSON.stringify({
+            error:
+              "module_id, module_number, or instructor_email is missing in query string parameters",
+          });
+        }
+        break;
+      case "PUT /instructor/edit_module":
+        if (
+          event.queryStringParameters != null &&
+          event.queryStringParameters.module_id &&
+          event.queryStringParameters.instructor_email &&
+          event.queryStringParameters.concept_id
+        ) {
+          const { module_id, instructor_email, concept_id } =
+            event.queryStringParameters;
+          const { module_name } = JSON.parse(event.body || "{}");
+
+          if (module_name) {
+            try {
+              // Check if another module with the same name already exists under the same concept
+              const existingModule = await sqlConnection`
+                  SELECT * FROM "Course_Modules"
+                  WHERE concept_id = ${concept_id}
+                  AND module_name = ${module_name}
+                  AND module_id != ${module_id};
+                `;
+
+              if (existingModule.length > 0) {
+                response.statusCode = 400;
+                response.body = JSON.stringify({
+                  error:
+                    "A module with this name already exists under the same concept.",
+                });
+                break;
+              }
+
+              // Update the module in the Course_Modules table
+              await sqlConnection`
+                  UPDATE "Course_Modules"
+                  SET module_name = ${module_name}, concept_id = ${concept_id}
+                  WHERE module_id = ${module_id};
+                `;
 
               // Insert into User Engagement Log
               await sqlConnection`
@@ -337,7 +473,7 @@ exports.handler = async (event) => {
           response.statusCode = 400;
           response.body = JSON.stringify({
             error:
-              "module_id, module_number, or instructor_email is missing in query string parameters",
+              "module_id, instructor_email, or concept_id is missing in query string parameters",
           });
         }
         break;

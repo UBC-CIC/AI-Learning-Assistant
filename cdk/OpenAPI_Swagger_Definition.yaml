@@ -1524,6 +1524,84 @@ paths:
         passthroughBehavior: "when_no_match"
         httpMethod: "POST"
         type: "aws_proxy"
+  /instructor/reorder_module:
+    options:
+      summary: CORS support
+      description: |
+        Enable CORS by returning correct headers
+      responses:
+        200:
+          $ref: "#/components/responses/Success"
+      x-amazon-apigateway-integration:
+        type: mock
+        requestTemplates:
+          application/json: |
+            {
+              "statusCode" : 200
+            }
+        responses:
+          default:
+            statusCode: "200"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key'"
+              method.response.header.Access-Control-Allow-Methods: "'*'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+            responseTemplates:
+              application/json: |
+                {}
+    put:
+      tags:
+        - Instructor
+      summary: Reorder and edit an existing module
+      operationId: instructor_reorder_module_PUT
+      parameters:
+        - in: query
+          name: module_id
+          required: true
+          description: ID of the module to be reordered or edited
+          schema:
+            type: string
+        - in: query
+          name: module_number
+          required: true
+          description: New number for the module
+          schema:
+            type: integer
+        - in: query
+          name: instructor_email
+          required: true
+          description: Email of the instructor making the change
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                module_name:
+                  type: string
+                  description: New name for the module
+      responses:
+        "200":
+          description: Module updated successfully
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "429":
+          description: Too Many Requests
+        "500":
+          description: Internal Server Error
+      security:
+        - instructorAuthorizer: []
+      x-amazon-apigateway-integration:
+        uri:
+          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${instructorFunction.Arn}/invocations"
+        passthroughBehavior: "when_no_match"
+        httpMethod: "POST"
+        type: "aws_proxy"
   /instructor/create_module:
     options:
       summary: CORS support
@@ -1651,11 +1729,11 @@ paths:
           schema:
             type: string
         - in: query
-          name: module_number
+          name: concept_id
           required: true
-          description: New number for the module being updated
+          description: ID of the concept to which the module will be reassigned
           schema:
-            type: integer
+            type: string
       requestBody:
         required: true
         content:
@@ -1665,11 +1743,8 @@ paths:
               properties:
                 module_name:
                   type: string
-                module_number:
-                  type: integer
               required:
                 - module_name
-                - module_number
       responses:
         "200":
           description: Module updated successfully
@@ -1689,6 +1764,7 @@ paths:
         passthroughBehavior: "when_no_match"
         httpMethod: "POST"
         type: "aws_proxy"
+
   /instructor/prompt:
     options:
       summary: CORS support

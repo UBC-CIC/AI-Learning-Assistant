@@ -1,98 +1,25 @@
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  Button,
-  Box,
-  Toolbar,
-  Typography,
-  Paper,
-} from "@mui/material";
+import { Button, Box, Toolbar, Typography, Paper } from "@mui/material";
 import { fetchAuthSession } from "aws-amplify/auth";
 import {
   MRT_TableContainer,
   useMaterialReactTable,
-} from 'material-react-table';
-
+} from "material-react-table";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 const InstructorConcepts = ({ courseName, course_id }) => {
   const navigate = useNavigate();
   const [data, setData] = useState([]);
-  const [accessCode, setAccessCode] = useState("loading...");
-
   useEffect(() => {
-    // Fetch modules from API or use initial data
-    const fetchModules = async () => {
-      // Simulate fetching from an API
-      const modulesData = [
-        {
-          module_id: "02f1adde-95ef-434c-87e7-c5789d9a3dce",
-          module_name: "program structure",
-          concept_name: "basics",
-        },
-        {
-          module_id: "493b210a-a04e-4069-8f7e-df101226a101",
-          module_name: "method and calls",
-          concept_name: "basics",
-        },
-        // Additional modules...
-      ];
-      setData(modulesData);
-    };
-
-    fetchModules();
-  }, []);
-
-  const columns = useMemo(() => [
-    {
-      accessorKey: 'module_name',
-      header: 'Module Name',
-    },
-    {
-      accessorKey: 'concept_name',
-      header: 'Concept',
-    },
-    {
-      accessorKey: 'actions',
-      header: 'Actions',
-      Cell: ({ row }) => (
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={() => handleEditClick(row.original.module_id)}
-        >
-          Edit
-        </Button>
-      ),
-    },
-  ], []);
-
-  const table = useMaterialReactTable({
-    autoResetPageIndex: false,
-    columns,
-    data,
-    enableRowOrdering: true,
-    enableSorting: false,
-    muiRowDragHandleProps: ({ table }) => ({
-      onDragEnd: () => {
-        const { draggingRow, hoveredRow } = table.getState();
-        if (hoveredRow && draggingRow) {
-          data.splice(
-            hoveredRow.index,
-            0,
-            data.splice(draggingRow.index, 1)[0],
-          );
-          setData([...data]);
-        }
-      },
-    }),
-  });
-
-  useEffect(() => {
-    const fetchCode = async () => {
+    const fetchConcepts = async () => {
       try {
         const session = await fetchAuthSession();
         var token = session.tokens.idToken.toString();
         const response = await fetch(
-          `${import.meta.env.VITE_API_ENDPOINT}instructor/get_access_code?course_id=${encodeURIComponent(course_id)}`,
+          `${
+            import.meta.env.VITE_API_ENDPOINT
+          }instructor/view_concepts?course_id=${encodeURIComponent(course_id)}`,
           {
             method: "GET",
             headers: {
@@ -104,83 +31,139 @@ const InstructorConcepts = ({ courseName, course_id }) => {
         if (response.ok) {
           const data = await response.json();
           console.log(data);
-          setAccessCode(data.course_access_code);
+          setData(data);
         } else {
-          console.error("Failed to fetch courses:", response.statusText);
+          console.error("Failed to fetch concepts:", response.statusText);
         }
       } catch (error) {
-        console.error("Error fetching courses:", error);
+        console.error("Error fetching concepts:", error);
       }
     };
 
-    fetchCode();
-  }, [course_id]);
+    fetchConcepts();
+  }, []);
 
-  useEffect(() => {
-    const fetchModules = async () => {
-      try {
-        const session = await fetchAuthSession();
-        var token = session.tokens.idToken.toString();
+  const columns = useMemo(
+    () => [
+      {
+        accessorKey: "concept_name",
+        header: "Concept Name",
+      },
+      {
+        accessorKey: "actions",
+        header: "Actions",
+        Cell: ({ row }) => (
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={() => handleEditClick(row.original)}
+          >
+            Edit
+          </Button>
+        ),
+      },
+    ],
+    []
+  );
+
+  const table = useMaterialReactTable({
+    autoResetPageIndex: false,
+    columns,
+    data,
+    enableRowOrdering: true,
+    enableSorting: false,
+    initialState: { pagination: { pageSize: 1000, pageIndex: 1 } },
+    muiRowDragHandleProps: ({ table }) => ({
+      onDragEnd: () => {
+        const { draggingRow, hoveredRow } = table.getState();
+        if (hoveredRow && draggingRow) {
+          data.splice(
+            hoveredRow.index,
+            0,
+            data.splice(draggingRow.index, 1)[0]
+          );
+          setData([...data]);
+        }
+      },
+    }),
+  });
+
+  const handleEditClick = (conceptData) => {
+    navigate(`/course/${courseName}/edit-concept/${conceptData.concept_id}`, {
+      state: { conceptData, course_id: course_id },
+    });
+  };
+
+  const handleCreateConceptClick = () => {
+    navigate(`/course/${courseName}/new-concept`, {
+      state: { data, course_id },
+    });
+  };
+
+  const handleSaveChanges = async () => {
+    try {
+      const session = await fetchAuthSession();
+      const token = session.tokens.idToken.toString();
+      console.log(data);
+
+      for (let i = 0; i < data.length; i++) {
+        const concept = data[i];
+        const conceptNumber = i + 1;
+
         const response = await fetch(
-          `${import.meta.env.VITE_API_ENDPOINT}instructor/view_modules?course_id=${encodeURIComponent(course_id)}`,
+          `${
+            import.meta.env.VITE_API_ENDPOINT
+          }instructor/edit_concept?concept_id=${encodeURIComponent(
+            concept.concept_id
+          )}&concept_number=${encodeURIComponent(conceptNumber)}`,
           {
-            method: "GET",
+            method: "PUT",
             headers: {
               Authorization: token,
               "Content-Type": "application/json",
             },
+            body: JSON.stringify({
+              concept_name: concept.concept_name,
+              concept_number: conceptNumber,
+            }),
           }
         );
-        if (response.ok) {
-          const moduleData = await response.json();
-          setData(moduleData);
+
+        if (!response.ok) {
+          console.error(
+            `Failed to update concept ${concept.concept_id}:`,
+            response.statusText
+          );
+          toast.error("Concept Order Update Failed", {
+            position: "top-center",
+            autoClose: 1000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            theme: "colored",
+          });
         } else {
-          console.error("Failed to fetch courses:", response.statusText);
+          const updatedConcept = await response.json();
+          console.log(
+            `Updated concept ${updatedConcept.concept_id} successfully.`
+          );
         }
-      } catch (error) {
-        console.error("Error fetching courses:", error);
       }
-    };
-
-    fetchModules();
-  }, [course_id]);
-
-  const handleEditClick = (moduleId) => {
-    navigate(`/course/${courseName}/edit-module/${moduleId}`);
-  };
-
-  const handleCreateModuleClick = () => {
-    navigate(`/course/${courseName}/new-module`);
-  };
-
-  const handleGenerateAccessCode = async () => {
-    try {
-      const session = await fetchAuthSession();
-      var token = session.tokens.idToken.toString();
-      const response = await fetch(
-        `${import.meta.env.VITE_API_ENDPOINT}instructor/generate_access_code?course_id=${encodeURIComponent(course_id)}`,
-        {
-          method: "PUT",
-          headers: {
-            Authorization: token,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-      if (response.ok) {
-        const data = await response.json();
-        console.log(data);
-        setAccessCode(data.access_code);
-      } else {
-        console.error("Failed to fetch courses:", response.statusText);
-      }
+      toast.success("Module Order Updated Successfully", {
+        position: "top-center",
+        autoClose: 1000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "colored",
+      });
     } catch (error) {
-      console.error("Error fetching courses:", error);
+      console.error("Error saving changes:", error);
     }
-  };
-
-  const handleLogModulesClick = () => {
-    console.log(data);
   };
 
   return (
@@ -213,37 +196,26 @@ const InstructorConcepts = ({ courseName, course_id }) => {
         <Button
           variant="contained"
           color="primary"
-          onClick={handleCreateModuleClick}
+          onClick={handleCreateConceptClick}
         >
-          Create New Module
+          Create New Concept
         </Button>
-        <Button
-          variant="contained"
-          color="secondary"
-          onClick={handleLogModulesClick}
-        >
-          Log Modules in Order
+        <Button variant="contained" color="primary" onClick={handleSaveChanges}>
+          Save Changes
         </Button>
       </Box>
-      <Paper
-        sx={{
-          marginTop: 5,
-          display: "flex-start",
-          p: 5,
-          width: "50%",
-        }}
-      >
-        <Typography variant="subtitle1" color="black">
-          Access Code: {accessCode}
-        </Typography>
-        <Button
-          variant="contained"
-          color="secondary"
-          onClick={handleGenerateAccessCode}
-        >
-          Generate New Access Code
-        </Button>
-      </Paper>
+      <ToastContainer
+        position="top-center"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="colored"
+      />
     </Box>
   );
 };

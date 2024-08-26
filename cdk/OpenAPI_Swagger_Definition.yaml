@@ -1068,9 +1068,9 @@ paths:
           schema:
             type: string
         - in: query
-          name: txt_file_name
+          name: txt_file_contents
           required: false
-          description: Name of the txt file accompanying the image
+          description: Contents of the txt file accompanying the image
           schema:
             type: string
       responses:
@@ -1081,15 +1081,9 @@ paths:
               schema:
                 type: object
                 properties:
-                  presignedurls:
-                    type: array
-                    description: List of presigned URLs of either only a single URL for documents of 2 URLs for images and their txt files 
-                    items:
-                      type: object
-                      properties:
-                        url:
-                          type: string
-                          description: Presigned URL
+                  presignedurl:
+                    type: string
+                    description: Presigned URL to upload document or image file to S3 Bucket
         "400":
           description: Bad Request
         "401":

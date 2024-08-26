@@ -1,4 +1,4 @@
-# boto3
+boto3
 # langchain
 # langchain-aws
 # langchain-core
@@ -9,4 +9,4 @@
 # sqlalchemy
 # pydantic
 # python-dotenv
-numpy
+# numpy

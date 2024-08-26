@@ -64,7 +64,6 @@ def answer():
 @app.route('/', methods=['GET'])
 @cross_origin()
 def home():
-    # Return a simple welcome message for the home endpoint
     response = {
         'message': 'Welcome to the home page!'
     }

@@ -61,12 +61,6 @@ def handler(event, context):
             "last_sign_in" timestamp
             );
 
-            CREATE TABLE IF NOT EXISTS "LLM_Vectors" (
-            "enrolment_id" uuid UNIQUE,
-            "student_strengths_embeddings" float[],
-            "student_weaknesses_embeddings" float[]
-            );
-
             CREATE TABLE IF NOT EXISTS "Courses" (
             "course_id" uuid PRIMARY KEY DEFAULT (uuid_generate_v4()),
             "course_name" varchar,
@@ -74,8 +68,7 @@ def handler(event, context):
             "course_number" integer,
             "course_access_code" varchar,
             "course_student_access" bool,
-            "system_prompt" text,
-            "llm_tone" varchar
+            "system_prompt" text
             );
 
             CREATE TABLE IF NOT EXISTS "Course_Modules" (
@@ -144,12 +137,13 @@ def handler(event, context):
             "module_id" uuid,
             "enrolment_id" uuid,
             "timestamp" timestamp,
-            "engagement_type" varchar
+            "engagement_type" varchar,
+            "engagement_details" text
             );
 
-            ALTER TABLE "User_Engagement_Log" ADD FOREIGN KEY ("enrolment_id") REFERENCES "Enrolments" ("enrolment_id"); ON DELETE CASCADE ON UPDATE CASCADE;
+            ALTER TABLE "User_Engagement_Log" ADD FOREIGN KEY ("enrolment_id") REFERENCES "Enrolments" ("enrolment_id") ON DELETE CASCADE ON UPDATE CASCADE;
 
-            ALTER TABLE "User_Engagement_Log" ADD FOREIGN KEY ("user_email") REFERENCES "Users" ("user_email"); ON DELETE CASCADE ON UPDATE CASCADE;
+            ALTER TABLE "User_Engagement_Log" ADD FOREIGN KEY ("user_email") REFERENCES "Users" ("user_email") ON DELETE CASCADE ON UPDATE CASCADE;
 
             ALTER TABLE "User_Engagement_Log" ADD FOREIGN KEY ("course_id") REFERENCES "Courses" ("course_id") ON DELETE CASCADE ON UPDATE CASCADE;
 
@@ -166,8 +160,6 @@ def handler(event, context):
             ALTER TABLE "Module_Files" ADD FOREIGN KEY ("module_id") REFERENCES "Course_Modules" ("module_id") ON DELETE CASCADE ON UPDATE CASCADE;
 
             ALTER TABLE "Student_Modules" ADD FOREIGN KEY ("course_module_id") REFERENCES "Course_Modules" ("module_id") ON DELETE CASCADE ON UPDATE CASCADE;
-
-            ALTER TABLE "LLM_Vectors" ADD FOREIGN KEY ("enrolment_id") REFERENCES "Enrolments" ("enrolment_id") ON DELETE CASCADE ON UPDATE CASCADE;
 
             ALTER TABLE "Student_Modules" ADD FOREIGN KEY ("enrolment_id") REFERENCES "Enrolments" ("enrolment_id") ON DELETE CASCADE ON UPDATE CASCADE;
 

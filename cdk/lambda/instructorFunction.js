@@ -488,19 +488,52 @@ exports.handler = async (event) => {
             const { course_id, instructor_email } = event.queryStringParameters;
             const { prompt } = JSON.parse(event.body);
 
+            // Retrieve the current system prompt
+            const currentPromptResult = await sqlConnection`
+                    SELECT system_prompt
+                    FROM "Courses"
+                    WHERE course_id = ${course_id};
+                  `;
+
+            if (currentPromptResult.length === 0) {
+              response.statusCode = 404;
+              response.body = JSON.stringify({ error: "Course not found" });
+              break;
+            }
+
+            const oldPrompt = currentPromptResult[0].system_prompt;
+
             // Update system prompt for the course in Courses table
             const updatedCourse = await sqlConnection`
-                  UPDATE "Courses"
-                  SET system_prompt = ${prompt}
-                  WHERE course_id = ${course_id}
-                  RETURNING *;
-                `;
+                    UPDATE "Courses"
+                    SET system_prompt = ${prompt}
+                    WHERE course_id = ${course_id}
+                    RETURNING *;
+                  `;
 
-            // Insert into User Engagement Log
+            // Insert into User Engagement Log with old prompt in engagement_details
             await sqlConnection`
-                  INSERT INTO "User_Engagement_Log" (log_id, user_email, course_id, module_id, enrolment_id, timestamp, engagement_type)
-                  VALUES (uuid_generate_v4(), ${instructor_email}, ${course_id}, null, null, CURRENT_TIMESTAMP, 'instructor_updated_prompt')
-                `;
+                    INSERT INTO "User_Engagement_Log" (
+                      log_id,
+                      user_email,
+                      course_id,
+                      module_id,
+                      enrolment_id,
+                      timestamp,
+                      engagement_type,
+                      engagement_details
+                    )
+                    VALUES (
+                      uuid_generate_v4(),
+                      ${instructor_email},
+                      ${course_id},
+                      null,
+                      null,
+                      CURRENT_TIMESTAMP,
+                      'instructor_updated_prompt',
+                      ${oldPrompt}
+                    );
+                  `;
 
             response.body = JSON.stringify(updatedCourse[0]);
           } catch (err) {
@@ -832,6 +865,38 @@ exports.handler = async (event) => {
           response.body = JSON.stringify({ error: "course_id is required" });
         }
         break;
+      case "GET /instructor/previous_prompts":
+        if (
+          event.queryStringParameters != null &&
+          event.queryStringParameters.course_id &&
+          event.queryStringParameters.instructor_email
+        ) {
+          try {
+            const { course_id, instructor_email } = event.queryStringParameters;
+
+            // Query to get all previous prompts for the given course and instructor
+            const previousPrompts = await sqlConnection`
+                    SELECT timestamp, engagement_details AS previous_prompt
+                    FROM "User_Engagement_Log"
+                    WHERE course_id = ${course_id}
+                      AND user_email = ${instructor_email}
+                      AND engagement_type = 'instructor_updated_prompt'
+                    ORDER BY timestamp DESC;
+                  `;
+
+            response.body = JSON.stringify(previousPrompts);
+          } catch (err) {
+            response.statusCode = 500;
+            console.log(err);
+            response.body = JSON.stringify({ error: "Internal server error" });
+          }
+        } else {
+          response.statusCode = 400;
+          response.body =
+            "course_id or instructor_email query parameter is required";
+        }
+        break;
+
       default:
         throw new Error(`Unsupported route: "${pathData}"`);
     }

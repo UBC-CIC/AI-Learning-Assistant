@@ -538,6 +538,12 @@ paths:
           description: ID of the course
           schema:
             type: string
+        - in: query
+          name: session_name
+          required: true
+          description: name of the session
+          schema:
+            type: string
       responses:
         "200":
           description: Session created
@@ -1843,6 +1849,78 @@ paths:
         passthroughBehavior: "when_no_match"
         httpMethod: "POST"
         type: "aws_proxy"
+  /instructor/previous_prompts:
+    options:
+        summary: CORS support
+        description: |
+          Enable CORS by returning correct headers
+        responses:
+          200:
+            $ref: "#/components/responses/Success"
+        x-amazon-apigateway-integration:
+          type: mock
+          requestTemplates:
+            application/json: |
+              {
+                "statusCode" : 200
+              }
+          responses:
+            default:
+              statusCode: "200"
+              responseParameters:
+                method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key'"
+                method.response.header.Access-Control-Allow-Methods: "'*'"
+                method.response.header.Access-Control-Allow-Origin: "'*'"
+              responseTemplates:
+                application/json: |
+                  {}
+    get:
+      tags:
+        - Instructor
+      summary: Retrieve all previous prompts for a specific course and instructor
+      operationId: instructor_get_previous_prompts
+      parameters:
+        - in: query
+          name: course_id
+          required: true
+          schema:
+            type: string
+          description: ID of the course
+        - in: query
+          name: instructor_email
+          required: true
+          schema:
+            type: string
+          description: Email of the instructor
+      responses:
+        "200":
+          description: Successfully retrieved previous prompts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    timestamp:
+                      type: string
+                      format: date-time
+                      description: Timestamp of when the prompt was updated
+                    previous_prompt:
+                      type: string
+                      description: Previous system prompt
+        "400":
+          description: Bad Request - Missing query parameters
+        "500":
+          description: Internal Server Error
+      security:
+        - instructorAuthorizer: []
+      x-amazon-apigateway-integration:
+        uri:
+          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${instructorFunction.Arn}/invocations"
+        passthroughBehavior: "when_no_match"
+        httpMethod: "POST"
+        type: "aws_proxy"
 
   /instructor/prompt:
     options:
@@ -2559,18 +2637,16 @@ paths:
           schema:
             type: boolean
           description: Student access details for the course
-        - in: query
-          name: system_prompt
-          required: true
-          schema:
-            type: string
-          description: System prompt for the course
-        - in: query
-          name: llm_tone
-          required: true
-          schema:
-            type: string
-          description: Tone for the course
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                system_prompt:
+                  type: string
+                  description: System prompt for the course
       responses:
         "200":
           description: Course created successfully

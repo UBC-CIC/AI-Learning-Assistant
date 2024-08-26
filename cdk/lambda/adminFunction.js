@@ -115,8 +115,7 @@ exports.handler = async (event) => {
           event.queryStringParameters.course_number &&
           event.queryStringParameters.course_access_code &&
           event.queryStringParameters.course_student_access &&
-          event.queryStringParameters.system_prompt &&
-          event.queryStringParameters.llm_tone
+          event.body
         ) {
           try {
             console.log("course creation start");
@@ -126,9 +125,9 @@ exports.handler = async (event) => {
               course_number,
               course_access_code,
               course_student_access,
-              system_prompt,
-              llm_tone,
             } = event.queryStringParameters;
+
+            const { system_prompt } = JSON.parse(event.body);
 
             const ext = await sqlConnectionTableCreator`
             CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
@@ -143,8 +142,7 @@ exports.handler = async (event) => {
                     course_number,
                     course_access_code,
                     course_student_access,
-                    system_prompt,
-                    llm_tone
+                    system_prompt
                 )
                 VALUES (
                     uuid_generate_v4(),
@@ -153,8 +151,7 @@ exports.handler = async (event) => {
                     ${course_number},
                     ${course_access_code},
                     ${course_student_access},
-                    ${system_prompt},
-                    ${llm_tone}
+                    ${system_prompt}
                 )
                 RETURNING *;
             `;
@@ -163,15 +160,34 @@ exports.handler = async (event) => {
             const courseId = newCourse[0].course_id;
             console.log(courseId);
 
-            // Create the dynamic table [Course_Id]
-            await sqlConnectionTableCreator`
-                CREATE TABLE IF NOT EXISTS ${ sqlConnectionTableCreator(courseId)} (
-                    chunk_id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
-                    course_id uuid,
-                    file_id uuid,
-                    vectors float[]
-                );
-            `;
+            // // Create the dynamic table [Course_Id]
+            // await sqlConnectionTableCreator`
+            //     CREATE TABLE IF NOT EXISTS ${sqlConnectionTableCreator(courseId)} (
+            //         chunk_id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+            //         course_id uuid,
+            //         file_id uuid,
+            //         vectors float[]
+            //     );
+            // `;
+            // // Add the foreign key for course_id
+            // await sqlConnectionTableCreator`
+            //   ALTER TABLE ${sqlConnectionTableCreator(courseId)}
+            //   ADD CONSTRAINT fk_course_id
+            //   FOREIGN KEY (course_id)
+            //   REFERENCES "Courses"(course_id)
+            //   ON DELETE CASCADE
+            //   ON UPDATE CASCADE;
+            // `;
+
+            // // Add the foreign key for file_id
+            // await sqlConnectionTableCreator`
+            //   ALTER TABLE ${sqlConnectionTableCreator(courseId)}
+            //   ADD CONSTRAINT fk_file_id
+            //   FOREIGN KEY (file_id)
+            //   REFERENCES "Module_Files"(file_id)
+            //   ON DELETE CASCADE
+            //   ON UPDATE CASCADE;
+            // `;
 
             response.body = JSON.stringify(newCourse[0]);
           } catch (err) {
@@ -315,6 +331,11 @@ exports.handler = async (event) => {
         ) {
           try {
             const { course_id } = event.queryStringParameters;
+
+            // // Drop the table whose name is the course_id
+            // await sqlConnectionTableCreator`
+            //   DROP TABLE IF EXISTS ${sqlConnectionTableCreator(course_id)};
+            // `;
 
             // Delete the course, related records will be automatically deleted due to cascading
             await sqlConnectionTableCreator`

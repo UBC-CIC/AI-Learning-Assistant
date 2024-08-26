@@ -101,9 +101,9 @@ const InstructorEditConcept = () => {
             import.meta.env.VITE_API_ENDPOINT
           }instructor/edit_concept?concept_id=${encodeURIComponent(
               conceptData.concept_id
-          )}&concept_number${encodeURIComponent(conceptData.concept_number)}`,
+          )}&concept_number=${encodeURIComponent(conceptData.concept_number)}`,
           {
-            method: "DELETE",
+            method: "PUT",
             headers: {
               Authorization: token,
               "Content-Type": "application/json",
@@ -164,6 +164,7 @@ const InstructorEditConcept = () => {
           onChange={handleInputChange}
           fullWidth
           margin="normal"
+          inputProps={{ maxLength: 50 }}
         />
 
         <Grid container spacing={2} style={{ marginTop: 16 }}>

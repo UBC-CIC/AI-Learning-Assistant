@@ -1038,9 +1038,9 @@ paths:
       operationId: instructor_generate_presigned_url_GET
       parameters:
         - in: query
-          name: course_name
+          name: course_id
           required: true
-          description: Name of the course
+          description: ID of the course
           schema:
             type: string
         - in: query
@@ -1138,9 +1138,9 @@ paths:
       operationId: instructor_get_all_files_GET
       parameters:
         - in: query
-          name: course_name
+          name: course_id
           required: true
-          description: Name of the course
+          description: ID of the course
           schema:
             type: string
         - in: query

@@ -33,17 +33,17 @@ def lambda_handler(event, context):
             'body': json.dumps('Missing queries to generate pre-signed URL')
         }
 
-    course_name = query_params.get("course_name", "")
+    course_id = query_params.get("course_id", "")
     module_id = query_params.get("module_id", "")
     module_name = query_params.get("module_name", "")
     file_type = query_params.get("file_type", "")  # PDF or JPG
     file_name = query_params.get("file_name", "")
     txt_file_name = query_params.get("txt_file_name", "")
 
-    if not course_name:
+    if not course_id:
         return {
             'statusCode': 400,
-            'body': json.dumps('Missing required parameter: course_name')
+            'body': json.dumps('Missing required parameter: course_id')
         }
 
     if not module_id:
@@ -76,12 +76,12 @@ def lambda_handler(event, context):
     }
     
     if file_type in allowed_document_types:
-        key = f"{course_name}/{module_name}_{module_id}/documents/{file_name}.{file_type}"
+        key = f"{course_id}/{module_name}_{module_id}/documents/{file_name}.{file_type}"
         content_type = f"application/{file_type}"
     elif file_type in allowed_images_types:
-        key = f"{course_name}/{module_name}_{module_id}/images/{file_name}.{file_type}"
+        key = f"{course_id}/{module_name}_{module_id}/images/{file_name}.{file_type}"
         content_type = f"image/{file_type}"
-        txt_key = f"{course_name}/{module_name}_{module_id}/images/{file_name}.txt" if txt_file_name else None
+        txt_key = f"{course_id}/{module_name}_{module_id}/images/{file_name}.txt" if txt_file_name else None
     else:
         return {
             'statusCode': 400,
@@ -89,7 +89,7 @@ def lambda_handler(event, context):
         }
 
     logger.info({
-        "course_name": course_name,
+        "course_id": course_id,
         "module_id": module_id,
         "module_name": module_name,
         "file_type": file_type,

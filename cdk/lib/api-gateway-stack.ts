@@ -1,6 +1,7 @@
 import * as cdk from "aws-cdk-lib";
 import * as apigateway from "aws-cdk-lib/aws-apigateway";
 import * as lambda from "aws-cdk-lib/aws-lambda";
+import * as lambdaEventSources from 'aws-cdk-lib/aws-lambda-event-sources';
 import * as iam from "aws-cdk-lib/aws-iam";
 import { Construct } from "constructs";
 import { Duration } from "aws-cdk-lib";
@@ -792,7 +793,7 @@ export class ApiGatewayStack extends cdk.Stack {
      *
      * Create Lambda with container image for text generation workflow in RAG pipeline
      */
-    const dockerFunc = new lambda.DockerImageFunction(this, "TextGenLambdaDockerFunc", {
+    const textGenLambdaDockerFunc = new lambda.DockerImageFunction(this, "TextGenLambdaDockerFunc", {
       code: lambda.DockerImageCode.fromImageAsset("./text_generation"),
       memorySize: 512,
       timeout: cdk.Duration.seconds(300),
@@ -805,11 +806,11 @@ export class ApiGatewayStack extends cdk.Stack {
     });
 
     // Override the Logical ID of the Lambda Function to get ARN in OpenAPI
-    const cfnDockerFunc = dockerFunc.node.defaultChild as lambda.CfnFunction;
-    cfnDockerFunc.overrideLogicalId("TextGenLambdaDockerFunc");
+    const cfnTextGenDockerFunc = textGenLambdaDockerFunc.node.defaultChild as lambda.CfnFunction;
+    cfnTextGenDockerFunc.overrideLogicalId("TextGenLambdaDockerFunc");
 
     // Add the permission to the Lambda function's policy to allow API Gateway access
-    dockerFunc.addPermission("AllowApiGatewayInvoke", {
+    textGenLambdaDockerFunc.addPermission("AllowApiGatewayInvoke", {
       principal: new iam.ServicePrincipal("apigateway.amazonaws.com"),
       action: "lambda:InvokeFunction",
       sourceArn: `arn:aws:execute-api:${this.region}:${this.account}:${this.api.restApiId}/*/*/student*`,
@@ -868,5 +869,31 @@ export class ApiGatewayStack extends cdk.Stack {
       action: "lambda:InvokeFunction",
       sourceArn: `arn:aws:execute-api:${this.region}:${this.account}:${this.api.restApiId}/*/*/instructor*`,
     });
+    
+    /**
+     *
+     * Create Lambda with container image for data ingestion workflow in RAG pipeline
+     * This function will be triggered when a file in uploaded to the S3 Bucket
+     */
+    const dataIngestLambdaDockerFunc = new lambda.DockerImageFunction(this, "DataIngestLambdaDockerFunc", {
+      code: lambda.DockerImageCode.fromImageAsset("./data_ingestion"),
+      memorySize: 512,
+      timeout: cdk.Duration.seconds(300),
+      vpc: vpcStack.vpc, // Pass the VPC
+      functionName: "DataIngestLambdaDockerFunc",
+      environment: {
+        SM_DB_CREDENTIALS: db.secretPathUser.secretName, // Database User Credentials
+        RDS_PROXY_ENDPOINT: db.rdsProxyEndpoint, // RDS Proxy Endpoint
+      },
+    });
+
+    // Override the Logical ID of the Lambda Function to get ARN in OpenAPI
+    const cfnDataIngestDockerFunc = dataIngestLambdaDockerFunc.node.defaultChild as lambda.CfnFunction;
+    cfnDataIngestDockerFunc.overrideLogicalId("DataIngestLambdaDockerFunc");
+
+    // Add the S3 event source trigger to the Lambda function
+    dataIngestLambdaDockerFunc.addEventSource(new lambdaEventSources.S3EventSource(dataIngestionBucket, {
+      events: [s3.EventType.OBJECT_CREATED]
+    }));
   }
 }

@@ -148,16 +148,6 @@ paths:
           description: ID of the session to update
           schema:
             type: string
-        - in: body
-          name: session_name
-          required: true
-          description: New name for the session
-          schema:
-            type: object
-            properties:
-              session_name:
-                type: string
-                description: New name for the session
       requestBody:
         required: true
         content:

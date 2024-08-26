@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import PropTypes from "prop-types";
-
+import { fetchAuthSession } from "aws-amplify/auth";
 const Session = ({
   text,
   session,
@@ -8,16 +8,47 @@ const Session = ({
   deleteSession,
   selectedSession,
   setMessages,
+  setSessions,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [newSessionName, setNewSessionName] = useState(text);
+
+  const inputRef = useRef(null);
+  const sessionRef = useRef(null);
+
+  // Handle clicks outside the session component
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (sessionRef.current && !sessionRef.current.contains(event.target)) {
+        handleInputBlur(); // Save changes when clicking outside
+      }
+    };
+
+    const handleKeyDown = (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault(); // Prevent default Enter key behavior
+        handleInputBlur(); // Save changes when Enter is pressed
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [newSessionName]);
 
   const isSelected =
     selectedSession && selectedSession.session_id === session.session_id;
 
   const handleSessionClick = () => {
-    setSession(session);
-    setMessages([]);
+    // Check if the current session is different from the selected session
+    if (selectedSession && selectedSession.session_id !== session.session_id) {
+      setMessages([]); // Clear messages if sessions are different
+    }
+    setSession(session); // Update the selected session
   };
 
   const handleDeleteClick = (event) => {
@@ -40,7 +71,6 @@ const Session = ({
       try {
         // Assuming you have a method to update session name
         await updateSessionName(session.session_id, newSessionName);
-        setSession({ ...session, session_name: newSessionName });
       } catch (error) {
         console.error("Failed to update session name:", error);
       }
@@ -48,11 +78,23 @@ const Session = ({
   };
 
   const updateSessionName = async (sessionId, newName) => {
+    setSessions((prevSessions) =>
+      prevSessions.map((session) =>
+        session.session_id === sessionId
+          ? { ...session, session_name: newName }
+          : session
+      )
+    );
+    const authSession = await fetchAuthSession();
+    const token = authSession.tokens.idToken.toString();
     const response = await fetch(
-      `${import.meta.env.VITE_API_ENDPOINT}student/update_session_name?session_id=${encodeURIComponent(sessionId)}`,
+      `${
+        import.meta.env.VITE_API_ENDPOINT
+      }student/update_session_name?session_id=${encodeURIComponent(sessionId)}`,
       {
         method: "PUT",
         headers: {
+          Authorization: token,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ session_name: newName }),
@@ -96,13 +138,9 @@ const Session = ({
       <div
         onClick={handleDeleteClick}
         className="cursor-pointer w-3 h-3 flex items-center justify-center ml-2"
-        style={{ marginLeft: '8px' }} // Adds margin around the delete button
+        style={{ marginLeft: "8px" }} // Adds margin around the delete button
       >
-        <img
-          src="/delete.png"
-          alt="delete"
-          className="w-3 h-3"
-        />
+        <img src="/delete.png" alt="delete" className="w-3 h-3" />
       </div>
     </div>
   );

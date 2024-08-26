@@ -71,8 +71,8 @@ def lambda_handler(event, context):
     
     # Allowed file types for images
     allowed_images_types = {
-        'bmp', 'eps', 'gif', 'icns', 'ico', 'im', 'jpeg', 'jpg', 'j2k', 'jp2', 'msp', 
-        'pcx', 'png', 'ppm', 'pgm', 'pbm', 'sgi', 'tga', 'tiff', 'tif', 'webp', 'xbm'
+        'bmp': 'bmp', 'eps': 'eps', 'gif': 'gif', 'icns': 'icns', 'ico': 'ico', 'im': 'im', 'jpeg': 'jpeg', 'jpg': 'jpeg', 'j2k': 'j2k', 'jp2': 'jp2', 'msp': 'msp', 
+        'pcx': 'pcx', 'png': 'png', 'ppm': 'ppm', 'pgm': 'pgm', 'pbm': 'pbm', 'sgi': 'sgi', 'tga': 'tga', 'tiff': 'tiff', 'tif': 'tif', 'webp': 'webp', 'xbm': 'xbm'
     }
     
     if file_type in allowed_document_types:
@@ -80,7 +80,7 @@ def lambda_handler(event, context):
         content_type = f"application/{file_type}"
     elif file_type in allowed_images_types:
         key = f"{course_id}/{module_name}_{module_id}/images/{file_name}.{file_type}"
-        content_type = f"image/{file_type}"
+        content_type = f"image/{allowed_images_types[file_type]}"
         txt_key = f"{course_id}/{module_name}_{module_id}/images/{file_name}.txt" if txt_file_contents else None
     else:
         return {

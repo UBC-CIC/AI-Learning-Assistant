@@ -58,13 +58,22 @@ def lambda_handler(event, context):
         }
 
     txt_key = None
+
+    # Allowed file types for ducuments
+    allowed_document_types = {"pdf", "docx", "pptx", "txt", "xlsx", "xps", "mobi", "cbz"}
     
-    if file_type == 'pdf':
-        key = f"{course_name}/{module_name}/documents/{file_name}.pdf"
-        content_type = "application/pdf"
-    elif file_type == 'jpg':
-        key = f"{course_name}/{module_name}/images/{file_name}.jpg"
-        content_type = "image/jpeg"
+    # Allowed file types for images
+    allowed_images_types = {
+        'bmp', 'eps', 'gif', 'icns', 'ico', 'im', 'jpeg', 'jpg', 'j2k', 'jp2', 'msp', 
+        'pcx', 'png', 'ppm', 'pgm', 'pbm', 'sgi', 'tga', 'tiff', 'tif', 'webp', 'xbm'
+    }
+    
+    if file_type in allowed_document_types:
+        key = f"{course_name}/{module_name}/documents/{file_name}.{file_type}"
+        content_type = f"application/{file_type}"
+    elif file_type in allowed_images_types:
+        key = f"{course_name}/{module_name}/images/{file_name}.{file_type}"
+        content_type = f"image/{file_type}"
         txt_key = f"{course_name}/{module_name}/images/{file_name}.txt" if txt_file_name else None
     else:
         return {

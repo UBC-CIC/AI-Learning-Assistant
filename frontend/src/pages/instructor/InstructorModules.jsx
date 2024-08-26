@@ -1,69 +1,42 @@
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  Button,
-  Box,
-  Toolbar,
-  Typography,
-  Paper,
-} from "@mui/material";
-import { fetchAuthSession } from "aws-amplify/auth";
+import { Button, Box, Toolbar, Typography, Paper } from "@mui/material";
+import { fetchAuthSession, getCurrentUser } from "aws-amplify/auth";
 import {
   MRT_TableContainer,
   useMaterialReactTable,
-} from 'material-react-table';
-
+} from "material-react-table";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 const InstructorModules = ({ courseName, course_id }) => {
   const navigate = useNavigate();
   const [data, setData] = useState([]);
-  const [accessCode, setAccessCode] = useState("loading...");
-
-  useEffect(() => {
-    // Fetch modules from API or use initial data
-    const fetchModules = async () => {
-      // Simulate fetching from an API
-      const modulesData = [
-        {
-          module_id: "02f1adde-95ef-434c-87e7-c5789d9a3dce",
-          module_name: "program structure",
-          concept_name: "basics",
-        },
-        {
-          module_id: "493b210a-a04e-4069-8f7e-df101226a101",
-          module_name: "method and calls",
-          concept_name: "basics",
-        },
-        // Additional modules...
-      ];
-      setData(modulesData);
-    };
-
-    fetchModules();
-  }, []);
-
-  const columns = useMemo(() => [
-    {
-      accessorKey: 'module_name',
-      header: 'Module Name',
-    },
-    {
-      accessorKey: 'concept_name',
-      header: 'Concept',
-    },
-    {
-      accessorKey: 'actions',
-      header: 'Actions',
-      Cell: ({ row }) => (
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={() => handleEditClick(row.original.module_id)}
-        >
-          Edit
-        </Button>
-      ),
-    },
-  ], []);
+  const columns = useMemo(
+    () => [
+      {
+        accessorKey: "module_name",
+        header: "Module Name",
+      },
+      {
+        accessorKey: "concept_name",
+        header: "Concept",
+      },
+      {
+        accessorKey: "actions",
+        header: "Actions",
+        Cell: ({ row }) => (
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={() => handleEditClick(row.original)}
+          >
+            Edit
+          </Button>
+        ),
+      },
+    ],
+    []
+  );
 
   const table = useMaterialReactTable({
     autoResetPageIndex: false,
@@ -71,6 +44,7 @@ const InstructorModules = ({ courseName, course_id }) => {
     data,
     enableRowOrdering: true,
     enableSorting: false,
+    initialState: { pagination: { pageSize: 1000, pageIndex: 1 } },
     muiRowDragHandleProps: ({ table }) => ({
       onDragEnd: () => {
         const { draggingRow, hoveredRow } = table.getState();
@@ -78,7 +52,7 @@ const InstructorModules = ({ courseName, course_id }) => {
           data.splice(
             hoveredRow.index,
             0,
-            data.splice(draggingRow.index, 1)[0],
+            data.splice(draggingRow.index, 1)[0]
           );
           setData([...data]);
         }
@@ -87,42 +61,14 @@ const InstructorModules = ({ courseName, course_id }) => {
   });
 
   useEffect(() => {
-    const fetchCode = async () => {
-      try {
-        const session = await fetchAuthSession();
-        var token = session.tokens.idToken.toString();
-        const response = await fetch(
-          `${import.meta.env.VITE_API_ENDPOINT}instructor/get_access_code?course_id=${encodeURIComponent(course_id)}`,
-          {
-            method: "GET",
-            headers: {
-              Authorization: token,
-              "Content-Type": "application/json",
-            },
-          }
-        );
-        if (response.ok) {
-          const data = await response.json();
-          console.log(data);
-          setAccessCode(data.course_access_code);
-        } else {
-          console.error("Failed to fetch courses:", response.statusText);
-        }
-      } catch (error) {
-        console.error("Error fetching courses:", error);
-      }
-    };
-
-    fetchCode();
-  }, [course_id]);
-
-  useEffect(() => {
     const fetchModules = async () => {
       try {
         const session = await fetchAuthSession();
         var token = session.tokens.idToken.toString();
         const response = await fetch(
-          `${import.meta.env.VITE_API_ENDPOINT}instructor/view_modules?course_id=${encodeURIComponent(course_id)}`,
+          `${
+            import.meta.env.VITE_API_ENDPOINT
+          }instructor/view_modules?course_id=${encodeURIComponent(course_id)}`,
           {
             method: "GET",
             headers: {
@@ -134,53 +80,94 @@ const InstructorModules = ({ courseName, course_id }) => {
         if (response.ok) {
           const moduleData = await response.json();
           setData(moduleData);
+          console.log("data", moduleData);
         } else {
-          console.error("Failed to fetch courses:", response.statusText);
+          console.error("Failed to fetch modules:", response.statusText);
         }
       } catch (error) {
-        console.error("Error fetching courses:", error);
+        console.error("Error fetching modules:", error);
       }
     };
 
     fetchModules();
   }, [course_id]);
 
-  const handleEditClick = (moduleId) => {
-    navigate(`/course/${courseName}/edit-module/${moduleId}`);
+  const handleEditClick = (moduleData) => {
+    navigate(`/course/${courseName}/edit-module/${moduleData.module_id}`, {
+      state: { moduleData, course_id: course_id },
+    });
   };
 
   const handleCreateModuleClick = () => {
-    navigate(`/course/${courseName}/new-module`);
+    navigate(`/course/${courseName}/new-module`, {
+      state: { data, course_id },
+    });
   };
-
-  const handleGenerateAccessCode = async () => {
+  const handleSaveChanges = async () => {
     try {
       const session = await fetchAuthSession();
-      var token = session.tokens.idToken.toString();
-      const response = await fetch(
-        `${import.meta.env.VITE_API_ENDPOINT}instructor/generate_access_code?course_id=${encodeURIComponent(course_id)}`,
-        {
-          method: "PUT",
-          headers: {
-            Authorization: token,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-      if (response.ok) {
-        const data = await response.json();
-        console.log(data);
-        setAccessCode(data.access_code);
-      } else {
-        console.error("Failed to fetch courses:", response.statusText);
-      }
-    } catch (error) {
-      console.error("Error fetching courses:", error);
-    }
-  };
+      const token = session.tokens.idToken.toString();
+      const { signInDetails } = await getCurrentUser();
 
-  const handleLogModulesClick = () => {
-    console.log(data);
+      for (let i = 0; i < data.length; i++) {
+        const module = data[i];
+        const moduleNumber = i + 1;
+
+        const response = await fetch(
+          `${
+            import.meta.env.VITE_API_ENDPOINT
+          }instructor/reorder_module?module_id=${encodeURIComponent(
+            module.module_id
+          )}&module_number=${moduleNumber}&instructor_email=${encodeURIComponent(
+            signInDetails.loginId
+          )}`,
+          {
+            method: "PUT",
+            headers: {
+              Authorization: token,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              module_name: module.module_name,
+            }),
+          }
+        );
+
+        if (!response.ok) {
+          console.error(
+            `Failed to update module ${module.module_id}:`,
+            response.statusText
+          );
+          toast.error("Module Order Update Failed", {
+            position: "top-center",
+            autoClose: 1000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            theme: "colored",
+          });
+        } else {
+          const updatedModule = await response.json();
+          console.log(
+            `Updated module ${updatedModule.module_id} successfully.`
+          );
+        }
+      }
+      toast.success("Module Order Updated Successfully", {
+        position: "top-center",
+        autoClose: 1000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "colored",
+      });
+    } catch (error) {
+      console.error("Error saving changes:", error);
+    }
   };
 
   return (
@@ -217,33 +204,22 @@ const InstructorModules = ({ courseName, course_id }) => {
         >
           Create New Module
         </Button>
-        <Button
-          variant="contained"
-          color="secondary"
-          onClick={handleLogModulesClick}
-        >
-          Log Modules in Order
+        <Button variant="contained" color="primary" onClick={handleSaveChanges}>
+          Save Changes
         </Button>
       </Box>
-      <Paper
-        sx={{
-          marginTop: 5,
-          display: "flex-start",
-          p: 5,
-          width: "50%",
-        }}
-      >
-        <Typography variant="subtitle1" color="black">
-          Access Code: {accessCode}
-        </Typography>
-        <Button
-          variant="contained"
-          color="secondary"
-          onClick={handleGenerateAccessCode}
-        >
-          Generate New Access Code
-        </Button>
-      </Paper>
+      <ToastContainer
+        position="top-center"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="colored"
+      />
     </Box>
   );
 };

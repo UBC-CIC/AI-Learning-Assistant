@@ -36,6 +36,7 @@ import InstructorNewModule from "./InstructorNewModule";
 import StudentDetails from "./StudentDetails";
 import InstructorNewConcept from "./InstructorNewConcept";
 import InstructorConcepts from "./InstructorConcepts";
+import InstructorEditConcept from "./InstructorEditConcept";
 
 // course details page
 const CourseDetails = () => {
@@ -92,6 +93,7 @@ const InstructorHomepage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
+  const [courseData, setCourseData] = useState([])
   const navigate = useNavigate();
   // connect to api data
   useEffect(() => {
@@ -116,6 +118,7 @@ const InstructorHomepage = () => {
         );
         if (response.ok) {
           const data = await response.json();
+          setCourseData(data);
           const formattedData = data.map((course) => ({
             course: course.course_name,
             date: new Date().toLocaleDateString(), // REPLACE
@@ -123,7 +126,6 @@ const InstructorHomepage = () => {
             id: course.course_id,
           }));
           setRows(formattedData);
-          // setLoading(false);
           console.log("Instructors course data:", data);
         } else {
           console.error("Failed to fetch courses:", response.statusText);
@@ -154,9 +156,20 @@ const InstructorHomepage = () => {
   );
 
   const handleRowClick = (courseName, course_id) => {
-    navigate(`/course/${courseName}`, { state: { course_id } });
-    // console.log("state", state);
+    const course = courseData.find(
+      (course) => course.course_name.trim() === courseName.trim()
+    );
+  
+    if (course) {
+      const { course_id, course_department, course_number } = course;
+      const path = `/course/${course_department} ${course_number} ${courseName.trim()}`;
+      console.log(course); // Log the course object
+      navigate(path, { state: { course_id } });
+    } else {
+      console.error("Course not found!");
+    }
   };
+  
 
   return (
     <Routes>
@@ -258,6 +271,10 @@ const InstructorHomepage = () => {
       <Route
         path=":courseName/edit-module/:moduleId"
         element={<InstructorEditCourse />}
+      />
+      <Route
+        path=":courseName/edit-concept/:conceptId"
+        element={<InstructorEditConcept />}
       />
       <Route path=":courseName/new-module" element={<InstructorNewModule />} />
       <Route

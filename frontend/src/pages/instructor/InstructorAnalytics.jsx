@@ -140,11 +140,11 @@ const InstructorAnalytics = ({ courseName, course_id }) => {
                   >
                     <Grid item width="80%">
                       <Typography textAlign="right">
-                        Average Grade: {module.average_score}%
+                        Completion Percentage: {module.perfect_score_percentage}%
                       </Typography>
                       <LinearProgress
                         variant="determinate"
-                        value={module.average_score}
+                        value={module.perfect_score_percentage}
                       />
                     </Grid>
                     <Grid item>
@@ -154,10 +154,6 @@ const InstructorAnalytics = ({ courseName, course_id }) => {
                     <Grid item>
                       <Typography>Access Count</Typography>
                       <Typography>{module.access_count}</Typography>
-                    </Grid>
-                    <Grid item>
-                      <Typography>Completion Percentage</Typography>
-                      <Typography>{module.perfect_score_percentage}</Typography>
                     </Grid>
                   </Grid>
                 </Box>

@@ -1100,6 +1100,85 @@ paths:
         passthroughBehavior: "when_no_match"
         httpMethod: "POST"
         type: "aws_proxy"
+  /instructor/get_all_files:
+    options:
+      summary: CORS support
+      description: |
+        Enable CORS by returning correct headers
+      responses:
+        200:
+          $ref: "#/components/responses/Success"
+      x-amazon-apigateway-integration:
+        type: mock
+        requestTemplates:
+          application/json: |
+            {
+              "statusCode" : 200
+            }
+        responses:
+          default:
+            statusCode: "200"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key'"
+              method.response.header.Access-Control-Allow-Methods: "'*'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+            responseTemplates:
+              application/json: |
+                {}
+    get:
+      tags:
+        - Instructor
+      summary: Get a list of all the document and image files for a specific course, concept, and module
+      operationId: instructor_get_all_files_GET
+      parameters:
+        - in: query
+          name: course_name
+          required: true
+          description: Name of the course
+          schema:
+            type: string
+        - in: query
+          name: concept_name
+          required: true
+          description: Name of the concept
+          schema:
+            type: string
+        - in: query
+          name: module_name
+          required: true
+          description: Name of the module
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Recieved all the files for the course, concept, and module successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  files:
+                    type: array
+                    description: A list of file names in the specified course, concept, and module directory
+                    items:
+                      type: string
+                      description: Name of the file
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "429":
+          description: Too Many Requests
+        "500":
+          description: Internal Server Error
+      security:
+        - instructorAuthorizer: []
+      x-amazon-apigateway-integration:
+        uri:
+          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetFilesFunction.Arn}/invocations"
+        passthroughBehavior: "when_no_match"
+        httpMethod: "POST"
+        type: "aws_proxy"
   /instructor/courses:
       options:
         summary: CORS support

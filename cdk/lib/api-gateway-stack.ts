@@ -895,5 +895,37 @@ export class ApiGatewayStack extends cdk.Stack {
     dataIngestLambdaDockerFunc.addEventSource(new lambdaEventSources.S3EventSource(dataIngestionBucket, {
       events: [s3.EventType.OBJECT_CREATED]
     }));
+
+    /**
+     *
+     * Create Lambda function that will return all file names for a specified course, concept, and module
+     */
+    const getFilesFunction = new lambda.Function(this, "GetFilesFunction", {
+      runtime: lambda.Runtime.PYTHON_3_9,
+      code: lambda.Code.fromAsset("lambda"), // Assumes the function is in the lambda directory
+      handler: "getFilesFunction.lambda_handler",
+      timeout: Duration.seconds(300),
+      memorySize: 128,
+      environment: {
+        BUCKET: dataIngestionBucket.bucketName,
+        REGION: this.region,
+      },
+      functionName: "GetFilesFunction",
+      layers: [powertoolsLayer],
+    });
+
+    // Override the Logical ID of the Lambda Function to get ARN in OpenAPI
+    const cfnGetFilesFunction = getFilesFunction.node.defaultChild as lambda.CfnFunction;
+    cfnGetFilesFunction.overrideLogicalId("GetFilesFunction");
+
+    // Grant the Lambda function read-only permissions to the S3 bucket
+    dataIngestionBucket.grantRead(getFilesFunction);
+
+    // Add the permission to the Lambda function's policy to allow API Gateway access
+    getFilesFunction.addPermission("AllowApiGatewayInvoke", {
+      principal: new iam.ServicePrincipal("apigateway.amazonaws.com"),
+      action: "lambda:InvokeFunction",
+      sourceArn: `arn:aws:execute-api:${this.region}:${this.account}:${this.api.restApiId}/*/*/instructor*`,
+    });
   }
 }

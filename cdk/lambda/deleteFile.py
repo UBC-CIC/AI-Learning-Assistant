@@ -38,7 +38,7 @@ def lambda_handler(event, context):
         # Allowed file types for images
         allowed_images_types = {
             'bmp', 'eps', 'gif', 'icns', 'ico', 'im', 'jpeg', 'jpg', 'j2k', 'jp2', 'msp',
-            'pcx', 'png', 'ppm', 'pgm', 'pbm', 'sgi', 'tga', 'tiff', 'tif', 'webp', 'xbm'
+            'pcx', 'png', 'ppm', 'pgm', 'pbm', 'sgi', 'tga', 'tiff', 'tif', 'webp', 'xbm', 'txt'
         }
 
         folder = None
@@ -53,22 +53,21 @@ def lambda_handler(event, context):
             }
 
         file_key = f"{course_id}/{module_name}_{module_id}/{folder}/{file_name}.{file_type}"
-
-        response = s3.head_object(Bucket=BUCKET, Key=file_key)
         
-        if response:
-            s3.delete_object(Bucket=BUCKET, Key=file_key)
-            logger.info(f"File {file_key} deleted successfully.")
-            return {
-                'statusCode': 200,
-                'body': json.dumps('File deleted successfully')
-            }
-        else:
-            logger.error(f"File {file_key} not found.")
-            return {
-                'statusCode': 404,
-                'body': json.dumps('File not found')
-            }
+        response = s3.delete_objects(
+            Bucket=BUCKET,
+            Delete={
+                "Objects": [{"Key": file_key}],
+                "Quiet": True,
+            },
+        )
+        
+        logger.info(f"Response: {response}")
+        logger.info(f"File {file_key} deleted successfully.")
+        return {
+            'statusCode': 200,
+            'body': json.dumps('File deleted successfully')
+        }
         
     except Exception as e:
         logger.exception(f"Error deleting file: {e}")

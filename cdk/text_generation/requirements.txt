@@ -1,8 +1,8 @@
-# boto3
-# langchain
-# langchain-aws
+boto3
+langchain
+langchain-aws
 # langchain-core
-# langchain-community
+langchain-community
 # langchain-experimental
 # langchain-postgres
 # psycopg2

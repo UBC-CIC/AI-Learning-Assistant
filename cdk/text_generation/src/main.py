@@ -11,7 +11,6 @@ from helpers.chat import get_bedrock_llm, get_initial_student_query, get_student
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger()
 
-
 param_manager = get_param_manager()
 
 BEDROCK_LLM_ID = "meta.llama3-70b-instruct-v1:0"
@@ -19,6 +18,7 @@ DB_SECRET_NAME = "credentials/rdsDbCredential"
 
 def get_module_name(module_id):
     try:
+        logger.info(f"Fetching module name for module_id: {module_id}")
         db_secret = param_manager.get_secret(DB_SECRET_NAME)
 
         connection_params = {
@@ -77,18 +77,21 @@ def handler(event, context):
     question = query_params.get("question", "")
 
     if not table_name:
+        logger.error("Missing required parameter: table_name")
         return {
             'statusCode': 400,
             'body': json.dumps('Missing required parameter: table_name')
         }
 
     if not session_id:
+        logger.error("Missing required parameter: session_id")
         return {
             'statusCode': 400,
             'body': json.dumps('Missing required parameter: session_id')
         }
 
     if not module_id:
+        logger.error("Missing required parameter: module_id")
         return {
             'statusCode': 400,
             'body': json.dumps('Missing required parameter: module_id')
@@ -97,22 +100,27 @@ def handler(event, context):
     topic = get_module_name(module_id)
 
     if topic is None:
+        logger.error(f"Invalid module_id: {module_id}")
         return {
             'statusCode': 400,
             'body': json.dumps('Invalid module_id')
         }    
     
     if len(question) == 0 and not create_dynamodb_history_table(table_name):
+        logger.info(f"Start of conversation. Creating conversation history table in DynamoDB.")
         student_query = get_initial_student_query(topic)
     elif len(question) > 0:
+        logger.info(f"Processing student question: {question}")
         student_query = get_student_query(question)
     else:
+        logger.error("Missing required parameter: question")
         return {
             'statusCode': 400,
             'body': json.dumps('Missing required parameter: question')
         }
     
     try:
+        logger.info("Creating Bedrock LLM instance.")
         llm = get_bedrock_llm(BEDROCK_LLM_ID)
     except Exception as e:
         logger.error(f"Error creating Bedrock LLM: {e}")
@@ -122,6 +130,7 @@ def handler(event, context):
         }
     
     try:
+        logger.info("Retrieving vectorstore config.")
         db_secret = param_manager.get_secret(DB_SECRET_NAME)
         vectorstore_config_dict = {
             'collection_name': 'CPSC_210', # hard coded for now
@@ -139,6 +148,7 @@ def handler(event, context):
         }
     
     try:
+        logger.info("Creating history-aware retriever.")
         embeddings = OpenCLIPEmbeddings()
 
         history_aware_retriever = get_vectorstore_retriever(
@@ -147,13 +157,14 @@ def handler(event, context):
             embeddings=embeddings
         )
     except Exception as e:
-        logger.error(f"Error creating vectorstore retriever: {e}")
+        logger.error(f"Error creating history-aware retriever: {e}")
         return {
             'statusCode': 500,
-            'body': json.dumps('Error creating vectorstore retriever')
+            'body': json.dumps('Error creating history-aware retriever')
         }
     
     try:
+        logger.info("Generating response from the LLM.")
         response = get_response(
             query=student_query,
             topic=topic,
@@ -169,12 +180,15 @@ def handler(event, context):
             'body': json.dumps('Error getting response')
         }
     
+    logger.info("Returning the generated response.")
     return {
         "statusCode": 200,
         "headers": {
             "Content-Type": "application/json"
         },
-        "body": json.dumps({"module_name": topic,
-                            "llm_output": response["llm_ouput"],
-                            "llm_verdict": response["llm_verdict"]})
+        "body": json.dumps({
+            "module_name": topic,
+            "llm_output": response.get("llm_output", "LLM failed to create response"),
+            "llm_verdict": response.get("llm_verdict", "LLM failed to create verdict")
+        })
     }

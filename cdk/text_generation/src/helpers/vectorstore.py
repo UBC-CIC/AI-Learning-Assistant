@@ -4,31 +4,8 @@ from langchain_core.vectorstores import VectorStoreRetriever
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain.chains import create_history_aware_retriever
 
-from helpers.helper import store_course_data, get_vectorstore
+from helpers.helper import get_vectorstore
 
-def update_vectorstore(
-    bucket: str,
-    vectorstore_config_dict: Dict[str, str],
-    embeddings#: OpenCLIPEmbeddings
-) -> None:
-    """
-    Update the vectorstore with embeddings for all documents in the S3 bucket.
-
-    Args:
-    bucket (str): The name of the S3 bucket containing the sub-folders "documents" and "figures".
-    vectorstore_config_dict (Dict[str, str]): The configuration dictionary for the vectorstore, including parameters like collection name, database name, user, password, host, and port.
-    embeddings (OpenCLIPEmbeddings): The embeddings instance used to process the documents.
-
-    Returns:
-    None
-    """
-    store_course_data(
-        bucket=bucket,
-        folder='all',
-        vectorstore_config_dict=vectorstore_config_dict,
-        embeddings=embeddings
-    )
-    
 def get_vectorstore_retriever(
     llm,
     vectorstore_config_dict: Dict[str, str],

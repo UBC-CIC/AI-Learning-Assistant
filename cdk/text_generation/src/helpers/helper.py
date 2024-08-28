@@ -1,16 +1,9 @@
 import logging
-from typing import Dict, Optional
+from typing import Optional
 
 import psycopg2
 from langchain_experimental.open_clip import OpenCLIPEmbeddings
 from langchain_postgres import PGVector
-from langchain.retrievers.multi_vector import MultiVectorRetriever
-from langchain.indexes import SQLRecordManager, index
-
-from processing.figures import process_figures
-from processing.documents import process_texts
-from helpers.store import PostgresByteStore
-#from helpers.langchain_postgres import PGVector
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -77,82 +70,3 @@ def get_vectorstore(
     except Exception as e:
         logger.error(f"Error initializing vector store: {e}")
         return None
-    
-def store_course_data(
-    bucket: str, 
-    folder: str, 
-    vectorstore_config_dict: Dict[str, str], 
-    embeddings: OpenCLIPEmbeddings
-) -> None:
-    """
-    Store course data from an S3 bucket into the vectorstore.
-    
-    Args:
-    bucket (str): The name of the S3 bucket.
-    folder (str): The folder in the S3 bucket.
-    vectorstore_config_dict (Dict[str, str]): The configuration dictionary for the vectorstore.
-    embeddings (OpenCLIPEmbeddings): The embeddings instance.
-    """
-    vectorstore, connection_string = get_vectorstore(
-        collection_name=vectorstore_config_dict['collection_name'],
-        embeddings=embeddings,
-        dbname=vectorstore_config_dict['dbname'],
-        user=vectorstore_config_dict['user'],
-        password=vectorstore_config_dict['password'],
-        host=vectorstore_config_dict['host'],
-        port=int(vectorstore_config_dict['port'])
-    )
-    
-    
-    
-    if vectorstore:
-        store = PostgresByteStore(connection_string, vectorstore_config_dict['collection_name'])
-        
-        retriever = MultiVectorRetriever(
-            vectorstore=vectorstore, 
-            docstore=store, 
-            id_key="doc_id",
-        )
-        
-        # define record manager
-        namespace = f"pgvector/{vectorstore_config_dict['collection_name']}"
-        record_manager = SQLRecordManager(
-            namespace, db_url=connection_string
-        )
-        record_manager.create_schema()
-
-    if not vectorstore:
-        logger.error("VectorStore could not be initialized")
-        return
-
-    if folder == 'figures':
-        process_figures(
-            bucket=bucket,
-            folder=folder,
-            vectorstore=vectorstore,
-            embeddings=embeddings,
-            record_manager=record_manager
-        )
-    elif folder == 'documents':
-        process_texts(
-            bucket=bucket,
-            folder=folder,
-            vectorstore=vectorstore,
-            embeddings=embeddings,
-            record_manager=record_manager
-        )
-    elif folder == 'all':
-        process_figures(
-            bucket=bucket,
-            folder='figures',
-            vectorstore=vectorstore,
-            embeddings=embeddings,
-            record_manager=record_manager
-        )
-        process_texts(
-            bucket=bucket,
-            folder='documents',
-            vectorstore=vectorstore,
-            embeddings=embeddings,
-            record_manager=record_manager
-        )

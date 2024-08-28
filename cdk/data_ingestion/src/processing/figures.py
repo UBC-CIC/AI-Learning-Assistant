@@ -64,6 +64,8 @@ def is_valid_image_pillow(
 
 def add_image(
     bucket: str, 
+    course: str, 
+    module: str,
     image_filename: str, 
     image_uri: str, 
     image_description: str, 
@@ -75,6 +77,8 @@ def add_image(
     
     Args:
     bucket (str): The name of the S3 bucket containing the image.
+    course (str): The course ID folder in the S3 bucket.
+    module (str): The module name and ID folder within the course.
     image_filename (str): The name of the image file.
     image_uri (str): The URI of the image.
     image_description (str): The description of the image.
@@ -85,7 +89,7 @@ def add_image(
 
     image_embeddings = embeddings.embed_image([image_uri])
     metadata = {
-        "source": f"s3://{bucket}/{image_filename}",
+        "source": f"s3://{bucket}/{course}/{module}/images/{image_filename}",
         "doc_id": str(uuid.uuid4())
     }
 
@@ -105,19 +109,25 @@ def add_image(
 
     logger.info(f"Successfully added image {image_filename} to the vectorstore")
     
-def process_figures(bucket: str, folder: str, vectorstore: PGVector, embeddings: OpenCLIPEmbeddings, record_manager: SQLRecordManager) -> None:
+def process_figures(
+    bucket: str, 
+    course: str,
+    vectorstore: PGVector, 
+    embeddings: OpenCLIPEmbeddings, 
+    record_manager: SQLRecordManager
+) -> None:
     """
     Process and add figures from an S3 bucket to the vectorstore.
     
     Args:
     bucket (str): The name of the S3 bucket containing the figures.
-    folder (str): The folder in the S3 bucket where the figures are stored.
+    course (str): The course ID folder in the S3 bucket.
     vectorstore (PGVector): The vectorstore instance.
     embeddings (OpenCLIPEmbeddings): The embeddings instance.
     record_manager (SQLRecordManager): Manages list of documents in the vectorstore for indexing.
     """
     paginator = s3.get_paginator('list_objects_v2')
-    page_iterator = paginator.paginate(Bucket=bucket, Prefix=folder)
+    page_iterator = paginator.paginate(Bucket=bucket, Prefix=f"{course}/")
     
     for page in page_iterator:
         for file in page['Contents']:
@@ -128,8 +138,9 @@ def process_figures(bucket: str, folder: str, vectorstore: PGVector, embeddings:
                 tmp_file_path = tmp_file.name
 
             if is_valid_image_pillow(tmp_file_path): # This is a valid image file
+                module = filename.split('/')[1]
                 image_description_filename = change_file_extension(filename, 'txt')
-                image_description_file_key = folder + '/' + image_description_filename
+                image_description_file_key = f"{course}/{module}/images/{image_description_filename}"
 
                 image_description = None
                 try:
@@ -147,7 +158,9 @@ def process_figures(bucket: str, folder: str, vectorstore: PGVector, embeddings:
 
                     add_image(
                         bucket=bucket,
-                        image_filename=filename,
+                        course=course,
+                        module=module,
+                        image_filename=os.path.basename(filename),
                         image_uri=tmp_file_path,
                         image_description=image_description,
                         vectorstore=vectorstore,
@@ -160,7 +173,9 @@ def process_figures(bucket: str, folder: str, vectorstore: PGVector, embeddings:
                                    ")
                     add_image(
                         bucket=bucket,
-                        image_filename=filename,
+                        course=course,
+                        module=module,
+                        image_filename=os.path.basename(filename),
                         image_uri=tmp_file_path,
                         image_description=None,
                         vectorstore=vectorstore,

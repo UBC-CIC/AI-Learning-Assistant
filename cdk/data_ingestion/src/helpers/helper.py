@@ -1,4 +1,5 @@
 import logging
+import boto3
 from typing import Dict, Optional
 
 import psycopg2
@@ -11,6 +12,7 @@ from processing.figures import process_figures
 from processing.documents import process_texts
 from helpers.store import PostgresByteStore
 #from helpers.langchain_postgres import PGVector
+s3 = boto3.client('s3')
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -80,7 +82,7 @@ def get_vectorstore(
     
 def store_course_data(
     bucket: str, 
-    folder: str, 
+    course: str, 
     vectorstore_config_dict: Dict[str, str], 
     embeddings: OpenCLIPEmbeddings
 ) -> None:
@@ -89,7 +91,7 @@ def store_course_data(
     
     Args:
     bucket (str): The name of the S3 bucket.
-    folder (str): The folder in the S3 bucket.
+    course (str): The course name/folder in the S3 bucket.
     vectorstore_config_dict (Dict[str, str]): The configuration dictionary for the vectorstore.
     embeddings (OpenCLIPEmbeddings): The embeddings instance.
     """
@@ -125,34 +127,27 @@ def store_course_data(
         logger.error("VectorStore could not be initialized")
         return
 
-    if folder == 'figures':
-        process_figures(
-            bucket=bucket,
-            folder=folder,
-            vectorstore=vectorstore,
-            embeddings=embeddings,
-            record_manager=record_manager
-        )
-    elif folder == 'documents':
-        process_texts(
-            bucket=bucket,
-            folder=folder,
-            vectorstore=vectorstore,
-            embeddings=embeddings,
-            record_manager=record_manager
-        )
-    elif folder == 'all':
-        process_figures(
-            bucket=bucket,
-            folder='figures',
-            vectorstore=vectorstore,
-            embeddings=embeddings,
-            record_manager=record_manager
-        )
-        process_texts(
-            bucket=bucket,
-            folder='documents',
-            vectorstore=vectorstore,
-            embeddings=embeddings,
-            record_manager=record_manager
-        )
+    paginator = s3.get_paginator('list_objects_v2')
+    page_iterator = paginator.paginate(Bucket=bucket, Prefix=f"{course}/")
+
+    for page in page_iterator:
+        for file in page['Contents']:
+            filename = file['Key']
+            module = filename.split('/')[1]
+            
+            if 'images/' in filename:
+                process_figures(
+                    bucket=bucket,
+                    course=course,
+                    vectorstore=vectorstore,
+                    embeddings=embeddings,
+                    record_manager=record_manager
+                )
+            elif 'documents/' in filename:
+                process_texts(
+                    bucket=bucket,
+                    course=course,
+                    vectorstore=vectorstore,
+                    embeddings=embeddings,
+                    record_manager=record_manager
+                )

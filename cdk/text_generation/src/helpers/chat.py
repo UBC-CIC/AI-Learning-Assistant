@@ -13,7 +13,7 @@ class LLM_evaluation(BaseModel):
     verdict: str = Field(description="'True' if the student has mastered the concept, 'False' otherwise.")
 
 
-def create_dynamodb_history_table(table_name: str) -> None:
+def create_dynamodb_history_table(table_name: str) -> bool:
     """
     Create a DynamoDB table to store the session history if it doesn't already exist.
 
@@ -44,6 +44,8 @@ def create_dynamodb_history_table(table_name: str) -> None:
         
         # Wait until the table exists.
         table.meta.client.get_waiter("table_exists").wait(TableName=table_name)
+        return True
+    return False
 
 def get_bedrock_llm(
     bedrock_llm_id: str,

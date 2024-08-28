@@ -287,7 +287,7 @@ export const InstructorNewModule = ({ courseId }) => {
               <Grid item xs={12}>
                 <input
                   type="file"
-                  sx={{ paddingLeft: 10 }}
+                  style={{ paddingLeft: 10 }}
                   onChange={(e) =>
                     handleImageWithTextChange(index, "image", e.target.files[0])
                   }

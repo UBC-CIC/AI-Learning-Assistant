@@ -162,31 +162,30 @@ const InstructorEditCourse = () => {
     setConcept(e.target.value);
   };
 
-const handleFileUpload = (event) => {
-  const uploadedFiles = Array.from(event);
-  const existingFileNames = files.map((file) => file.name);
+  const handleFileUpload = (event) => {
+    const uploadedFiles = Array.from(event);
+    const existingFileNames = files.map((file) => file.name);
 
-  // Filter out files with names that already exist
-  const newFiles = uploadedFiles.filter(
-    (file) => !existingFileNames.includes(file.name)
-  );
+    // Filter out files with names that already exist
+    const newFiles = uploadedFiles.filter(
+      (file) => !existingFileNames.includes(file.name)
+    );
 
-  if (newFiles.length < uploadedFiles.length) {
-    toast.error("Some files were not uploaded because they already exist.", {
-      position: "top-center",
-      autoClose: 2000,
-      hideProgressBar: false,
-      closeOnClick: true,
-      pauseOnHover: true,
-      draggable: true,
-      progress: undefined,
-      theme: "colored",
-    });
-  }
+    if (newFiles.length < uploadedFiles.length) {
+      toast.error("Some files were not uploaded because they already exist.", {
+        position: "top-center",
+        autoClose: 2000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "colored",
+      });
+    }
 
-  setFiles([...files, ...newFiles]);
-};
-
+    setFiles([...files, ...newFiles]);
+  };
 
   const handleRemoveFile = (file_name) => {
     const updatedFiles = files.filter((file) => file.name !== file_name);
@@ -216,8 +215,59 @@ const handleFileUpload = (event) => {
   };
 
   const handleSave = async () => {
-    const selectedConcept = allConcepts.find((c) => c.concept_name === concept);
+    let presignedUrls = [];
+    const session = await fetchAuthSession();
+    var token = session.tokens.idToken.toString();
+    const { signInDetails } = await getCurrentUser();
+    try {
+      const response = await fetch(
+        `${
+          import.meta.env.VITE_API_ENDPOINT
+        }instructor/generate_presigned_url?course_id=${encodeURIComponent(course_id
 
+        )}&module_id=${encodeURIComponent(
+          module.module_id
+        )}&module_name=${encodeURIComponent(
+          module.module_name
+        )}&`,
+        {
+          method: "PUT",
+          headers: {
+            Authorization: token,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            module_name: moduleName,
+          }),
+        }
+      );
+      if (response.ok) {
+        toast.success("Module updated successfully", {
+          position: "top-center",
+          autoClose: 1000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: "colored",
+        });
+      } else {
+        toast.error("Module failed to update", {
+          position: "top-center",
+          autoClose: 1000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: "colored",
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching courses:", error);
+    }
+    const selectedConcept = allConcepts.find((c) => c.concept_name === concept);
     console.log(
       "Module saved:",
       module,
@@ -226,9 +276,6 @@ const handleFileUpload = (event) => {
       imagesWithText
     );
     try {
-      const session = await fetchAuthSession();
-      var token = session.tokens.idToken.toString();
-      const { signInDetails } = await getCurrentUser();
       const response = await fetch(
         `${
           import.meta.env.VITE_API_ENDPOINT

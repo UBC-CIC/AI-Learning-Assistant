@@ -46,6 +46,8 @@ def extract_txt(
 
 def store_doc_texts(
     bucket: str, 
+    course: str, 
+    module: str,
     filename: str, 
     output_bucket: str
 ) -> List[str]:
@@ -54,6 +56,8 @@ def store_doc_texts(
     
     Args:
     bucket (str): The name of the S3 bucket containing the document.
+    course (str): The course ID folder in the S3 bucket.
+    module (str): The module name and ID folder within the course.
     filename (str): The name of the document file.
     output_bucket (str): The name of the S3 bucket for storing the extracted text.
     
@@ -61,7 +65,7 @@ def store_doc_texts(
     List[str]: A list of keys for the stored text files in the output bucket.
     """
     with tempfile.NamedTemporaryFile(delete=False) as tmp_file:
-        s3.download_file(bucket, filename, tmp_file.name)
+        s3.download_file(bucket, f"{course}/{module}/documents/{filename}", tmp_file.name)
         doc = pymupdf.open(tmp_file.name)
         output_buffer = BytesIO()
 
@@ -70,16 +74,18 @@ def store_doc_texts(
             output_buffer.write(text)
             output_buffer.write(bytes((12,)))
 
-            page_output_key = f'doc-texts/{filename}_page_{page_num}.txt'
+            page_output_key = f'{course}/{module}/documents/{filename}_page_{page_num}.txt'
             page_output_buffer = BytesIO(text)
             s3.upload_fileobj(page_output_buffer, output_bucket, page_output_key)
 
         os.remove(tmp_file.name)
 
-    return [f'doc-texts/{filename}_page_{page_num}.txt' for page_num in range(1, len(doc) + 1)]
+    return [f'{course}/{module}/documents/{filename}_page_{page_num}.txt' for page_num in range(1, len(doc) + 1)]
 
 def add_document(
     bucket: str, 
+    course: str, 
+    module: str,
     filename: str, 
     vectorstore: PGVector, 
     embeddings: OpenCLIPEmbeddings,
@@ -90,6 +96,8 @@ def add_document(
     
     Args:
     bucket (str): The name of the S3 bucket containing the document.
+    course (str): The course ID folder in the S3 bucket.
+    module (str): The module name and ID folder within the course.
     filename (str): The name of the document file.
     vectorstore (PGVector): The vectorstore instance.
     embeddings (OpenCLIPEmbeddings): The embeddings instance.
@@ -100,6 +108,8 @@ def add_document(
     """
     output_filenames = store_doc_texts(
         bucket=bucket,
+        course=course,
+        module=module,
         filename=filename,
         output_bucket=output_bucket
     )
@@ -162,7 +172,7 @@ def store_doc_chunks(
                 
 def process_texts(
     bucket: str, 
-    folder: str, 
+    course: str, 
     vectorstore: PGVector, 
     embeddings: OpenCLIPEmbeddings,
     record_manager: SQLRecordManager
@@ -172,22 +182,25 @@ def process_texts(
     
     Args:
     bucket (str): The name of the S3 bucket containing the text documents.
-    folder (str): The folder in the S3 bucket where the text documents are stored.
+    course (str): The course ID folder in the S3 bucket.
     vectorstore (PGVector): The vectorstore instance.
     embeddings (OpenCLIPEmbeddings): The embeddings instance.
     record_manager (SQLRecordManager): Manages list of documents in the vectorstore for indexing.
     """
     paginator = s3.get_paginator('list_objects_v2')
-    page_iterator = paginator.paginate(Bucket=bucket, Prefix=folder)
+    page_iterator = paginator.paginate(Bucket=bucket, Prefix=f"{course}/")
     all_doc_chunks = []
     
     for page in page_iterator:
         for file in page['Contents']:
             filename = file['Key']
             if filename.endswith((".pdf", ".docx", ".pptx", ".txt", ".xlsx", ".xps", ".mobi", ".cbz")):
+                module = filename.split('/')[1]
                 this_doc_chunks = add_document(
                     bucket=bucket,
-                    filename=filename,
+                    course=course,
+                    module=module,
+                    filename=os.path.basename(filename),
                     vectorstore=vectorstore,
                     embeddings=embeddings
                 )
@@ -204,4 +217,4 @@ def process_texts(
         source_id_key="source"
     )
 
-    print(f"Indexing updates: \n {idx}")    
+    print(f"Indexing updates: \n {idx}")

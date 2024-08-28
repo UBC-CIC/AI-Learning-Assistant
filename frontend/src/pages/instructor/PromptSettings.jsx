@@ -8,7 +8,7 @@ import {
   Paper,
   Toolbar,
 } from "@mui/material";
-import { fetchAuthSession, getCurrentUser } from "aws-amplify/auth";
+import { fetchAuthSession, fetchUserAttributes } from "aws-amplify/auth";
 import { toast, ToastContainer } from "react-toastify";
 import MobileStepper from "@mui/material/MobileStepper";
 import KeyboardArrowLeft from "@mui/icons-material/KeyboardArrowLeft";
@@ -41,13 +41,13 @@ const PromptSettings = ({ courseName, course_id }) => {
     try {
       const session = await fetchAuthSession();
       const token = session.tokens.idToken.toString();
-      const { signInDetails } = await getCurrentUser();
+      const { email } = await fetchUserAttributes();
       const response = await fetch(
         `${
           import.meta.env.VITE_API_ENDPOINT
         }instructor/previous_prompts?course_id=${encodeURIComponent(
           course_id
-        )}&instructor_email=${encodeURIComponent(signInDetails.loginId)}`,
+        )}&instructor_email=${encodeURIComponent(email)}`,
         {
           method: "GET",
           headers: {
@@ -106,8 +106,8 @@ const PromptSettings = ({ courseName, course_id }) => {
     try {
       const session = await fetchAuthSession();
       const token = session.tokens.idToken.toString();
-      const { signInDetails } = await getCurrentUser();
-
+      const { email } = await fetchUserAttributes();
+      
       // Save current prompt and fetch previous prompts
       const requestBody = {
         prompt: `${userPrompt}`,
@@ -117,7 +117,7 @@ const PromptSettings = ({ courseName, course_id }) => {
           import.meta.env.VITE_API_ENDPOINT
         }instructor/prompt?course_id=${encodeURIComponent(
           course_id
-        )}&instructor_email=${encodeURIComponent(signInDetails.loginId)}`,
+        )}&instructor_email=${encodeURIComponent(email)}`,
         {
           method: "PUT",
           headers: {

@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
-import { fetchAuthSession, getCurrentUser } from "aws-amplify/auth";
+import { fetchAuthSession, fetchUserAttributes } from "aws-amplify/auth";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import PageContainer from "../Container";
@@ -133,7 +133,7 @@ const StudentDetails = () => {
     try {
       const session = await fetchAuthSession();
       const token = session.tokens.idToken.toString();
-      const { signInDetails } = await getCurrentUser();
+      const { email } = await fetchUserAttributes();
       const response = await fetch(
         `${
           import.meta.env.VITE_API_ENDPOINT
@@ -141,7 +141,7 @@ const StudentDetails = () => {
           course_id
         )}&user_email=${encodeURIComponent(
           student.email
-        )}&instructor_email=${encodeURIComponent(signInDetails.loginId)}`,
+        )}&instructor_email=${encodeURIComponent(email)}`,
         {
           method: "DELETE",
           headers: {

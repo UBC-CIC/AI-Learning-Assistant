@@ -1,31 +1,31 @@
-import React, {useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import AIMessage from "../../components/AIMessage";
 import Session from "../../components/Session";
 import StudentMessage from "../../components/StudentMessage";
 import { fetchAuthSession } from "aws-amplify/auth";
-import { getCurrentUser } from "aws-amplify/auth";
 import { useNavigate } from "react-router-dom";
+import { fetchUserAttributes } from 'aws-amplify/auth';
 
 const StudentChat = ({ course, module, setModule, setCourse }) => {
   const textareaRef = useRef(null);
   const [sessions, setSessions] = useState([]);
   const [session, setSession] = useState(null);
   const [messages, setMessages] = useState([]);
-  useEffect(() => {
-    console.log(sessions)
-  }, [sessions]);
+
+
   async function retrieveKnowledgeBase(message) {
     try {
       const authSession = await fetchAuthSession();
-      const { signInDetails } = await getCurrentUser();
+      const {email} = await fetchUserAttributes();
       const token = authSession.tokens.idToken.toString();
       try {
         const response = await fetch(
-          `${import.meta.env.VITE_API_ENDPOINT
+          `${
+            import.meta.env.VITE_API_ENDPOINT
           }student/create_ai_message?session_id=${encodeURIComponent(
             session.session_id
           )}&email=${encodeURIComponent(
-            signInDetails.loginId
+            email
           )}&course_id=${encodeURIComponent(
             course.course_id
           )}&module_id=${encodeURIComponent(module.module_id)}`,
@@ -36,7 +36,7 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              message_content: message.message
+              message_content: message.message,
             }),
           }
         );
@@ -62,17 +62,22 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
     } else {
       new_session = session;
     }
-    const messageContent = textareaRef.current.value;
+    const messageContent = textareaRef.current.value.trim();
+    if (!messageContent) {
+      console.warn("Message content is empty or contains only spaces.");
+      return;
+    }
     const authSession = await fetchAuthSession();
-    const { signInDetails } = await getCurrentUser();
+    const {email} = await fetchUserAttributes();
     const token = authSession.tokens.idToken.toString();
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_API_ENDPOINT
+        `${
+          import.meta.env.VITE_API_ENDPOINT
         }student/create_message?session_id=${encodeURIComponent(
           new_session.session_id
         )}&email=${encodeURIComponent(
-          signInDetails.loginId
+          email
         )}&course_id=${encodeURIComponent(
           course.course_id
         )}&module_id=${encodeURIComponent(module.module_id)}`, // change to name
@@ -109,7 +114,7 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
           const data = await response.json();
 
           // Log the parsed data
-          retrieveKnowledgeBase(data)
+          retrieveKnowledgeBase(data);
         } catch (error) {
           console.error("Error creating flask:", error);
         }
@@ -132,12 +137,13 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
 
       try {
         const session = await fetchAuthSession();
-        const { signInDetails } = await getCurrentUser();
+        const {email} = await fetchUserAttributes();
         const token = session.tokens.idToken.toString();
         const response = await fetch(
-          `${import.meta.env.VITE_API_ENDPOINT
+          `${
+            import.meta.env.VITE_API_ENDPOINT
           }student/module?email=${encodeURIComponent(
-            signInDetails.loginId
+            email
           )}&course_id=${encodeURIComponent(
             course.course_id
           )}&module_id=${encodeURIComponent(module.module_id)}`,
@@ -179,12 +185,13 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
   const handleNewChat = async () => {
     try {
       const session = await fetchAuthSession();
-      const { signInDetails } = await getCurrentUser();
+      const {email} = await fetchUserAttributes();
       const token = session.tokens.idToken.toString();
       const response = await fetch(
-        `${import.meta.env.VITE_API_ENDPOINT
+        `${
+          import.meta.env.VITE_API_ENDPOINT
         }student/create_session?email=${encodeURIComponent(
-          signInDetails.loginId
+          email
         )}&course_id=${encodeURIComponent(
           course.course_id
         )}&module_id=${encodeURIComponent(
@@ -201,7 +208,7 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
       if (response.ok) {
         const data = await response.json();
         setSessions((prevItems) => [...prevItems, data[0]]);
-        setSession(data[0])
+        setSession(data[0]);
         return data[0];
       } else {
         console.error("Failed to create session:", response.statusText);
@@ -214,12 +221,13 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
   const handleDeleteSession = async (sessionDelete) => {
     try {
       const authSession = await fetchAuthSession();
-      const { signInDetails } = await getCurrentUser();
+      const {email} = await fetchUserAttributes();
       const token = authSession.tokens.idToken.toString();
       const response = await fetch(
-        `${import.meta.env.VITE_API_ENDPOINT
+        `${
+          import.meta.env.VITE_API_ENDPOINT
         }student/delete_session?email=${encodeURIComponent(
-          signInDetails.loginId
+          email
         )}&course_id=${encodeURIComponent(
           course.course_id
         )}&module_id=${encodeURIComponent(
@@ -240,7 +248,7 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
             (isession) => isession.session_id !== sessionDelete.session_id
           )
         );
-        setSession(null)
+        setSession(null);
         setMessages([]);
       } else {
         console.error("Failed to create session:", response.statusText);
@@ -300,10 +308,11 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
   const getMessages = async () => {
     try {
       const authSession = await fetchAuthSession();
-      const { signInDetails } = await getCurrentUser();
+      const {email} = await fetchUserAttributes();
       const token = authSession.tokens.idToken.toString();
       const response = await fetch(
-        `${import.meta.env.VITE_API_ENDPOINT
+        `${
+          import.meta.env.VITE_API_ENDPOINT
         }student/get_messages?session_id=${encodeURIComponent(
           session.session_id
         )}`,
@@ -341,13 +350,16 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
   return (
     <div className="flex flex-row h-screen">
       <div className="flex flex-col w-1/4 bg-gradient-to-tr from-purple-300 to-cyan-100">
-        <div className="mt-3 mb-3 ml-4">
+        <div className="flex flex-row mt-3 mb-3 ml-4">
           <img
             onClick={() => handleBack()}
             className="w-8 h-8 cursor-pointer"
             src="./ArrowCircleDownRounded.png"
             alt="back"
           />
+          <div className="ml-3 pt-0.5 text-black font-roboto font-bold text-lg">
+            {module.module_name}
+          </div>
         </div>
         <button
           onClick={() => {
@@ -381,7 +393,7 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
                 deleteSession={handleDeleteSession}
                 selectedSession={session}
                 setMessages={setMessages}
-                setSessions = {setSessions}
+                setSessions={setSessions}
               />
             ))}
         </div>

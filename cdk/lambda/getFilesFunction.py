@@ -16,6 +16,17 @@ def list_files_in_s3_prefix(bucket, prefix):
             files.append(obj['Key'].replace(prefix, ''))
     return files
 
+def generate_presigned_url(bucket, key):
+    try:
+        return s3.generate_presigned_url(
+            ClientMethod="get_object",
+            Params={"Bucket": bucket, "Key": key},
+            ExpiresIn=300
+        )
+    except Exception as e:
+        logger.exception(f"Error generating presigned URL for {key}: {e}")
+        return None
+
 @logger.inject_lambda_context
 def lambda_handler(event, context):
     query_params = event.get("queryStringParameters", {})
@@ -42,20 +53,24 @@ def lambda_handler(event, context):
         document_files = list_files_in_s3_prefix(BUCKET, document_prefix)
         image_files = list_files_in_s3_prefix(BUCKET, image_prefix)
 
-        logger.info("Files retrieved successfully", extra={
-            "document_files": document_files,
-            "image_files": image_files
+        # Generate presigned URLs for each file
+        document_files_urls = {file_name: generate_presigned_url(BUCKET, f"{document_prefix}{file_name}") for file_name in document_files}
+        image_files_urls = {file_name: generate_presigned_url(BUCKET, f"{image_prefix}{file_name}") for file_name in image_files}
+
+        logger.info("Presigned URLs generated successfully", extra={
+            "document_files": document_files_urls,
+            "image_files": image_files_urls
         })
 
         return {
             'statusCode': 200,
             'body': json.dumps({
-                'document_files': document_files,
-                'image_files': image_files
+                'document_files': document_files_urls,
+                'image_files': image_files_urls
             })
         }
     except Exception as e:
-        logger.exception(f"Error retrieving files: {e}")
+        logger.exception(f"Error generating presigned URLs: {e}")
         return {
             'statusCode': 500,
             'body': json.dumps('Internal server error')

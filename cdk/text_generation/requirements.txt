@@ -6,6 +6,6 @@ langchain-core
 langchain-community
 langchain-experimental
 langchain-postgres
-psycopg2
+psycopg2-binary
 python-dotenv
 numpy

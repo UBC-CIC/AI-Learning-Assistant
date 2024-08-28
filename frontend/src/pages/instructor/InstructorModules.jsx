@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button, Box, Toolbar, Typography, Paper } from "@mui/material";
-import { fetchAuthSession, getCurrentUser } from "aws-amplify/auth";
+import { fetchAuthSession, fetchUserAttributes } from "aws-amplify/auth";
 import {
   MRT_TableContainer,
   useMaterialReactTable,
@@ -107,8 +107,7 @@ const InstructorModules = ({ courseName, course_id }) => {
     try {
       const session = await fetchAuthSession();
       const token = session.tokens.idToken.toString();
-      const { signInDetails } = await getCurrentUser();
-
+      const {email} = await fetchUserAttributes();
       for (let i = 0; i < data.length; i++) {
         const module = data[i];
         const moduleNumber = i + 1;
@@ -119,7 +118,7 @@ const InstructorModules = ({ courseName, course_id }) => {
           }instructor/reorder_module?module_id=${encodeURIComponent(
             module.module_id
           )}&module_number=${moduleNumber}&instructor_email=${encodeURIComponent(
-            signInDetails.loginId
+            email
           )}`,
           {
             method: "PUT",

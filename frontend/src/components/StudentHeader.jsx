@@ -5,7 +5,7 @@ import SettingsIcon from "@mui/icons-material/Settings";
 // amplify
 import { signOut } from "aws-amplify/auth";
 import { fetchAuthSession } from 'aws-amplify/auth';
-import { getCurrentUser } from 'aws-amplify/auth';
+import { fetchUserAttributes } from 'aws-amplify/auth';
 
 
 const StudentHeader = () => {
@@ -16,9 +16,9 @@ const StudentHeader = () => {
     const fetchName = async () => {
       try {
         const session = await fetchAuthSession();
-        const {signInDetails } = await getCurrentUser();
+        const {email} = await fetchUserAttributes();
         var token = session.tokens.idToken.toString()
-        const response = await fetch(`${import.meta.env.VITE_API_ENDPOINT}student/get_name?user_email=${encodeURIComponent(signInDetails.loginId)}`, {
+        const response = await fetch(`${import.meta.env.VITE_API_ENDPOINT}student/get_name?user_email=${encodeURIComponent(email)}`, {
           method: 'GET',
           headers: {
               'Authorization': token,

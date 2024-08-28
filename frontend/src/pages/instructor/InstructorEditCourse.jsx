@@ -4,7 +4,8 @@ import AWS from "aws-sdk";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { fetchAuthSession } from "aws-amplify/auth";
-import { getCurrentUser } from "aws-amplify/auth";
+import { fetchUserAttributes } from "aws-amplify/auth";
+
 import {
   TextField,
   Button,
@@ -218,18 +219,16 @@ const InstructorEditCourse = () => {
     let presignedUrls = [];
     const session = await fetchAuthSession();
     var token = session.tokens.idToken.toString();
-    const { signInDetails } = await getCurrentUser();
+    const { email } = await fetchUserAttributes();
     try {
       const response = await fetch(
         `${
           import.meta.env.VITE_API_ENDPOINT
-        }instructor/generate_presigned_url?course_id=${encodeURIComponent(course_id
-
+        }instructor/generate_presigned_url?course_id=${encodeURIComponent(
+          course_id
         )}&module_id=${encodeURIComponent(
           module.module_id
-        )}&module_name=${encodeURIComponent(
-          module.module_name
-        )}&`,
+        )}&module_name=${encodeURIComponent(module.module_name)}&`,
         {
           method: "PUT",
           headers: {
@@ -282,7 +281,7 @@ const InstructorEditCourse = () => {
         }instructor/edit_module?module_id=${encodeURIComponent(
           module.module_id
         )}&instructor_email=${encodeURIComponent(
-          signInDetails.loginId
+          email
         )}&concept_id=${encodeURIComponent(selectedConcept.concept_id)}`,
         {
           method: "PUT",

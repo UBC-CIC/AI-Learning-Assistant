@@ -1,12 +1,12 @@
 boto3
-# langchain
-# langchain-aws
-# langchain-core
-# langchain-community
-# langchain-experimental
-# langchain-postgres
-# psycopg2
-# sqlalchemy
-# pydantic
-# python-dotenv
-# numpy
+botocore
+langchain
+langchain-core
+langchain-experimental
+langchain-postgres
+python-dotenv
+sqlalchemy
+transformers
+Pillow
+tqdm
+pymupdf

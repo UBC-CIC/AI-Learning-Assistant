@@ -6,7 +6,6 @@ import uuid
 
 import boto3
 from tqdm import tqdm
-import botocore
 import pymupdf
 from langchain_postgres import PGVector
 from langchain_core.documents import Document

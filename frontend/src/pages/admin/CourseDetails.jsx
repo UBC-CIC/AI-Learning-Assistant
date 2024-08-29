@@ -153,50 +153,19 @@ const CourseDetails = ({ course, onBack }) => {
   };
 
   const handleSave = async () => {
-    const session = await fetchAuthSession();
-    var token = session.tokens.idToken.toString();
-    const deleteResponse = await fetch(
-      `${
-        import.meta.env.VITE_API_ENDPOINT
-      }admin/delete_course_instructor_enrolments?&course_id=${encodeURIComponent(
-        course.id
-      )}`,
-      {
-        method: "DELETE",
-        headers: {
-          Authorization: token,
-          "Content-Type": "application/json",
-        },
-      }
-    );
+    try {
+      const session = await fetchAuthSession();
+      const token = session.tokens.idToken.toString();
 
-    if (deleteResponse.ok) {
-      const enrollData = await deleteResponse.json();
-      console.log("delete data:", enrollData);
-    } else {
-      console.error("Failed to update enrolment:", deleteResponse.statusText);
-      toast.error("update enrolment Failed", {
-        position: "top-center",
-        autoClose: 1000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        theme: "colored",
-      });
-      return;
-    }
-
-    for (const instructor of activeInstructors) {
-      const enrollResponse = await fetch(
+      // Delete existing enrollments
+      const deleteResponse = await fetch(
         `${
           import.meta.env.VITE_API_ENDPOINT
-        }admin/enroll_instructor?course_id=${encodeURIComponent(
+        }admin/delete_course_instructor_enrolments?&course_id=${encodeURIComponent(
           course.id
-        )}&instructor_email=${encodeURIComponent(instructor.user_email)}`,
+        )}`,
         {
-          method: "POST",
+          method: "DELETE",
           headers: {
             Authorization: token,
             "Content-Type": "application/json",
@@ -204,10 +173,70 @@ const CourseDetails = ({ course, onBack }) => {
         }
       );
 
-      if (enrollResponse.ok) {
-        const enrollData = await enrollResponse.json();
-        console.log("Instructor enrollment data:", enrollData);
-        toast.success("🦄 Enrolment Updated!", {
+      if (!deleteResponse.ok) {
+        console.error("Failed to update enrolment:", deleteResponse.statusText);
+        toast.error("Update enrolment Failed", {
+          position: "top-center",
+          autoClose: 1000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: "colored",
+        });
+        return;
+      }
+      console.log("Delete data:", await deleteResponse.json());
+
+      // Enroll new instructors in parallel
+      const enrollPromises = activeInstructors.map((instructor) =>
+        fetch(
+          `${
+            import.meta.env.VITE_API_ENDPOINT
+          }admin/enroll_instructor?course_id=${encodeURIComponent(
+            course.id
+          )}&instructor_email=${encodeURIComponent(instructor.user_email)}`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: token,
+              "Content-Type": "application/json",
+            },
+          }
+        ).then((enrollResponse) => {
+          if (enrollResponse.ok) {
+            return enrollResponse.json().then((enrollData) => {
+              console.log("Instructor enrollment data:", enrollData);
+              return { success: true };
+            });
+          } else {
+            console.error(
+              "Failed to enroll instructor:",
+              enrollResponse.statusText
+            );
+            toast.error("Enroll Instructor Failed", {
+              position: "top-center",
+              autoClose: 1000,
+              hideProgressBar: false,
+              closeOnClick: true,
+              pauseOnHover: true,
+              draggable: true,
+              progress: undefined,
+              theme: "colored",
+            });
+            return { success: false };
+          }
+        })
+      );
+
+      const enrollResults = await Promise.all(enrollPromises);
+      const allEnrolledSuccessfully = enrollResults.every(
+        (result) => result.success
+      );
+
+      if (!allEnrolledSuccessfully) {
+        toast.error("Some instructors could not be enrolled", {
           position: "top-center",
           autoClose: 1000,
           hideProgressBar: false,
@@ -218,11 +247,7 @@ const CourseDetails = ({ course, onBack }) => {
           theme: "colored",
         });
       } else {
-        console.error(
-          "Failed to enroll instructor:",
-          enrollResponse.statusText
-        );
-        toast.error("Enroll Instructor Failed", {
+        toast.success("🦄 Enrolment Updated!", {
           position: "top-center",
           autoClose: 1000,
           hideProgressBar: false,
@@ -233,29 +258,47 @@ const CourseDetails = ({ course, onBack }) => {
           theme: "colored",
         });
       }
-    }
 
-    const updateCourseAccess = await fetch(
-      `${
-        import.meta.env.VITE_API_ENDPOINT
-      }admin/updateCourseAccess?&course_id=${encodeURIComponent(
-        course.id
-      )}&access=${encodeURIComponent(isActive)}`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: token,
-          "Content-Type": "application/json",
-        },
+      // Update course access
+      const updateCourseAccess = await fetch(
+        `${
+          import.meta.env.VITE_API_ENDPOINT
+        }admin/updateCourseAccess?&course_id=${encodeURIComponent(
+          course.id
+        )}&access=${encodeURIComponent(isActive)}`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: token,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (!updateCourseAccess.ok) {
+        console.error(
+          "Failed to update course access:",
+          updateCourseAccess.statusText
+        );
+        toast.error("Update course access Failed", {
+          position: "top-center",
+          autoClose: 1000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: "colored",
+        });
+      } else {
+        console.log(
+          "Update course access data:",
+          await updateCourseAccess.json()
+        );
       }
-    );
-
-    if (updateCourseAccess.ok) {
-      const enrollData = await updateCourseAccess.json();
-      console.log("updateCourseAccess data:", enrollData);
-    } else {
-      console.error("Failed to update enrolment:", deleteResponse.statusText);
-      toast.error("update enrolment Failed", {
+    } catch (error) {
+      console.error("Error in handleSave:", error);
+      toast.error("An error occurred", {
         position: "top-center",
         autoClose: 1000,
         hideProgressBar: false,
@@ -264,8 +307,8 @@ const CourseDetails = ({ course, onBack }) => {
         draggable: true,
         progress: undefined,
         theme: "colored",
+        transition: "Bounce",
       });
-      return;
     }
   };
 

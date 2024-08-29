@@ -106,11 +106,11 @@ const InstructorConcepts = ({ courseName, course_id }) => {
       const token = session.tokens.idToken.toString();
       console.log(data);
 
-      for (let i = 0; i < data.length; i++) {
-        const concept = data[i];
-        const conceptNumber = i + 1;
+      // Create an array of promises for updating concepts
+      const updatePromises = data.map((concept, index) => {
+        const conceptNumber = index + 1;
 
-        const response = await fetch(
+        return fetch(
           `${
             import.meta.env.VITE_API_ENDPOINT
           }instructor/edit_concept?concept_id=${encodeURIComponent(
@@ -127,31 +127,66 @@ const InstructorConcepts = ({ courseName, course_id }) => {
               concept_number: conceptNumber,
             }),
           }
-        );
+        ).then((response) => {
+          if (!response.ok) {
+            console.error(
+              `Failed to update concept ${concept.concept_id}:`,
+              response.statusText
+            );
+            toast.error("Concept Order Update Failed", {
+              position: "top-center",
+              autoClose: 1000,
+              hideProgressBar: false,
+              closeOnClick: true,
+              pauseOnHover: true,
+              draggable: true,
+              progress: undefined,
+              theme: "colored",
+            });
+            return { success: false };
+          } else {
+            return response.json().then((updatedConcept) => {
+              console.log(
+                `Updated concept ${updatedConcept.concept_id} successfully.`
+              );
+              return { success: true };
+            });
+          }
+        });
+      });
 
-        if (!response.ok) {
-          console.error(
-            `Failed to update concept ${concept.concept_id}:`,
-            response.statusText
-          );
-          toast.error("Concept Order Update Failed", {
-            position: "top-center",
-            autoClose: 1000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            theme: "colored",
-          });
-        } else {
-          const updatedConcept = await response.json();
-          console.log(
-            `Updated concept ${updatedConcept.concept_id} successfully.`
-          );
-        }
+      // Wait for all promises to complete
+      const updateResults = await Promise.all(updatePromises);
+      const allUpdatesSuccessful = updateResults.every(
+        (result) => result.success
+      );
+
+      if (allUpdatesSuccessful) {
+        toast.success("Concept Order Updated Successfully", {
+          position: "top-center",
+          autoClose: 1000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: "colored",
+        });
+      } else {
+        toast.error("Some concept updates failed", {
+          position: "top-center",
+          autoClose: 1000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: "colored",
+        });
       }
-      toast.success("Module Order Updated Successfully", {
+    } catch (error) {
+      console.error("Error saving changes:", error);
+      toast.error("An error occurred while saving changes", {
         position: "top-center",
         autoClose: 1000,
         hideProgressBar: false,
@@ -160,9 +195,8 @@ const InstructorConcepts = ({ courseName, course_id }) => {
         draggable: true,
         progress: undefined,
         theme: "colored",
+        transition: "Bounce",
       });
-    } catch (error) {
-      console.error("Error saving changes:", error);
     }
   };
 

@@ -95,7 +95,8 @@ def handler(event, context):
             "s3_bucket_reference" varchar,
             "filepath" varchar,
             "filename" varchar,
-            "time_uploaded" timestamp
+            "time_uploaded" timestamp,
+            "metadata" text
             );
 
             CREATE TABLE IF NOT EXISTS "Student_Modules" (

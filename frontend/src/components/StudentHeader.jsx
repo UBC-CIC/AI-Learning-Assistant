@@ -4,36 +4,43 @@ import { useNavigate } from "react-router-dom";
 import SettingsIcon from "@mui/icons-material/Settings";
 // amplify
 import { signOut } from "aws-amplify/auth";
-import { fetchAuthSession } from 'aws-amplify/auth';
-import { fetchUserAttributes } from 'aws-amplify/auth';
-
+import { fetchAuthSession } from "aws-amplify/auth";
+import { fetchUserAttributes } from "aws-amplify/auth";
 
 const StudentHeader = () => {
-  const [name, setName] = useState('')
+  const [name, setName] = useState("");
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchName = async () => {
-      try {
-        const session = await fetchAuthSession();
-        const {email} = await fetchUserAttributes();
-        var token = session.tokens.idToken.toString()
-        const response = await fetch(`${import.meta.env.VITE_API_ENDPOINT}student/get_name?user_email=${encodeURIComponent(email)}`, {
-          method: 'GET',
-          headers: {
-              'Authorization': token,
-              'Content-Type': 'application/json'
-          }
-      });
-        if (response.ok) {
-          const data = await response.json();
-          setName(data.name)
-        } else {
-          console.error('Failed to fetch name:', response.statusText);
-        }
-      } catch (error) {
-        console.error('Error fetching name:', error);
-      }
+    const fetchName = () => {
+      fetchAuthSession()
+        .then((session) => {
+          return fetchUserAttributes().then((userAttributes) => {
+            const token = session.tokens.idToken.toString();
+            const email = userAttributes.email;
+            return fetch(
+              `${
+                import.meta.env.VITE_API_ENDPOINT
+              }student/get_name?user_email=${encodeURIComponent(email)}`,
+              {
+                method: "GET",
+                headers: {
+                  Authorization: token,
+                  "Content-Type": "application/json",
+                },
+              }
+            );
+          });
+        })
+        .then((response) => {
+          return response.json();
+        })
+        .then((data) => {
+          setName(data.name);
+        })
+        .catch((error) => {
+          console.error("Error fetching name:", error);
+        });
     };
 
     fetchName();
@@ -41,13 +48,13 @@ const StudentHeader = () => {
 
   const handleSignOut = async (event) => {
     event.preventDefault();
-    try {
-      await signOut();
-      window.location.href = "/";
-      // navigate("/"); // Redirect to the login page
-    } catch (error) {
-      console.error("Error signing out: ", error);
-    }
+    signOut()
+      .then(() => {
+        window.location.href = "/";
+      })
+      .catch((error) => {
+        console.error("Error signing out: ", error);
+      });
   };
 
   return (
@@ -59,14 +66,8 @@ const StudentHeader = () => {
         <SettingsIcon size={35} />
       </button> */}
       <button
-        variant="contained"
-        color="secondary"
+        className="bg-gray-800 text-white hover:bg-gray-700"
         onClick={handleSignOut}
-        sx={{
-          bgcolor: "purple",
-          color: "white",
-          ":hover": { bgcolor: "darkpurple" },
-        }}
       >
         Sign Out
       </button>

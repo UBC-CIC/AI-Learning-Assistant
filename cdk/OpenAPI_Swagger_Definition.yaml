@@ -1124,7 +1124,7 @@ paths:
         - in: query
           name: file_type
           required: true
-          description: Type of file (pdf or jpg)
+          description: Type of file
           schema:
             type: string
         - in: query

@@ -45,22 +45,23 @@ function App() {
   const [module, setModule] = useState(null);
 
   useEffect(() => {
-    const fetchAuthData = async () => {
-      try {
-        const { tokens } = await fetchAuthSession();
-        if (tokens && tokens.accessToken) {
-          const group = tokens.accessToken.payload["cognito:groups"];
-          setUser(tokens.accessToken.payload);
-          setUserGroup(group || []);
-          console.log(
-            "auth token payload",
-            tokens.accessToken.payload["cognito:groups"]
-          );
-          console.log(userGroup);
-        }
-      } catch (error) {
-        console.log(error);
-      }
+    const fetchAuthData = () => {
+      fetchAuthSession()
+        .then(({ tokens }) => {
+          if (tokens && tokens.accessToken) {
+            const group = tokens.accessToken.payload["cognito:groups"];
+            setUser(tokens.accessToken.payload);
+            setUserGroup(group || []);
+            console.log(
+              "auth token payload",
+              tokens.accessToken.payload["cognito:groups"]
+            );
+            console.log(userGroup);
+          }
+        })
+        .catch((error) => {
+          console.log(error);
+        });
     };
 
     fetchAuthData();
@@ -85,8 +86,27 @@ function App() {
     <Router>
       <Routes>
         <Route path="/" element={user ? <Navigate to="/home" /> : <Login />} />
-        <Route path="/student_chat/*" element={<StudentChat course = {course} module = {module} setModule={setModule} setCourse = {setCourse}/>} />
-        <Route path="/student_course/*" element={<CourseView course = {course} setModule = {setModule} setCourse = {setCourse}/>} />
+        <Route
+          path="/student_chat/*"
+          element={
+            <StudentChat
+              course={course}
+              module={module}
+              setModule={setModule}
+              setCourse={setCourse}
+            />
+          }
+        />
+        <Route
+          path="/student_course/*"
+          element={
+            <CourseView
+              course={course}
+              setModule={setModule}
+              setCourse={setCourse}
+            />
+          }
+        />
         <Route path="/home" element={getHomePage()} />
         <Route path="/course/*" element={<InstructorHomepage />} />
       </Routes>

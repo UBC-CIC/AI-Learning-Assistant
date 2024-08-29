@@ -107,12 +107,13 @@ const InstructorModules = ({ courseName, course_id }) => {
     try {
       const session = await fetchAuthSession();
       const token = session.tokens.idToken.toString();
-      const {email} = await fetchUserAttributes();
-      for (let i = 0; i < data.length; i++) {
-        const module = data[i];
-        const moduleNumber = i + 1;
+      const { email } = await fetchUserAttributes();
 
-        const response = await fetch(
+      // Create an array of promises for updating modules
+      const updatePromises = data.map((module, index) => {
+        const moduleNumber = index + 1;
+
+        return fetch(
           `${
             import.meta.env.VITE_API_ENDPOINT
           }instructor/reorder_module?module_id=${encodeURIComponent(
@@ -130,31 +131,66 @@ const InstructorModules = ({ courseName, course_id }) => {
               module_name: module.module_name,
             }),
           }
-        );
+        ).then((response) => {
+          if (!response.ok) {
+            console.error(
+              `Failed to update module ${module.module_id}:`,
+              response.statusText
+            );
+            toast.error("Module Order Update Failed", {
+              position: "top-center",
+              autoClose: 1000,
+              hideProgressBar: false,
+              closeOnClick: true,
+              pauseOnHover: true,
+              draggable: true,
+              progress: undefined,
+              theme: "colored",
+            });
+            return { success: false };
+          } else {
+            return response.json().then((updatedModule) => {
+              console.log(
+                `Updated module ${updatedModule.module_id} successfully.`
+              );
+              return { success: true };
+            });
+          }
+        });
+      });
 
-        if (!response.ok) {
-          console.error(
-            `Failed to update module ${module.module_id}:`,
-            response.statusText
-          );
-          toast.error("Module Order Update Failed", {
-            position: "top-center",
-            autoClose: 1000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            theme: "colored",
-          });
-        } else {
-          const updatedModule = await response.json();
-          console.log(
-            `Updated module ${updatedModule.module_id} successfully.`
-          );
-        }
+      // Wait for all promises to complete
+      const updateResults = await Promise.all(updatePromises);
+      const allUpdatesSuccessful = updateResults.every(
+        (result) => result.success
+      );
+
+      if (allUpdatesSuccessful) {
+        toast.success("Module Order Updated Successfully", {
+          position: "top-center",
+          autoClose: 1000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: "colored",
+        });
+      } else {
+        toast.error("Some module updates failed", {
+          position: "top-center",
+          autoClose: 1000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: "colored",
+        });
       }
-      toast.success("Module Order Updated Successfully", {
+    } catch (error) {
+      console.error("Error saving changes:", error);
+      toast.error("An error occurred while saving changes", {
         position: "top-center",
         autoClose: 1000,
         hideProgressBar: false,
@@ -163,9 +199,8 @@ const InstructorModules = ({ courseName, course_id }) => {
         draggable: true,
         progress: undefined,
         theme: "colored",
+        transition: "Bounce",
       });
-    } catch (error) {
-      console.error("Error saving changes:", error);
     }
   };
 

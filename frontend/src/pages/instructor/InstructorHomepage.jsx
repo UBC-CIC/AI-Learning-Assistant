@@ -6,7 +6,7 @@ import {
   useParams,
   useLocation,
 } from "react-router-dom";
-import { fetchAuthSession, getCurrentUser } from "aws-amplify/auth";
+import { fetchAuthSession, fetchUserAttributes } from "aws-amplify/auth";
 import {
   Typography,
   Box,
@@ -106,12 +106,12 @@ const InstructorHomepage = () => {
       try {
         const session = await fetchAuthSession();
         var token = session.tokens.idToken.toString();
-        const { signInDetails } = await getCurrentUser();
+        const {email} = await fetchUserAttributes();
         const response = await fetch(
           `${
             import.meta.env.VITE_API_ENDPOINT
           }instructor/courses?email=${encodeURIComponent(
-            signInDetails.loginId
+            email
           )}`,
           {
             method: "GET",

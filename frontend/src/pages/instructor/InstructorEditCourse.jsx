@@ -4,7 +4,8 @@ import AWS from "aws-sdk";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { fetchAuthSession } from "aws-amplify/auth";
-import { getCurrentUser } from "aws-amplify/auth";
+import { fetchUserAttributes } from "aws-amplify/auth";
+
 import {
   TextField,
   Button,
@@ -40,7 +41,10 @@ const InstructorEditCourse = () => {
   const handleBackClick = () => {
     window.history.back();
   };
-  // Function to handle file download
+
+  function removeFileExtension(fileName) {
+    return fileName.replace(/\.[^/.]+$/, '');
+  }
   const handleDownloadFile = (file) => {
     const url = window.URL.createObjectURL(new Blob([file]));
     const link = document.createElement("a");
@@ -162,7 +166,7 @@ const InstructorEditCourse = () => {
     setConcept(e.target.value);
   };
 
-  const handleFileUpload = (event) => {
+  const handleFileUpload = async (event) => {
     const uploadedFiles = Array.from(event);
     const existingFileNames = files.map((file) => file.name);
 
@@ -185,6 +189,66 @@ const InstructorEditCourse = () => {
     }
 
     setFiles([...files, ...newFiles]);
+    console.log(newFiles);
+    const session = await fetchAuthSession();
+    const token = session.tokens.idToken.toString();
+    const { email } = await fetchUserAttributes();
+    // Assuming 'files' is an array of file objects with the necessary properties
+    for (const file of newFiles) {
+      const fileType = getFileType(file.name);
+      const fileName = removeFileExtension(file.name);
+      console.log(fileName)
+      console.log(fileType);
+      console.log(course_id)
+      console.log(module.module_id)
+      console.log(moduleName)
+      await fetch(
+        `${
+          import.meta.env.VITE_API_ENDPOINT
+        }instructor/generate_presigned_url?course_id=${encodeURIComponent(
+          course_id
+        )}&module_id=${encodeURIComponent(
+          module.module_id
+        )}&module_name=${encodeURIComponent(
+          moduleName
+        )}&file_type=${encodeURIComponent(
+          fileType
+        )}&file_name=${encodeURIComponent(fileName)}`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: token,
+            "Content-Type": "application/json",
+          },
+        }
+      )
+        .then((response) => {
+          console.log("url", response);
+          fetch(`${response.body.presignedurl}`, {
+            method: "PUT",
+            headers: {
+              Authorization: token,
+              "Content-Type": "application/json",
+            },
+            body: file,
+          });
+        })
+        .then((response) => {
+          console.log(response);
+        })
+        .catch((err) => {
+          toast.error("Module failed to update", {
+            position: "top-center",
+            autoClose: 1000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            theme: "colored",
+          });
+        });
+    }
   };
 
   const handleRemoveFile = (file_name) => {
@@ -214,59 +278,19 @@ const InstructorEditCourse = () => {
     setImagesWithText(updatedImages);
   };
 
-  const handleSave = async () => {
-    let presignedUrls = [];
-    const session = await fetchAuthSession();
-    var token = session.tokens.idToken.toString();
-    const { signInDetails } = await getCurrentUser();
-    try {
-      const response = await fetch(
-        `${
-          import.meta.env.VITE_API_ENDPOINT
-        }instructor/generate_presigned_url?course_id=${encodeURIComponent(course_id
+  const getFileType = (filename) => {
+    // Get the file extension by splitting the filename on '.' and taking the last part
+    const parts = filename.split(".");
 
-        )}&module_id=${encodeURIComponent(
-          module.module_id
-        )}&module_name=${encodeURIComponent(
-          module.module_name
-        )}&`,
-        {
-          method: "PUT",
-          headers: {
-            Authorization: token,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            module_name: moduleName,
-          }),
-        }
-      );
-      if (response.ok) {
-        toast.success("Module updated successfully", {
-          position: "top-center",
-          autoClose: 1000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-          progress: undefined,
-          theme: "colored",
-        });
-      } else {
-        toast.error("Module failed to update", {
-          position: "top-center",
-          autoClose: 1000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-          progress: undefined,
-          theme: "colored",
-        });
-      }
-    } catch (error) {
-      console.error("Error fetching courses:", error);
+    // Check if there's at least one '.' in the filename and return the last part
+    if (parts.length > 1) {
+      return parts.pop();
+    } else {
+      return ""; // Return an empty string if there's no file extension
     }
+  };
+
+  const handleSave = async () => {
     const selectedConcept = allConcepts.find((c) => c.concept_name === concept);
     console.log(
       "Module saved:",
@@ -276,13 +300,16 @@ const InstructorEditCourse = () => {
       imagesWithText
     );
     try {
+      const session = await fetchAuthSession();
+      const token = session.tokens.idToken.toString();
+      const { email } = await fetchUserAttributes();
       const response = await fetch(
         `${
           import.meta.env.VITE_API_ENDPOINT
         }instructor/edit_module?module_id=${encodeURIComponent(
           module.module_id
         )}&instructor_email=${encodeURIComponent(
-          signInDetails.loginId
+          email
         )}&concept_id=${encodeURIComponent(selectedConcept.concept_id)}`,
         {
           method: "PUT",

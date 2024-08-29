@@ -4,7 +4,8 @@ import AWS from "aws-sdk";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { fetchAuthSession } from "aws-amplify/auth";
-import { getCurrentUser } from "aws-amplify/auth";
+import { fetchUserAttributes } from 'aws-amplify/auth';
+
 import {
   TextField,
   Button,
@@ -114,14 +115,14 @@ export const InstructorNewModule = ({ courseId }) => {
     try {
       const session = await fetchAuthSession();
       const token = session.tokens.idToken.toString();
-      const { signInDetails } = await getCurrentUser();
+      const { email } = await fetchUserAttributes();
       console.log(
         "sign in details",
         course_id,
         selectedConcept.concept_id,
         nextModuleNumber,
         moduleName,
-        signInDetails.loginId
+        email
       );
       const response = await fetch(
         `${
@@ -134,7 +135,7 @@ export const InstructorNewModule = ({ courseId }) => {
           moduleName
         )}&module_number=${encodeURIComponent(
           nextModuleNumber
-        )}&instructor_email=${encodeURIComponent(signInDetails.loginId)}`,
+        )}&instructor_email=${encodeURIComponent(email)}`,
         {
           method: "POST",
           headers: {

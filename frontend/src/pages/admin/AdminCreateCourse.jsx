@@ -97,8 +97,9 @@ export const AdminCreateCourse = ({ setSelectedComponent }) => {
     // Handle the create course logic here
     try {
       const session = await fetchAuthSession();
-      var token = session.tokens.idToken.toString();
+      const token = session.tokens.idToken.toString();
       const numericCourseCode = Number(courseCode);
+      
       if (isNaN(numericCourseCode)) {
         toast.error("access code must be a number", {
           position: "top-center",
@@ -110,21 +111,11 @@ export const AdminCreateCourse = ({ setSelectedComponent }) => {
           progress: undefined,
           theme: "colored",
         });
+        return; // Stop further execution if access code is invalid
       }
+      
       const response = await fetch(
-        `${
-          import.meta.env.VITE_API_ENDPOINT
-        }admin/create_course?course_name=${encodeURIComponent(
-          courseName
-        )}&course_department=${encodeURIComponent(
-          courseDepartment
-        )}&course_number=${encodeURIComponent(
-          courseCode
-        )}&course_access_code=${encodeURIComponent(
-          access_code
-        )}&course_student_access=${encodeURIComponent(
-          isActive
-        )}`,
+        `${import.meta.env.VITE_API_ENDPOINT}admin/create_course?course_name=${encodeURIComponent(courseName)}&course_department=${encodeURIComponent(courseDepartment)}&course_number=${encodeURIComponent(courseCode)}&course_access_code=${encodeURIComponent(access_code)}&course_student_access=${encodeURIComponent(isActive)}`,
         {
           method: "POST",
           headers: {
@@ -136,11 +127,48 @@ export const AdminCreateCourse = ({ setSelectedComponent }) => {
           }),
         }
       );
+      
       if (response.ok) {
         const data = await response.json();
         const { course_id } = data;
-        // Enroll each selected instructor
-        if (selectedInstructors.length === 0) {
+        
+        const enrollPromises = selectedInstructors.map((instructor) =>
+          fetch(
+            `${import.meta.env.VITE_API_ENDPOINT}admin/enroll_instructor?course_id=${encodeURIComponent(course_id)}&instructor_email=${encodeURIComponent(instructor)}`,
+            {
+              method: "POST",
+              headers: {
+                Authorization: token,
+                "Content-Type": "application/json",
+              },
+            }
+          ).then((enrollResponse) => {
+            if (enrollResponse.ok) {
+              return enrollResponse.json().then((enrollData) => {
+                console.log("Instructor enrollment data:", enrollData);
+                return { success: true };
+              });
+            } else {
+              console.error("Failed to enroll instructor:", enrollResponse.statusText);
+              toast.error("Enroll Instructor Failed", {
+                position: "top-center",
+                autoClose: 1000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                theme: "colored",
+              });
+              return { success: false };
+            }
+          })
+        );
+        
+        const enrollResults = await Promise.all(enrollPromises);
+        const allEnrolledSuccessfully = enrollResults.every((result) => result.success);
+  
+        if (allEnrolledSuccessfully || selectedInstructors.length === 0) {
           toast.success("🦄 Course Created!", {
             position: "top-center",
             autoClose: 1000,
@@ -151,61 +179,23 @@ export const AdminCreateCourse = ({ setSelectedComponent }) => {
             progress: undefined,
             theme: "colored",
           });
-          setTimeout(function () {
+          setTimeout(() => {
             setSelectedComponent("AdminCourses");
           }, 1000);
-          return;
-        }
-        for (const instructor of selectedInstructors) {
-          console.log("course_id", course_id);
-          console.log("instructor", instructor);
-          const enrollResponse = await fetch(
-            `${
-              import.meta.env.VITE_API_ENDPOINT
-            }admin/enroll_instructor?course_id=${encodeURIComponent(
-              course_id
-            )}&instructor_email=${encodeURIComponent(instructor)}`,
-            {
-              method: "POST",
-              headers: {
-                Authorization: token,
-                "Content-Type": "application/json",
-              },
-            }
-          );
-
-          if (enrollResponse.ok) {
-            const enrollData = await enrollResponse.json();
-            console.log("Instructor enrollment data:", enrollData);
-            toast.success("🦄 Course Created!", {
-              position: "top-center",
-              autoClose: 1000,
-              hideProgressBar: false,
-              closeOnClick: true,
-              pauseOnHover: true,
-              draggable: true,
-              progress: undefined,
-              theme: "colored",
-            });
-          } else {
-            console.error(
-              "Failed to enroll instructor:",
-              enrollResponse.statusText
-            );
-            toast.error("Enroll Instructor Failed", {
-              position: "top-center",
-              autoClose: 1000,
-              hideProgressBar: false,
-              closeOnClick: true,
-              pauseOnHover: true,
-              draggable: true,
-              progress: undefined,
-              theme: "colored",
-            });
-          }
+        } else {
+          toast.error("Some instructors could not be enrolled", {
+            position: "top-center",
+            autoClose: 1000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            theme: "colored",
+          });
         }
       } else {
-        console.error("Failed to fetch instructors:", response.statusText);
+        console.error("Failed to create course:", response.statusText);
         toast.error("Course Creation Failed", {
           position: "top-center",
           autoClose: 1000,
@@ -218,7 +208,7 @@ export const AdminCreateCourse = ({ setSelectedComponent }) => {
         });
       }
     } catch (error) {
-      console.error("Error fetching instructors:", error);
+      console.error("Error creating course:", error);
       toast.error("Course Creation Failed", {
         position: "top-center",
         autoClose: 1000,
@@ -232,6 +222,7 @@ export const AdminCreateCourse = ({ setSelectedComponent }) => {
       });
     }
   };
+  
 
   const handleChange = (event) => {
     setSelectedInstructors(event.target.value);

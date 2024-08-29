@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { fetchAuthSession } from "aws-amplify/auth";
-import { getCurrentUser } from "aws-amplify/auth";
+import { fetchUserAttributes } from "aws-amplify/auth";
 
 import { BiCheck } from "react-icons/bi";
 import { FaInfoCircle } from "react-icons/fa";
@@ -92,14 +92,14 @@ export const CourseView = ({ course, setModule, setCourse }) => {
     const fetchCoursePage = async () => {
       try {
         const session = await fetchAuthSession();
-        const { signInDetails } = await getCurrentUser();
-
+        const { email } = await fetchUserAttributes();
+      
         const token = session.tokens.idToken.toString();
         const response = await fetch(
           `${
             import.meta.env.VITE_API_ENDPOINT
           }student/course_page?email=${encodeURIComponent(
-            signInDetails.loginId
+            email
           )}&course_id=${encodeURIComponent(course.course_id)}`,
           {
             method: "GET",

@@ -44,8 +44,6 @@ def create_dynamodb_history_table(table_name: str) -> bool:
         
         # Wait until the table exists.
         table.meta.client.get_waiter("table_exists").wait(TableName=table_name)
-        return True
-    return False
 
 def get_bedrock_llm(
     bedrock_llm_id: str,

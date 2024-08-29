@@ -11,12 +11,17 @@ from helpers.chat import get_bedrock_llm, get_initial_student_query, get_student
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger()
 
-param_manager = get_param_manager()
-
 BEDROCK_LLM_ID = "meta.llama3-70b-instruct-v1:0"
 DB_SECRET_NAME = "credentials/rdsDbCredential"
+TABLE_NAME = "API-Gateway-Test-Table-Name"
+
+param_manager = get_param_manager()
+embeddings = OpenCLIPEmbeddings()
+create_dynamodb_history_table(TABLE_NAME)
 
 def get_module_name(module_id):
+    connection = None
+    cur = None
     try:
         logger.info(f"Fetching module name for module_id: {module_id}")
         db_secret = param_manager.get_secret(DB_SECRET_NAME)
@@ -37,12 +42,13 @@ def get_module_name(module_id):
 
         cur.execute("""
             SELECT module_name 
-            FROM Course_Modules 
+            FROM "Course_Modules" 
             WHERE module_id = %s;
         """, (module_id,))
         
         result = cur.fetchone()
-        module_name = result['module_name'] if result else None
+        logger.info(f"Query result: {result}")
+        module_name = result[0] if result else None
         
         cur.close()
         connection.close()
@@ -71,17 +77,9 @@ def handler(event, context):
 
     query_params = event.get("queryStringParameters", {})
 
-    table_name = query_params.get("table_name", "")
     session_id = query_params.get("session_id", "")
     module_id = query_params.get("module_id", "")
-    question = query_params.get("question", "")
-
-    if not table_name:
-        logger.error("Missing required parameter: table_name")
-        return {
-            'statusCode': 400,
-            'body': json.dumps('Missing required parameter: table_name')
-        }
+    session_name = query_params.get("session_name", "New Chat")
 
     if not session_id:
         logger.error("Missing required parameter: session_id")
@@ -104,20 +102,17 @@ def handler(event, context):
         return {
             'statusCode': 400,
             'body': json.dumps('Invalid module_id')
-        }    
+        }
     
-    if len(question) == 0 and not create_dynamodb_history_table(table_name):
+    body = json.loads(event.get("body", "{}"))
+    question = body.get("message_content", "")
+    
+    if not question:
         logger.info(f"Start of conversation. Creating conversation history table in DynamoDB.")
         student_query = get_initial_student_query(topic)
-    elif len(question) > 0:
+    else:
         logger.info(f"Processing student question: {question}")
         student_query = get_student_query(question)
-    else:
-        logger.error("Missing required parameter: question")
-        return {
-            'statusCode': 400,
-            'body': json.dumps('Missing required parameter: question')
-        }
     
     try:
         logger.info("Creating Bedrock LLM instance.")
@@ -149,7 +144,6 @@ def handler(event, context):
     
     try:
         logger.info("Creating history-aware retriever.")
-        embeddings = OpenCLIPEmbeddings()
 
         history_aware_retriever = get_vectorstore_retriever(
             llm=llm,
@@ -170,7 +164,7 @@ def handler(event, context):
             topic=topic,
             llm=llm,
             history_aware_retriever=history_aware_retriever,
-            table_name=table_name,
+            table_name=TABLE_NAME,
             session_id=session_id
         )
     except Exception as e:
@@ -187,7 +181,7 @@ def handler(event, context):
             "Content-Type": "application/json"
         },
         "body": json.dumps({
-            "module_name": topic,
+            "session_name": session_name,
             "llm_output": response.get("llm_output", "LLM failed to create response"),
             "llm_verdict": response.get("llm_verdict", "LLM failed to create verdict")
         })

@@ -795,7 +795,7 @@ export class ApiGatewayStack extends cdk.Stack {
      */
     const textGenLambdaDockerFunc = new lambda.DockerImageFunction(this, "TextGenLambdaDockerFunc", {
       code: lambda.DockerImageCode.fromImageAsset("./text_generation"),
-      memorySize: 512,
+      memorySize: 2048,
       timeout: cdk.Duration.seconds(300),
       vpc: vpcStack.vpc, // Pass the VPC
       functionName: "TextGenLambdaDockerFunc",
@@ -815,6 +815,50 @@ export class ApiGatewayStack extends cdk.Stack {
       action: "lambda:InvokeFunction",
       sourceArn: `arn:aws:execute-api:${this.region}:${this.account}:${this.api.restApiId}/*/*/student*`,
     });
+
+    // Custom policy statement for Bedrock access
+    const bedrockPolicyStatement = new iam.PolicyStatement({
+      effect: iam.Effect.ALLOW,
+      actions: [
+        'bedrock:InvokeModel',
+        'bedrock:InvokeEndpoint'
+      ],
+      resources: ["arn:aws:bedrock:" + this.region + "::foundation-model/meta.llama3-70b-instruct-v1:0"],
+    });
+
+    // Attach the custom Bedrock policy to Lambda function
+    textGenLambdaDockerFunc.addToRolePolicy(bedrockPolicyStatement);
+
+    // Grant access to Secret Manager
+    textGenLambdaDockerFunc.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: [
+          //Secrets Manager
+          "secretsmanager:GetSecretValue",
+        ],
+        resources: [
+          `arn:aws:secretsmanager:${this.region}:${this.account}:secret:*`,
+        ],
+      })
+    );
+
+    // Grant access to DynamoDB actions
+    textGenLambdaDockerFunc.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: [
+          "dynamodb:ListTables",
+          "dynamodb:CreateTable", // if your function needs to create tables
+          "dynamodb:DescribeTable", // if your function needs to describe tables
+          "dynamodb:PutItem", // if your function needs to put items into tables
+          "dynamodb:GetItem", // if your function needs to get items from tables
+        ],
+        resources: [
+          `arn:aws:dynamodb:${this.region}:${this.account}:table/*`,
+        ],
+      })
+    );
 
     // Create S3 Bucket to handle documents and images for each course
     const dataIngestionBucket = new s3.Bucket(this, "AILADataIngestionBucket", {

@@ -27,8 +27,7 @@ import {
   TextField,
 } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
-import { getCurrentUser } from "aws-amplify/auth";
-
+import { fetchUserAttributes } from 'aws-amplify/auth';
 import { useNavigate } from "react-router-dom";
 // MUI theming
 const { palette } = createTheme();
@@ -58,14 +57,14 @@ export const StudentHomepage = ({ setCourse }) => {
   const handleJoin = async (code) => {
     try {
       const session = await fetchAuthSession();
-      const { signInDetails } = await getCurrentUser();
-
+      const { email } = await fetchUserAttributes();
+      
       var token = session.tokens.idToken.toString();
       const response = await fetch(
         `${
           import.meta.env.VITE_API_ENDPOINT
         }student/enroll_student?student_email=${encodeURIComponent(
-          signInDetails.loginId
+          email
         )}&course_access_code=${encodeURIComponent(code)}`,
         {
           method: "POST",
@@ -128,13 +127,13 @@ export const StudentHomepage = ({ setCourse }) => {
   const fetchCourses = async () => {
     try {
       const session = await fetchAuthSession();
-      const { signInDetails } = await getCurrentUser();
-
+      const { email } = await fetchUserAttributes();
+      
       var token = session.tokens.idToken.toString();
       const response = await fetch(
         `${
           import.meta.env.VITE_API_ENDPOINT
-        }student/course?email=${encodeURIComponent(signInDetails.loginId)}`,
+        }student/course?email=${encodeURIComponent(email)}`,
         {
           method: "GET",
           headers: {

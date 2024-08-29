@@ -4,7 +4,7 @@ import AWS from "aws-sdk";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { fetchAuthSession } from "aws-amplify/auth";
-import { getCurrentUser } from "aws-amplify/auth";
+import { fetchUserAttributes } from "aws-amplify/auth";
 import {
   TextField,
   Button,
@@ -42,7 +42,7 @@ const InstructorNewConcept = () => {
     try {
       const session = await fetchAuthSession();
       const token = session.tokens.idToken.toString();
-      const { signInDetails } = await getCurrentUser();
+      const { email } = await fetchUserAttributes();
       const response = await fetch(
         `${
           import.meta.env.VITE_API_ENDPOINT

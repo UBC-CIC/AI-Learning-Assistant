@@ -104,69 +104,25 @@ const InstructorDetails = ({ instructorData, onBack }) => {
     const newCourses = event.target.value;
     // Filter out duplicates
     const uniqueCourses = Array.from(
-      new Map(newCourses.map(course => [course.course_id, course])).values()
+      new Map(newCourses.map((course) => [course.course_id, course])).values()
     );
     setActiveCourses(uniqueCourses);
   };
 
   const handleSave = async () => {
-    const session = await fetchAuthSession();
-    var token = session.tokens.idToken.toString();
-    const deleteResponse = await fetch(
-      `${
-        import.meta.env.VITE_API_ENDPOINT
-      }admin/delete_instructor_enrolments?&instructor_email=${encodeURIComponent(instructor.user)}`,
-      {
-        method: "DELETE",
-        headers: {
-          Authorization: token,
-          "Content-Type": "application/json",
-        },
-      }
-    );
+    try {
+      const session = await fetchAuthSession();
+      const token = session.tokens.idToken.toString();
 
-    if (deleteResponse.ok) {
-      const enrollData = await deleteResponse.json();
-      console.log("delete data:", enrollData);
-      // toast.success("🦄 Enrolment Updated!", {
-      //   position: "top-center",
-      //   autoClose: 1000,
-      //   hideProgressBar: false,
-      //   closeOnClick: true,
-      //   pauseOnHover: true,
-      //   draggable: true,
-      //   progress: undefined,
-      //   theme: "colored",
-      // });
-    } else {
-      console.error(
-        "Failed to update enrolment:",
-        deleteResponse.statusText
-      );
-      toast.error("update enrolment Failed", {
-        position: "top-center",
-        autoClose: 1000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        theme: "colored",
-      });
-      return;
-    }
-
-    for (const course of activeCourses) {
-      console.log("course_id", course.course_id);
-      console.log("instructor", instructor.user);
-      const enrollResponse = await fetch(
+      // Delete existing enrolments for the instructor
+      const deleteResponse = await fetch(
         `${
           import.meta.env.VITE_API_ENDPOINT
-        }admin/enroll_instructor?course_id=${encodeURIComponent(
-          course.course_id
-        )}&instructor_email=${encodeURIComponent(instructor.email)}`,
+        }admin/delete_instructor_enrolments?&instructor_email=${encodeURIComponent(
+          instructor.user
+        )}`,
         {
-          method: "POST",
+          method: "DELETE",
           headers: {
             Authorization: token,
             "Content-Type": "application/json",
@@ -174,9 +130,69 @@ const InstructorDetails = ({ instructorData, onBack }) => {
         }
       );
 
-      if (enrollResponse.ok) {
-        const enrollData = await enrollResponse.json();
-        console.log("Instructor enrollment data:", enrollData);
+      if (!deleteResponse.ok) {
+        console.error("Failed to update enrolment:", deleteResponse.statusText);
+        toast.error("Update enrolment Failed", {
+          position: "top-center",
+          autoClose: 1000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: "colored",
+        });
+        return;
+      }
+      console.log("Delete data:", await deleteResponse.json());
+
+      // Enroll instructor in multiple courses in parallel
+      const enrollPromises = activeCourses.map((course) =>
+        fetch(
+          `${
+            import.meta.env.VITE_API_ENDPOINT
+          }admin/enroll_instructor?course_id=${encodeURIComponent(
+            course.course_id
+          )}&instructor_email=${encodeURIComponent(instructor.email)}`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: token,
+              "Content-Type": "application/json",
+            },
+          }
+        ).then((enrollResponse) => {
+          if (enrollResponse.ok) {
+            return enrollResponse.json().then((enrollData) => {
+              console.log("Instructor enrollment data:", enrollData);
+              return { success: true };
+            });
+          } else {
+            console.error(
+              "Failed to enroll instructor:",
+              enrollResponse.statusText
+            );
+            toast.error("Enroll Instructor Failed", {
+              position: "top-center",
+              autoClose: 1000,
+              hideProgressBar: false,
+              closeOnClick: true,
+              pauseOnHover: true,
+              draggable: true,
+              progress: undefined,
+              theme: "colored",
+            });
+            return { success: false };
+          }
+        })
+      );
+
+      const enrollResults = await Promise.all(enrollPromises);
+      const allEnrolledSuccessfully = enrollResults.every(
+        (result) => result.success
+      );
+
+      if (allEnrolledSuccessfully) {
         toast.success("🦄 Enrolment Updated!", {
           position: "top-center",
           autoClose: 1000,
@@ -188,11 +204,7 @@ const InstructorDetails = ({ instructorData, onBack }) => {
           theme: "colored",
         });
       } else {
-        console.error(
-          "Failed to enroll instructor:",
-          enrollResponse.statusText
-        );
-        toast.error("Enroll Instructor Failed", {
+        toast.error("Some enrolments failed", {
           position: "top-center",
           autoClose: 1000,
           hideProgressBar: false,
@@ -203,6 +215,19 @@ const InstructorDetails = ({ instructorData, onBack }) => {
           theme: "colored",
         });
       }
+    } catch (error) {
+      console.error("Error in handleSave:", error);
+      toast.error("An error occurred", {
+        position: "top-center",
+        autoClose: 1000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "colored",
+        transition: "Bounce",
+      });
     }
   };
 

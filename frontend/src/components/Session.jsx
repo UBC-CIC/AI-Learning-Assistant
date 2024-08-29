@@ -61,48 +61,63 @@ const Session = ({
   };
 
   const handleInputChange = (event) => {
-    setNewSessionName(event.target.value);
+    const inputValue = event.target.value;
+    if (inputValue.length <= 20) {
+      setNewSessionName(inputValue);
+    }
   };
 
   const handleInputBlur = async () => {
     setIsEditing(false);
     if (newSessionName !== text) {
       // Update the session name in the parent component or backend
-      try {
-        // Assuming you have a method to update session name
-        await updateSessionName(session.session_id, newSessionName);
-      } catch (error) {
-        console.error("Failed to update session name:", error);
-      }
+      updateSessionName(session.session_id, newSessionName).catch((err) => {
+        console.error("Failed to update session name:", err);
+      });
     }
   };
 
-  const updateSessionName = async (sessionId, newName) => {
+  const updateSessionName = (sessionId, newName) => {
+    const updatedName = newName.trim() === "" ? "New Chat" : newName;
+
+    // Update the sessions state first
     setSessions((prevSessions) =>
       prevSessions.map((session) =>
         session.session_id === sessionId
-          ? { ...session, session_name: newName }
+          ? { ...session, session_name: updatedName }
           : session
       )
     );
-    const authSession = await fetchAuthSession();
-    const token = authSession.tokens.idToken.toString();
-    const response = await fetch(
-      `${
-        import.meta.env.VITE_API_ENDPOINT
-      }student/update_session_name?session_id=${encodeURIComponent(sessionId)}`,
-      {
-        method: "PUT",
-        headers: {
-          Authorization: token,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ session_name: newName }),
-      }
-    );
-    if (!response.ok) {
-      throw new Error("Failed to update session name");
-    }
+
+    // Return the fetchAuthSession promise
+    return fetchAuthSession()
+      .then((authSession) => {
+        const token = authSession.tokens.idToken.toString();
+        // Return the fetch promise
+        return fetch(
+          `${
+            import.meta.env.VITE_API_ENDPOINT
+          }student/update_session_name?session_id=${encodeURIComponent(
+            sessionId
+          )}`,
+          {
+            method: "PUT",
+            headers: {
+              Authorization: token,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ session_name: updatedName }),
+          }
+        );
+      })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Failed to update session name");
+        }
+      })
+      .catch((error) => {
+        console.error("Error updating session name:", error);
+      });
   };
 
   return (

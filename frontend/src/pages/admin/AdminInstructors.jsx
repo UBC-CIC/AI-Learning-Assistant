@@ -1,4 +1,3 @@
-// MUI
 import {
   Typography,
   Box,
@@ -13,21 +12,24 @@ import {
   TextField,
   TableFooter,
   TablePagination,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+  Button
 } from "@mui/material";
 import { useState, useEffect } from "react";
 import { fetchAuthSession, fetchUserAttributes } from "aws-amplify/auth";
 
-// fetch instructor data from api
 const fetchInstructors = async () => {
   try {
-    // Get session and token
     const session = await fetchAuthSession();
     const userAtrributes = await fetchUserAttributes();
     const token = session.tokens.idToken.toString();
     const adminEmail = userAtrributes.email;
     console.log("admin email", adminEmail);
 
-    // Make the API request
     const response = await fetch(
       `${
         import.meta.env.VITE_API_ENDPOINT
@@ -52,23 +54,16 @@ const fetchInstructors = async () => {
   }
 };
 
-// populate with dummy data
 const createData = (user, last, email) => {
   return { user, last, email };
 };
-
-// const initialRows = [
-//   createData("John Doe", "john.doe@example.com", "Active"),
-//   createData("Jane Smith", "jane.smith@example.com", "Inactive"),
-//   createData("Bob Johnson", "bob.johnson@example.com", "Active"),
-// ];
 
 function getInstructorInfo(coursesArray) {
   return coursesArray.map((instructor) =>
     createData(
       instructor.first_name,
       instructor.last_name,
-      instructor.user_email,
+      instructor.user_email
     )
   );
 }
@@ -80,6 +75,14 @@ export const AdminInstructors = ({ setSelectedInstructor }) => {
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [instructors, setInstructors] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [open, setOpen] = useState(false);
+  const handleClickOpen = () => {
+    setOpen(true);
+  };
+
+  const handleClose = () => {
+    setOpen(false);
+  };
 
   useEffect(() => {
     const loadInstructors = async () => {
@@ -87,7 +90,7 @@ export const AdminInstructors = ({ setSelectedInstructor }) => {
         const data = await fetchInstructors();
         setInstructors(data);
       } catch (error) {
-        setError(error.message);
+        console.log("error loading data");
       } finally {
         setLoading(false);
       }
@@ -115,7 +118,7 @@ export const AdminInstructors = ({ setSelectedInstructor }) => {
         );
         if (response.ok) {
           const data = await response.json();
-          console.log(data)
+          console.log(data);
           setRows(getInstructorInfo(data));
           setLoading(false);
           console.log("Instructors data:", data);
@@ -149,6 +152,11 @@ export const AdminInstructors = ({ setSelectedInstructor }) => {
 
   const handleRowClick = (user) => {
     setSelectedInstructor(user);
+  };
+
+  const handleAddInstructor = () => {
+    // Logic for adding an instructor goes here
+    console.log("Add Instructor button clicked");
   };
 
   return (
@@ -198,9 +206,15 @@ export const AdminInstructors = ({ setSelectedInstructor }) => {
                           onClick={() => handleRowClick({ row })}
                           style={{ cursor: "pointer" }}
                         >
-                          <TableCell sx={{ fontSize: 12 }}>{row.user}</TableCell>
-                          <TableCell sx={{ fontSize: 12 }}>{row.last}</TableCell>
-                          <TableCell sx={{ fontSize: 12 }}>{row.email}</TableCell>
+                          <TableCell sx={{ fontSize: 12 }}>
+                            {row.user}
+                          </TableCell>
+                          <TableCell sx={{ fontSize: 12 }}>
+                            {row.last}
+                          </TableCell>
+                          <TableCell sx={{ fontSize: 12 }}>
+                            {row.email}
+                          </TableCell>
                         </TableRow>
                       ))}
                   </TableBody>
@@ -227,11 +241,57 @@ export const AdminInstructors = ({ setSelectedInstructor }) => {
               </TableFooter>
             </Table>
           </TableContainer>
+
+          {/* Add Instructor Button */}
+          <Button
+            variant="contained"
+            color="primary"
+            sx={{ marginBottom: 2 }}
+            onClick={handleClickOpen}
+          >
+            Add Instructors
+          </Button>
         </Paper>
       </Box>
+      <Dialog
+        open={open}
+        onClose={handleClose}
+        PaperProps={{
+          component: 'form',
+          onSubmit: (event) => {
+            event.preventDefault();
+            const formData = new FormData(event.currentTarget);
+            const formJson = Object.fromEntries((formData).entries());
+            const email = formJson.email;
+            console.log(email);
+            handleAddInstructor();
+          },
+        }}
+      >
+        <DialogTitle>Add an Instructor</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Please enter the email of the instructor here
+          </DialogContentText>
+          <TextField
+            autoFocus
+            required
+            margin="dense"
+            id="name"
+            name="email"
+            label="Email Address"
+            type="email"
+            fullWidth
+            variant="standard"
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleClose}>Cancel</Button>
+          <Button type="submit">Submit</Button>
+        </DialogActions>
+      </Dialog>
     </div>
   );
-  
 };
 
 export default AdminInstructors;

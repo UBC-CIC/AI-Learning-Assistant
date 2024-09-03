@@ -1,6 +1,5 @@
-import React, { useState, useEffect, useContext, createContext } from "react";
-import { useParams, useNavigate, useLocation } from "react-router-dom";
-import AWS from "aws-sdk";
+import { useState } from "react";
+import { useLocation } from "react-router-dom";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { fetchAuthSession } from "aws-amplify/auth";
@@ -10,19 +9,9 @@ import {
   Button,
   Paper,
   Typography,
-  IconButton,
   Grid,
-  Card,
-  CardContent,
   Box,
-  Toolbar,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
 } from "@mui/material";
-import DeleteIcon from "@mui/icons-material/Delete";
-import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import PageContainer from "../Container";
 const InstructorNewConcept = () => {
   const [conceptName, setConceptName] = useState("");

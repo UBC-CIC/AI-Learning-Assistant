@@ -1205,8 +1205,7 @@ paths:
   /instructor/get_all_files:
     options:
       summary: CORS support
-      description: |
-        Enable CORS by returning correct headers
+      description: Enable CORS by returning correct headers
       responses:
         200:
           $ref: "#/components/responses/Success"
@@ -1227,6 +1226,7 @@ paths:
             responseTemplates:
               application/json: |
                 {}
+    
     get:
       tags:
         - Instructor

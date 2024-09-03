@@ -43,6 +43,12 @@ def lambda_handler(event, context):
         })
         return {
             'statusCode': 400,
+            "headers": {
+                "Content-Type": "application/json",
+                "Access-Control-Allow-Headers": "*",
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "*",
+            },
             'body': json.dumps('Missing required parameters: course_id, module_id, or module_name')
         }
 
@@ -64,6 +70,12 @@ def lambda_handler(event, context):
 
         return {
             'statusCode': 200,
+            "headers": {
+                "Content-Type": "application/json",
+                "Access-Control-Allow-Headers": "*",
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "*",
+            },
             'body': json.dumps({
                 'document_files': document_files_urls,
                 'image_files': image_files_urls
@@ -73,5 +85,11 @@ def lambda_handler(event, context):
         logger.exception(f"Error generating presigned URLs: {e}")
         return {
             'statusCode': 500,
+            "headers": {
+                "Content-Type": "application/json",
+                "Access-Control-Allow-Headers": "*",
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "*",
+            },
             'body': json.dumps('Internal server error')
         }

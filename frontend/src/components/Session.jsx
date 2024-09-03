@@ -161,13 +161,4 @@ const Session = ({
   );
 };
 
-Session.propTypes = {
-  text: PropTypes.string.isRequired,
-  session: PropTypes.object.isRequired,
-  setSession: PropTypes.func.isRequired,
-  deleteSession: PropTypes.func.isRequired,
-  selectedSession: PropTypes.object,
-  setMessages: PropTypes.func.isRequired,
-};
-
 export default Session;

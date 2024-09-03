@@ -28,6 +28,12 @@ def lambda_handler(event, context):
         })
         return {
             'statusCode': 400,
+            "headers": {
+                "Content-Type": "application/json",
+                "Access-Control-Allow-Headers": "*",
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "*",
+            },
             'body': json.dumps('Missing required parameters: course_id, module_id, module_name, file_name, or file_type')
         }
 
@@ -49,6 +55,12 @@ def lambda_handler(event, context):
         else:
             return {
                 'statusCode': 400,
+                "headers": {
+                    "Content-Type": "application/json",
+                    "Access-Control-Allow-Headers": "*",
+                    "Access-Control-Allow-Origin": "*",
+                    "Access-Control-Allow-Methods": "*",
+                },
                 'body': json.dumps('Unsupported file type')
             }
 
@@ -66,6 +78,12 @@ def lambda_handler(event, context):
         logger.info(f"File {file_key} deleted successfully.")
         return {
             'statusCode': 200,
+            "headers": {
+                "Content-Type": "application/json",
+                "Access-Control-Allow-Headers": "*",
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "*",
+            },
             'body': json.dumps('File deleted successfully')
         }
         
@@ -73,5 +91,11 @@ def lambda_handler(event, context):
         logger.exception(f"Error deleting file: {e}")
         return {
             'statusCode': 500,
+            "headers": {
+                "Content-Type": "application/json",
+                "Access-Control-Allow-Headers": "*",
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "*",
+            },
             'body': json.dumps('Internal server error')
         }

@@ -85,13 +85,6 @@ export const AdminCreateCourse = ({ setSelectedComponent }) => {
 
     fetchInstructors();
   }, []);
-
-  // instructors = [
-  //   { id: 1, name: "Instructor 1" },
-  //   { id: 2, name: "Instructor 2" },
-  //   { id: 3, name: "Instructor 3" },
-  // ];
-
   const handleCreate = async () => {
     const access_code = generateAccessCode();
     // Handle the create course logic here

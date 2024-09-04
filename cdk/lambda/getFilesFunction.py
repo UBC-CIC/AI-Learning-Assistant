@@ -59,6 +59,9 @@ def lambda_handler(event, context):
         document_files = list_files_in_s3_prefix(BUCKET, document_prefix)
         image_files = list_files_in_s3_prefix(BUCKET, image_prefix)
 
+        # Filter out .txt files from the images folder
+        image_files = [file_name for file_name in image_files if not file_name.endswith('.txt')]
+
         # Generate presigned URLs for each file
         document_files_urls = {file_name: generate_presigned_url(BUCKET, f"{document_prefix}{file_name}") for file_name in document_files}
         image_files_urls = {file_name: generate_presigned_url(BUCKET, f"{image_prefix}{file_name}") for file_name in image_files}

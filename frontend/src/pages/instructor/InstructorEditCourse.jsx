@@ -18,8 +18,8 @@ import {
   MenuItem,
 } from "@mui/material";
 import PageContainer from "../Container";
-import ImagesWithText from "../../components/ImagesWithText";
 import FileManagement from "../../components/FileManagement";
+import ImagesWithText from "../../components/ImagesWithText";
 
 const InstructorEditCourse = () => {
   const [loading, setLoading] = useState(true);
@@ -30,9 +30,9 @@ const InstructorEditCourse = () => {
   const [savedFiles, setSavedFiles] = useState([]);
   const [deletedFiles, setDeletedFiles] = useState([]);
 
-  const [imagesWithText, setImagesWithText] = useState([]);
   const [savedImagesWithText, setSavedImagesWithText] = useState([]);
   const [newImagesWithText, setNewImagesWithText] = useState([]);
+  const [deletedImagesWithText, setDeletedImagesWithText] = useState([]);
 
   const location = useLocation();
   const [module, setModule] = useState(null);
@@ -44,18 +44,18 @@ const InstructorEditCourse = () => {
     window.history.back();
   };
 
-  useEffect(() => {
-    console.log(files);
-  }, [files]);
-
   function convertDocumentFilesToArray(files) {
     const documentFiles = files.document_files;
-    const resultArray = Object.entries(documentFiles).map(
-      ([fileName, url]) => ({
-        fileName,
-        url,
-      })
-    );
+    const imageFiles = files.image_files;
+    console.log("imagefiles", imageFiles);
+    const resultArray = Object.entries({
+      ...documentFiles,
+      ...imageFiles,
+    }).map(([fileName, url]) => ({
+      fileName,
+      url,
+    }));
+    console.log("res", resultArray);
     return resultArray;
   }
 
@@ -83,6 +83,7 @@ const InstructorEditCourse = () => {
       );
       if (response.ok) {
         const fileData = await response.json();
+        console.log("filedata", fileData);
         setFiles(convertDocumentFilesToArray(fileData));
       } else {
         console.error("Failed to fetch files:", response.statusText);
@@ -118,7 +119,6 @@ const InstructorEditCourse = () => {
       console.error("Error fetching courses:", error);
     }
   };
-
   useEffect(() => {
     if (moduleData) {
       setModule(moduleData);
@@ -134,10 +134,29 @@ const InstructorEditCourse = () => {
     }
   }, [module]);
 
+  const handleRemoveSavedImage = (imgFileObject) => {
+    setDeletedImagesWithText((prevDeletedFiles) => [
+      ...prevDeletedFiles,
+      imgFileObject,
+    ]);
+    const updatedFiles = savedFiles.filter(
+      (file) => file.image.name !== imgFileObject.name
+    );
+    setSavedImagesWithText(updatedFiles);
+  };
+
   const handleDelete = async () => {
     try {
       const session = await fetchAuthSession();
       var token = session.tokens.idToken.toString();
+      await deleteFiles(deletedFiles, token);
+      await deleteFiles(savedFiles, token);
+      await deleteFiles(newFiles, token);
+      await deleteFiles(files, token);
+      await deleteImagesWithText(savedImagesWithText, token)
+      await deleteImagesWithText(newImagesWithText, token)
+      await deleteImagesWithText(deletedImagesWithText, token)
+
       const response = await fetch(
         `${
           import.meta.env.VITE_API_ENDPOINT
@@ -198,7 +217,6 @@ const InstructorEditCourse = () => {
   };
 
   const handleConceptInputChange = (e) => {
-    console.log(e);
     setConcept(e.target.value);
   };
   const getFileType = (filename) => {
@@ -209,7 +227,7 @@ const InstructorEditCourse = () => {
     if (parts.length > 1) {
       return parts.pop();
     } else {
-      return ""; // Return an empty string if there's no file extension
+      return "";
     }
   };
 
@@ -248,6 +266,51 @@ const InstructorEditCourse = () => {
     const deletedFilePromises = deletedFiles.map((file_name) => {
       const fileType = getFileType(file_name);
       const fileName = removeFileExtension(file_name);
+      return fetch(
+        `${
+          import.meta.env.VITE_API_ENDPOINT
+        }instructor/delete_file?course_id=${encodeURIComponent(
+          course_id
+        )}&module_id=${encodeURIComponent(
+          module.module_id
+        )}&module_name=${encodeURIComponent(
+          moduleName
+        )}&file_type=${encodeURIComponent(
+          fileType
+        )}&file_name=${encodeURIComponent(fileName)}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: token,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+    });
+  };
+
+  const handleRemoveFile = async (file_name) => {
+    setDeletedFiles((prevDeletedFiles) => [...prevDeletedFiles, file_name]);
+    const updatedFiles = files.filter((file) => file.fileName !== file_name);
+    setFiles(updatedFiles);
+  };
+
+  const handleSavedRemoveFile = async (file_name) => {
+    setDeletedFiles((prevDeletedFiles) => [...prevDeletedFiles, file_name]);
+    const updatedFiles = files.filter((file) => file.fileName !== file_name);
+    setSavedFiles(updatedFiles);
+  };
+
+  const handleRemoveNewFile = (file_name) => {
+    const updatedFiles = newFiles.filter((file) => file.name !== file_name);
+    setNewFiles(updatedFiles);
+  };
+
+  const deleteImagesWithText = async (deletedImagesWithText, token) => {
+    console.log('deletedImagesWithText: ', deletedImagesWithText)
+    const deletedFilePromises = deletedImagesWithText.map((file) => {
+      const fileType = getFileType(file.image.name);
+      const fileName = removeFileExtension(file.image.name);
       return fetch(
         `${
           import.meta.env.VITE_API_ENDPOINT
@@ -312,6 +375,47 @@ const InstructorEditCourse = () => {
     return await Promise.all(newFilePromises);
   };
 
+  const uploadImagesWithText = async (newImagesWithText, token) => {
+    const newFilePromises = newImagesWithText.map((file) => {
+      const fileType = getFileType(file.image.name);
+      const fileName = removeFileExtension(file.image.name);
+      return fetch(
+        `${
+          import.meta.env.VITE_API_ENDPOINT
+        }instructor/generate_presigned_url?course_id=${encodeURIComponent(
+          course_id
+        )}&module_id=${encodeURIComponent(
+          module.module_id
+        )}&module_name=${encodeURIComponent(
+          moduleName
+        )}&file_type=${encodeURIComponent(
+          fileType
+        )}&file_name=${encodeURIComponent(
+          fileName
+        )}&txt_file_contents=${encodeURIComponent(file.text)}`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: token,
+            "Content-Type": "application/json",
+          },
+        }
+      )
+        .then((response) => response.json())
+        .then((presignedUrl) => {
+          return fetch(presignedUrl.presignedurl, {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/pdf",
+            },
+            body: file,
+          });
+        });
+    });
+
+    return await Promise.all(newFilePromises);
+  };
+
   const handleSave = async () => {
     if (isSaving) return; // Prevent double clicking
     setIsSaving(true);
@@ -320,7 +424,21 @@ const InstructorEditCourse = () => {
       const { token } = await getAuthSessionAndEmail();
       await deleteFiles(deletedFiles, token);
       await uploadFiles(newFiles, token);
+      await deleteImagesWithText(deletedImagesWithText, token);
+      await uploadImagesWithText(newImagesWithText, token);
 
+      setFiles((prevFiles) =>
+        prevFiles.filter((file) => !deletedFiles.includes(file.fileName))
+      );
+      setSavedFiles((prevFiles) => [...prevFiles, ...newFiles]);
+      setSavedImagesWithText((prevImagesWithText) => [
+        ...prevImagesWithText,
+        ...newImagesWithText,
+      ]);
+      setNewImagesWithText([]);
+      setDeletedImagesWithText([]);
+      setDeletedFiles([]);
+      setNewFiles([]);
       toast.success("Module updated successfully", {
         position: "top-center",
         autoClose: 1000,
@@ -331,13 +449,6 @@ const InstructorEditCourse = () => {
         progress: undefined,
         theme: "colored",
       });
-
-      setFiles((prevFiles) =>
-        prevFiles.filter((file) => !deletedFiles.includes(file.fileName))
-      );
-      setSavedFiles((prevFiles) => [...prevFiles, ...newFiles]);
-      setDeletedFiles([]);
-      setNewFiles([]);
     } catch (error) {
       console.error("Error fetching courses:", error);
       toast.error("Module failed to update", {
@@ -351,7 +462,7 @@ const InstructorEditCourse = () => {
         theme: "colored",
       });
     } finally {
-      setIsSaving(false); // Reset the state after save operation is complete
+      setIsSaving(false);
     }
   };
 
@@ -404,17 +515,17 @@ const InstructorEditCourse = () => {
           setFiles={setFiles}
           setDeletedFiles={setDeletedFiles}
           savedFiles={savedFiles}
+          setSavedFiles={setSavedFiles}
           loading={loading}
+          savedImagesWithText={savedImagesWithText}
+          setSavedImagesWithText={setSavedImagesWithText}
+          deletedImagesWithText={deletedImagesWithText}
+          setDeletedImagesWithText={setDeletedImagesWithText}
         />
 
         <ImagesWithText
-          imagesWithText={imagesWithText}
-          setImagesWithText={setImagesWithText}
-          savedImagesWithText={savedImagesWithText}
-          setSavedImagesWithText={setSavedImagesWithText}
           newImagesWithText={newImagesWithText}
           setNewImagesWithText={setNewImagesWithText}
-          loading={loading}
         />
 
         <Grid container spacing={2} style={{ marginTop: 16 }}>

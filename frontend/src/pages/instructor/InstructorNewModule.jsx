@@ -1,35 +1,37 @@
-import React, { useState, useEffect, useContext, createContext } from "react";
-import { useParams, useNavigate, useLocation } from "react-router-dom";
-import AWS from "aws-sdk";
+import  { useState, useEffect} from "react";
+import { useLocation } from "react-router-dom";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { fetchAuthSession } from "aws-amplify/auth";
-import { fetchUserAttributes } from 'aws-amplify/auth';
+import { fetchUserAttributes } from "aws-amplify/auth";
 
 import {
   TextField,
   Button,
   Paper,
   Typography,
-  IconButton,
   Grid,
-  Card,
-  CardContent,
   Box,
-  Toolbar,
   FormControl,
   InputLabel,
   Select,
   MenuItem,
 } from "@mui/material";
-import DeleteIcon from "@mui/icons-material/Delete";
-import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import PageContainer from "../Container";
+import FileManagement from "../../components/FileManagement";
+import ImagesWithText from "../../components/ImagesWithText";
 export const InstructorNewModule = ({ courseId }) => {
-  const [newFiles, setNewFiles] = useState([]);
   const [files, setFiles] = useState([]);
-  const [imagesWithText, setImagesWithText] = useState([]);
-  const navigate = useNavigate();
+  const [newFiles, setNewFiles] = useState([]);
+  const [savedFiles, setSavedFiles] = useState([]);
+  const [deletedFiles, setDeletedFiles] = useState([]);
+
+  const [savedImagesWithText, setSavedImagesWithText] = useState([]);
+  const [newImagesWithText, setNewImagesWithText] = useState([]);
+  const [deletedImagesWithText, setDeletedImagesWithText] = useState([]);
+
+  const [isSaving, setIsSaving] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [moduleName, setModuleName] = useState("");
   const [concept, setConcept] = useState("");
   const [allConcepts, setAllConcept] = useState([]);
@@ -38,6 +40,19 @@ export const InstructorNewModule = ({ courseId }) => {
   const [nextModuleNumber, setNextModuleNumber] = useState(data.length + 1);
   const handleBackClick = () => {
     window.history.back();
+  };
+
+  function removeFileExtension(fileName) {
+    return fileName.replace(/\.[^/.]+$/, "");
+  }
+
+  const getFileType = (filename) => {
+    const parts = filename.split(".");
+    if (parts.length > 1) {
+      return parts.pop();
+    } else {
+      return "";
+    }
   };
 
   useEffect(() => {
@@ -78,39 +93,90 @@ export const InstructorNewModule = ({ courseId }) => {
     console.log(e);
     setConcept(e.target.value);
   };
+  const uploadFiles = async (newFiles, token, moduleid) => {
+    const newFilePromises = newFiles.map((file) => {
+      const fileType = getFileType(file.name);
+      const fileName = removeFileExtension(file.name);
+      return fetch(
+        `${
+          import.meta.env.VITE_API_ENDPOINT
+        }instructor/generate_presigned_url?course_id=${encodeURIComponent(
+          course_id
+        )}&module_id=${encodeURIComponent(
+          moduleid
+        )}&module_name=${encodeURIComponent(
+          moduleName
+        )}&file_type=${encodeURIComponent(
+          fileType
+        )}&file_name=${encodeURIComponent(fileName)}`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: token,
+            "Content-Type": "application/json",
+          },
+        }
+      )
+        .then((response) => response.json())
+        .then((presignedUrl) => {
+          return fetch(presignedUrl.presignedurl, {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/pdf",
+            },
+            body: file,
+          });
+        });
+    });
 
-  const handleFileUpload = async (e) => {
-    setFiles([...files, ...Array.from(event.target.files)]);
+    return await Promise.all(newFilePromises);
   };
 
-  const handleRemoveFile = (fileId) => {
-    const updatedFiles = files.filter((file) => file.id !== fileId);
-    setFiles(updatedFiles);
-  };
+  const uploadImagesWithText = async (newImagesWithText, token, moduleid) => {
+    const newFilePromises = newImagesWithText.map((file) => {
+      const fileType = getFileType(file.image.name);
+      const fileName = removeFileExtension(file.image.name);
+      return fetch(
+        `${
+          import.meta.env.VITE_API_ENDPOINT
+        }instructor/generate_presigned_url?course_id=${encodeURIComponent(
+          course_id
+        )}&module_id=${encodeURIComponent(
+          module.module_id
+        )}&module_name=${encodeURIComponent(
+          moduleName
+        )}&file_type=${encodeURIComponent(
+          fileType
+        )}&file_name=${encodeURIComponent(
+          fileName
+        )}&txt_file_contents=${encodeURIComponent(file.text)}`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: token,
+            "Content-Type": "application/json",
+          },
+        }
+      )
+        .then((response) => response.json())
+        .then((presignedUrl) => {
+          return fetch(presignedUrl.presignedurl, {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/pdf",
+            },
+            body: file,
+          });
+        });
+    });
 
-  const handleRemoveNewFile = (index) => {
-    setFiles(files.filter((_, i) => i !== index));
-  };
-
-  const handleImageWithTextChange = (index, field, value) => {
-    const updatedImages = [...imagesWithText];
-    updatedImages[index][field] = value;
-    setImagesWithText(updatedImages);
-  };
-
-  const handleAddImageWithText = () => {
-    setImagesWithText([
-      ...imagesWithText,
-      { id: Date.now(), image: "", text: "" },
-    ]);
-  };
-
-  const handleRemoveImageWithText = (id) => {
-    const updatedImages = imagesWithText.filter((img) => img.id !== id);
-    setImagesWithText(updatedImages);
+    return await Promise.all(newFilePromises);
   };
 
   const handleSave = async () => {
+    if (isSaving) return; // Prevent double clicking
+    setIsSaving(true);
+
     const selectedConcept = allConcepts.find((c) => c.concept_name === concept);
     try {
       const session = await fetchAuthSession();
@@ -158,7 +224,25 @@ export const InstructorNewModule = ({ courseId }) => {
         });
       } else {
         const updatedModule = await response.json();
-        console.log(`Updated module ${updatedModule.module_id} successfully.`);
+        console.log(`Created module ${updatedModule.module_id} successfully.`);
+        await uploadFiles(newFiles, token, updatedModule.module_id);
+        await uploadImagesWithText(
+          newImagesWithText,
+          token,
+          updatedModule.module_id
+        );
+        setFiles((prevFiles) =>
+          prevFiles.filter((file) => !deletedFiles.includes(file.fileName))
+        );
+        setSavedFiles((prevFiles) => [...prevFiles, ...newFiles]);
+        setSavedImagesWithText((prevImagesWithText) => [
+          ...prevImagesWithText,
+          ...newImagesWithText,
+        ]);
+        setNewImagesWithText([]);
+        setDeletedImagesWithText([]);
+        setDeletedFiles([]);
+        setNewFiles([]);
         toast.success("Module Created Successfully", {
           position: "top-center",
           autoClose: 1000,
@@ -172,6 +256,11 @@ export const InstructorNewModule = ({ courseId }) => {
       }
     } catch (error) {
       console.error("Error saving changes:", error);
+    } finally {
+      setIsSaving(false);
+      setTimeout(function () {
+        handleBackClick();
+      }, 1000);
     }
     setNextModuleNumber(nextModuleNumber + 1);
   };
@@ -208,118 +297,25 @@ export const InstructorNewModule = ({ courseId }) => {
           </Select>
         </FormControl>
 
-        <Box sx={{ border: 1, borderRadius: 3, borderColor: "grey.400", p: 1 }}>
-          <Typography variant="h6" sx={{ p: 1 }}>
-            Existing Files
-          </Typography>
-          {files.map((file) => (
-            <div key={file.id}>
-              <Typography variant="body2">{file.name}</Typography>
-              <IconButton onClick={() => handleRemoveFile(file.id)}>
-                <DeleteIcon />
-              </IconButton>
-            </div>
-          ))}
-          <Grid item xs={12}>
-            <Card
-              variant="outlined"
-              component="label"
-              sx={{ textAlign: "center", p: 0, cursor: "pointer" }}
-            >
-              <CardContent>
-                <input
-                  accept="application/pdf"
-                  type="file"
-                  multiple
-                  hidden
-                  onChange={(e) => handleFileUpload(e.target.files)}
-                />
-                <IconButton
-                  color="primary"
-                  aria-label="upload files"
-                  component="span"
-                >
-                  <CloudUploadIcon sx={{ fontSize: 40 }} />
-                </IconButton>
-                <Typography variant="body1" color="textSecondary">
-                  Click to upload file
-                </Typography>
-              </CardContent>
-            </Card>
-            {files.length > 0 && (
-              <Box mt={2}>
-                <Typography variant="body2">
-                  <strong>Selected Files:</strong>
-                </Typography>
-                <ul>
-                  {files.map((file, index) => (
-                    <li key={index}>
-                      {file.name}
-                      <Button
-                        onClick={() => handleRemoveNewFile(index)}
-                        color="error"
-                        sx={{ ml: 2 }}
-                      >
-                        Remove
-                      </Button>
-                    </li>
-                  ))}
-                </ul>
-              </Box>
-            )}
-          </Grid>
-        </Box>
+        <FileManagement
+          newFiles={newFiles}
+          setNewFiles={setNewFiles}
+          files={files}
+          setFiles={setFiles}
+          setDeletedFiles={setDeletedFiles}
+          savedFiles={savedFiles}
+          setSavedFiles={setSavedFiles}
+          loading={loading}
+          savedImagesWithText={savedImagesWithText}
+          setSavedImagesWithText={setSavedImagesWithText}
+          deletedImagesWithText={deletedImagesWithText}
+          setDeletedImagesWithText={setDeletedImagesWithText}
+        />
 
-        <Box
-          sx={{
-            border: 1,
-            borderRadius: 3,
-            borderColor: "grey.400",
-            p: 1,
-            marginY: 2,
-          }}
-        >
-          <Typography variant="h6" style={{ marginTop: 16 }} sx={{ p: 1 }}>
-            Images with Text
-          </Typography>
-
-          {imagesWithText.map((img, index) => (
-            <Grid container spacing={2} key={img.id}>
-              <Grid item xs={12}>
-                <input
-                  type="file"
-                  style={{ paddingLeft: 10 }}
-                  onChange={(e) =>
-                    handleImageWithTextChange(index, "image", e.target.files[0])
-                  }
-                />
-              </Grid>
-
-              <Grid item xs={12}>
-                <TextField
-                  label="Text"
-                  value={img.text}
-                  onChange={(e) =>
-                    handleImageWithTextChange(index, "text", e.target.value)
-                  }
-                  sx={{ width: "50%" }}
-                  margin="normal"
-                />
-                <IconButton onClick={() => handleRemoveImageWithText(img.id)}>
-                  <DeleteIcon />
-                </IconButton>
-              </Grid>
-            </Grid>
-          ))}
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={handleAddImageWithText}
-            sx={{ margin: 2 }}
-          >
-            Add Another
-          </Button>
-        </Box>
+        <ImagesWithText
+          newImagesWithText={newImagesWithText}
+          setNewImagesWithText={setNewImagesWithText}
+        />
 
         <Grid container spacing={2} style={{ marginTop: 16 }}>
           <Grid item xs={4}>

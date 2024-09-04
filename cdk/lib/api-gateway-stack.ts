@@ -70,11 +70,54 @@ export class ApiGatewayStack extends cdk.Stack {
       description: "Contains the postgres library for JS",
     });
 
-    //create psycopglayer
+    /**
+     *
+     * Create Lambda layer for Psycopg2
+     */
     const psycopgLayer = new LayerVersion(this, "psycopgLambdaLayer", {
       code: Code.fromAsset("./layers/psycopg2.zip"),
       compatibleRuntimes: [Runtime.PYTHON_3_9],
       description: "Lambda layer containing the psycopg2 Python library",
+    });
+
+    /**
+     *
+     * Create Lambda layer for LangChain
+     */
+    const langchainLayer = new LayerVersion(this, "langchain", {
+      code: Code.fromAsset("./layers/langchain.zip"),
+      compatibleRuntimes: [Runtime.PYTHON_3_9],
+      description: "Lambda layer containing the LangChain Python library",
+    });
+
+    /**
+     *
+     * Create Lambda layer for LangChain Experimental
+     */
+    const langchainExperimentalLayer = new LayerVersion(this, "langchain_experimental", {
+      code: Code.fromAsset("./layers/langchain_experimental.zip"),
+      compatibleRuntimes: [Runtime.PYTHON_3_9],
+      description: "Lambda layer containing the LangChain Experimental Python library",
+    });
+
+    /**
+     *
+     * Create Lambda layer for Torch
+     */
+    const torchLayer = new LayerVersion(this, "torch", {
+      code: Code.fromAsset("./layers/torch.zip"),
+      compatibleRuntimes: [Runtime.PYTHON_3_9],
+      description: "Lambda layer containing the Torch Python library",
+    });
+
+    /**
+     *
+     * Create Lambda layer for Open Clip Torch
+     */
+    const opencliptorchLayer = new LayerVersion(this, "open_clip_torch", {
+      code: Code.fromAsset("./layers/open_clip_torch.zip"),
+      compatibleRuntimes: [Runtime.PYTHON_3_9],
+      description: "Lambda layer containing the Open Clip Torch Python library",
     });
 
     // powertoolsLayer does not follow the format of layerList
@@ -83,6 +126,10 @@ export class ApiGatewayStack extends cdk.Stack {
     this.layerList["psycopg2"] = psycopgLayer;
     this.layerList["postgres"] = postgres;
     this.layerList["jwt"] = jwt;
+    this.layerList["langchain"] = langchainLayer;
+    this.layerList["langchain_experimental"] = langchainExperimentalLayer;
+    this.layerList["torcj"] = torchLayer;
+    this.layerList["open_clip_torch"] = opencliptorchLayer;
 
     // Create Cognito user pool
 
@@ -788,29 +835,32 @@ export class ApiGatewayStack extends cdk.Stack {
     apiGW_authorizationFunction_instructor.overrideLogicalId(
       "instructorLambdaAuthorizer"
     );
-    
+
     /**
      *
-     * Create Lambda with container image for text generation workflow in RAG pipeline
+     * Create Lambda function for text generation workflow in RAG pipeline
      */
-    const textGenLambdaDockerFunc = new lambda.DockerImageFunction(this, "TextGenLambdaDockerFunc", {
-      code: lambda.DockerImageCode.fromImageAsset("./text_generation"),
-      memorySize: 2048,
+    const textGenLambdaFunc = new lambda.Function(this, "TextGenLambdaFunc", {
+      runtime: lambda.Runtime.PYTHON_3_9,
+      code: lambda.Code.fromAsset("lambda/textGenLambda"),
+      handler: "main.handler",
       timeout: cdk.Duration.seconds(300),
-      vpc: vpcStack.vpc, // Pass the VPC
-      functionName: "TextGenLambdaDockerFunc",
+      vpc: vpcStack.vpc,
+      functionName: "TextGenLambdaFunc",
+      memorySize: 3008,
       environment: {
         SM_DB_CREDENTIALS: db.secretPathUser.secretName, // Database User Credentials
         RDS_PROXY_ENDPOINT: db.rdsProxyEndpoint, // RDS Proxy Endpoint
       },
+      layers: [psycopgLayer, langchainLayer, langchainExperimentalLayer, torchLayer, opencliptorchLayer,],
     });
 
     // Override the Logical ID of the Lambda Function to get ARN in OpenAPI
-    const cfnTextGenDockerFunc = textGenLambdaDockerFunc.node.defaultChild as lambda.CfnFunction;
-    cfnTextGenDockerFunc.overrideLogicalId("TextGenLambdaDockerFunc");
+    const cfnTextGenFunc = textGenLambdaFunc.node.defaultChild as lambda.CfnFunction;
+    cfnTextGenFunc.overrideLogicalId("TextGenLambdaFunc");
 
     // Add the permission to the Lambda function's policy to allow API Gateway access
-    textGenLambdaDockerFunc.addPermission("AllowApiGatewayInvoke", {
+    textGenLambdaFunc.addPermission("AllowApiGatewayInvoke", {
       principal: new iam.ServicePrincipal("apigateway.amazonaws.com"),
       action: "lambda:InvokeFunction",
       sourceArn: `arn:aws:execute-api:${this.region}:${this.account}:${this.api.restApiId}/*/*/student*`,
@@ -827,10 +877,10 @@ export class ApiGatewayStack extends cdk.Stack {
     });
 
     // Attach the custom Bedrock policy to Lambda function
-    textGenLambdaDockerFunc.addToRolePolicy(bedrockPolicyStatement);
+    textGenLambdaFunc.addToRolePolicy(bedrockPolicyStatement);
 
     // Grant access to Secret Manager
-    textGenLambdaDockerFunc.addToRolePolicy(
+    textGenLambdaFunc.addToRolePolicy(
       new iam.PolicyStatement({
         effect: iam.Effect.ALLOW,
         actions: [
@@ -844,7 +894,7 @@ export class ApiGatewayStack extends cdk.Stack {
     );
 
     // Grant access to DynamoDB actions
-    textGenLambdaDockerFunc.addToRolePolicy(
+    textGenLambdaFunc.addToRolePolicy(
       new iam.PolicyStatement({
         effect: iam.Effect.ALLOW,
         actions: [
@@ -919,26 +969,26 @@ export class ApiGatewayStack extends cdk.Stack {
      * Create Lambda with container image for data ingestion workflow in RAG pipeline
      * This function will be triggered when a file in uploaded to the S3 Bucket
      */
-    const dataIngestLambdaDockerFunc = new lambda.DockerImageFunction(this, "DataIngestLambdaDockerFunc", {
-      code: lambda.DockerImageCode.fromImageAsset("./data_ingestion"),
-      memorySize: 512,
-      timeout: cdk.Duration.seconds(300),
-      vpc: vpcStack.vpc, // Pass the VPC
-      functionName: "DataIngestLambdaDockerFunc",
-      environment: {
-        SM_DB_CREDENTIALS: db.secretPathUser.secretName, // Database User Credentials
-        RDS_PROXY_ENDPOINT: db.rdsProxyEndpoint, // RDS Proxy Endpoint
-      },
-    });
+    // const dataIngestLambdaDockerFunc = new lambda.DockerImageFunction(this, "DataIngestLambdaDockerFunc", {
+    //   code: lambda.DockerImageCode.fromImageAsset("./data_ingestion"),
+    //   memorySize: 512,
+    //   timeout: cdk.Duration.seconds(300),
+    //   vpc: vpcStack.vpc, // Pass the VPC
+    //   functionName: "DataIngestLambdaDockerFunc",
+    //   environment: {
+    //     SM_DB_CREDENTIALS: db.secretPathUser.secretName, // Database User Credentials
+    //     RDS_PROXY_ENDPOINT: db.rdsProxyEndpoint, // RDS Proxy Endpoint
+    //   },
+    // });
 
-    // Override the Logical ID of the Lambda Function to get ARN in OpenAPI
-    const cfnDataIngestDockerFunc = dataIngestLambdaDockerFunc.node.defaultChild as lambda.CfnFunction;
-    cfnDataIngestDockerFunc.overrideLogicalId("DataIngestLambdaDockerFunc");
+    // // Override the Logical ID of the Lambda Function to get ARN in OpenAPI
+    // const cfnDataIngestDockerFunc = dataIngestLambdaDockerFunc.node.defaultChild as lambda.CfnFunction;
+    // cfnDataIngestDockerFunc.overrideLogicalId("DataIngestLambdaDockerFunc");
 
-    // Add the S3 event source trigger to the Lambda function
-    dataIngestLambdaDockerFunc.addEventSource(new lambdaEventSources.S3EventSource(dataIngestionBucket, {
-      events: [s3.EventType.OBJECT_CREATED]
-    }));
+    // // Add the S3 event source trigger to the Lambda function
+    // dataIngestLambdaDockerFunc.addEventSource(new lambdaEventSources.S3EventSource(dataIngestionBucket, {
+    //   events: [s3.EventType.OBJECT_CREATED]
+    // }));
 
     /**
      *

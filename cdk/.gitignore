@@ -7,3 +7,12 @@ node_modules
 # CDK asset staging directory
 .cdk.staging
 cdk.out
+
+# Ignore everything in textGenLambdaFolder
+lambda/textGenLambdaFolder/*
+
+# Ignore everything in textGenLambda ZIP since over 100 MB
+lambda/textGenLambda.zip
+
+# Ignore torch.zip since over 100 MB
+layers/torch.zip

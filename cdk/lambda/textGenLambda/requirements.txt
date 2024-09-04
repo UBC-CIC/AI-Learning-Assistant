@@ -1,0 +1,14 @@
+boto3
+botocore
+langchain
+langchain-aws
+langchain-core
+langchain-community
+langchain-experimental
+langchain-postgres
+pymupdf
+psycopg[binary,pool]
+torch
+open_clip_torch
+psycopg2-binary
+python-dotenv

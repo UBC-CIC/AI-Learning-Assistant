@@ -22,7 +22,12 @@ const FileManagement = ({
   setFiles,
   setDeletedFiles,
   savedFiles,
+  setSavedFiles,
   loading,
+  savedImagesWithText,
+  setSavedImagesWithText,
+  deletedImagesWithText,
+  setDeletedImagesWithText,
 }) => {
   const handleDownloadClick = (url) => {
     window.open(url, "_blank");
@@ -58,7 +63,6 @@ const FileManagement = ({
     }
 
     setNewFiles([...newFiles, ...newFile]);
-    console.log(newFile);
   };
 
   const handleDownloadFile = (file) => {
@@ -77,9 +81,26 @@ const FileManagement = ({
     setFiles(updatedFiles);
   };
 
+  const handleSavedRemoveFile = async (file_name) => {
+    setDeletedFiles((prevDeletedFiles) => [...prevDeletedFiles, file_name]);
+    const updatedFiles = files.filter((file) => file.fileName !== file_name);
+    setSavedFiles(updatedFiles);
+  };
+
   const handleRemoveNewFile = (file_name) => {
     const updatedFiles = newFiles.filter((file) => file.name !== file_name);
     setNewFiles(updatedFiles);
+  };
+
+  const handleRemoveSavedImage = (imgFileObject) => {
+    setDeletedImagesWithText((prevDeletedFiles) => [
+      ...prevDeletedFiles,
+      imgFileObject,
+    ]);
+    const updatedFiles = savedFiles.filter(
+      (file) => file.image.name !== imgFileObject.name
+    );
+    setSavedImagesWithText(updatedFiles);
   };
   return (
     <Box sx={{ border: 1, borderRadius: 3, borderColor: "grey.400", p: 1 }}>
@@ -133,56 +154,76 @@ const FileManagement = ({
               </TableRow>
             </TableHead>
             <TableBody>
-              {[...files, ...savedFiles, ...newFiles]
-                .sort((a, b) => {
-                  if (newFiles.includes(a) && !newFiles.includes(b)) return 1;
-                  if (!newFiles.includes(a) && newFiles.includes(b)) return -1;
-                  return (a.fileName || a.name).localeCompare(
-                    b.fileName || b.name
-                  );
-                })
-                .map((file, index) => (
-                  <TableRow key={index}>
-                    <TableCell>
-                      <Typography
-                        variant="body2"
-                        sx={{
-                          color: newFiles.includes(file) ? "#db1212" : "inherit",
-                        }}
-                      >
-                        {file.fileName || file.name}
-                      </Typography>
-                    </TableCell>
-                    <TableCell align="right">
-                      <Button
-                        variant="contained"
-                        color="primary"
-                        onClick={() => {
-                          if (file.url) {
-                            handleDownloadClick(file.url);
-                          } else {
-                            handleDownloadFile(file);
-                          }
-                        }}
-                      >
-                        Download
-                      </Button>
-                    </TableCell>
-                    <TableCell align="right">
-                      <IconButton
-                        onClick={() => {
-                          if (file.fileName) {
-                            handleRemoveFile(file.fileName);
-                          } else {
-                            handleRemoveNewFile(file.name);
-                          }
-                        }}
-                      >
-                        <DeleteIcon />
-                      </IconButton>
-                    </TableCell>
-                  </TableRow>
-                ))}
+              {[...files, ...savedFiles, ...newFiles, ...savedImagesWithText]
+                .length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={3}>
+                    <Typography variant="body2" align="center">
+                      No Files Uploaded
+                    </Typography>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                [...files, ...savedFiles, ...newFiles, ...savedImagesWithText]
+                  .sort((a, b) => {
+                    if (newFiles.includes(a) && !newFiles.includes(b)) return 1;
+                    if (!newFiles.includes(a) && newFiles.includes(b))
+                      return -1;
+                    return (a.fileName || a.name).localeCompare(
+                      b.fileName || b.name
+                    );
+                  })
+                  .map((file, index) => (
+                    <TableRow key={index}>
+                      <TableCell>
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            color: newFiles.includes(file)
+                              ? "#db1212"
+                              : "inherit",
+                          }}
+                        >
+                          {file.fileName || file.name || file.image.name}
+                        </Typography>
+                      </TableCell>
+                      <TableCell align="right">
+                        <Button
+                          variant="contained"
+                          color="primary"
+                          onClick={() => {
+                            if (file.url) {
+                              handleDownloadClick(file.url);
+                            } else if (file.fileName) {
+                              handleDownloadFile(file);
+                            } else {
+                              handleDownloadFile(file.image);
+                            }
+                          }}
+                        >
+                          Download
+                        </Button>
+                      </TableCell>
+                      <TableCell align="right">
+                        <IconButton
+                          onClick={() => {
+                            if (file.fileName) {
+                              handleRemoveFile(file.fileName);
+                            } else if (savedFiles.includes(file)) {
+                              handleSavedRemoveFile(file.name);
+                            } else if (file.name) {
+                              handleRemoveNewFile(file.name);
+                            } else {
+                              handleRemoveSavedImage(file.image);
+                            }
+                          }}
+                        >
+                          <DeleteIcon />
+                        </IconButton>
+                      </TableCell>
+                    </TableRow>
+                  ))
+              )}
             </TableBody>
           </Table>
         </Box>

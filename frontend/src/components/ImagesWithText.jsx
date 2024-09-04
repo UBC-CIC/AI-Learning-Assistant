@@ -1,4 +1,3 @@
-import { useState, useEffect } from "react";
 
 import {
   TextField,
@@ -10,34 +9,26 @@ import {
 } from "@mui/material";
 
 import DeleteIcon from "@mui/icons-material/Delete";
-const ImagesWithText = ({ 
-  imagesWithText, 
-  setImagesWithText,
-  savedImagesWithText,
-  setSavedImagesWithText,
+const ImagesWithText = ({
   newImagesWithText,
   setNewImagesWithText,
-  loading,
- }) => {
-  useEffect(() => {
-    console.log(imagesWithText);
-  }, [imagesWithText]);
-  const handleImageWithTextChange = (index, field, value) => {
-    const updatedImages = [...imagesWithText];
+}) => {
+  const handleNewImageWithTextChange = (index, field, value) => {
+    const updatedImages = [...newImagesWithText];
     updatedImages[index][field] = value;
-    setImagesWithText(updatedImages);
+    setNewImagesWithText(updatedImages);
+  };
+
+  const handleRemoveNewImageWithText = (id) => {
+    const updatedImages = newImagesWithText.filter((img) => img.id !== id);
+    setNewImagesWithText(updatedImages);
   };
 
   const handleAddImageWithText = () => {
-    setImagesWithText([
-      ...imagesWithText,
+    setNewImagesWithText([
+      ...newImagesWithText,
       { id: Date.now(), image: "", text: "" },
     ]);
-  };
-
-  const handleRemoveImageWithText = (id) => {
-    const updatedImages = imagesWithText.filter((img) => img.id !== id);
-    setImagesWithText(updatedImages);
   };
   return (
     <Box
@@ -58,16 +49,15 @@ const ImagesWithText = ({
           Please provide a brief description of the image for the LLM.
         </Typography>
       </Box>
-
-      {imagesWithText.map((img, index) => (
-        <Grid sx = {{pb: 2}} container spacing={2} key={img.id}>
+      {newImagesWithText.map((img, index) => (
+        <Grid sx={{ pb: 2 }} container spacing={2} key={img.id}>
           <Grid item xs={12}>
             <input
               type="file"
               accept=".bmp,.eps,.gif,.icns,.ico,.im,.jpeg,.jpg,.j2k,.jp2,.msp,.pcx,.png,.ppm,.pgm,.pbm,.sgi,.tga,.tiff,.tif,.webp,.xbm"
               style={{ paddingLeft: 10 }}
               onChange={(e) =>
-                handleImageWithTextChange(index, "image", e.target.files[0])
+                handleNewImageWithTextChange(index, "image", e.target.files[0])
               }
             />
           </Grid>
@@ -77,12 +67,12 @@ const ImagesWithText = ({
               label="Text"
               value={img.text}
               onChange={(e) =>
-                handleImageWithTextChange(index, "text", e.target.value)
+                handleNewImageWithTextChange(index, "text", e.target.value)
               }
               sx={{ width: "50%" }}
               margin="normal"
             />
-            <IconButton onClick={() => handleRemoveImageWithText(img.id)}>
+            <IconButton onClick={() => handleRemoveNewImageWithText(img.id)}>
               <DeleteIcon />
             </IconButton>
           </Grid>

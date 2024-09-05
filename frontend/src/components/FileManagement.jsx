@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   Button,
   Typography,
@@ -10,6 +11,7 @@ import {
   TableCell,
   TableRow,
   TableHead,
+  TextField,
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
@@ -28,10 +30,19 @@ const FileManagement = ({
   setSavedImagesWithText,
   deletedImagesWithText,
   setDeletedImagesWithText,
+  metadata,
+  setMetadata
 }) => {
+  const handleMetadataChange = (fileName, value) => {
+    setMetadata((prev) => ({ ...prev, [fileName]: value }));
+  };
+
   const handleDownloadClick = (url) => {
     window.open(url, "_blank");
   };
+
+
+  
 
   const handleFileUpload = async (event) => {
     const uploadedFiles = Array.from(event);
@@ -147,6 +158,7 @@ const FileManagement = ({
             <TableHead>
               <TableRow>
                 <TableCell>File Name</TableCell>
+                <TableCell align='center' >Meta Data</TableCell> {/* New Meta Data column */}
                 <TableCell align="right" sx={{ pr: 5 }}>
                   Download
                 </TableCell>
@@ -155,25 +167,22 @@ const FileManagement = ({
             </TableHead>
             <TableBody>
               {[...files, ...savedFiles, ...newFiles, ...savedImagesWithText]
-                .length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={3}>
-                    <Typography variant="body2" align="center">
-                      No Files Uploaded
-                    </Typography>
-                  </TableCell>
-                </TableRow>
-              ) : (
-                [...files, ...savedFiles, ...newFiles, ...savedImagesWithText]
-                  .sort((a, b) => {
-                    if (newFiles.includes(a) && !newFiles.includes(b)) return 1;
-                    if (!newFiles.includes(a) && newFiles.includes(b))
-                      return -1;
-                    return (a.fileName || a.name).localeCompare(
-                      b.fileName || b.name
-                    );
-                  })
-                  .map((file, index) => (
+                .sort((a, b) => {
+                  if (newFiles.includes(a) && !newFiles.includes(b)) return 1;
+                  if (!newFiles.includes(a) && newFiles.includes(b)) return -1;
+
+                  const nameA = a.fileName || a.name;
+                  const nameB = b.fileName || b.name;
+
+                  if (nameA < nameB) return -1;
+                  if (nameA > nameB) return 1;
+
+                  return 0;
+                })
+                .map((file, index) => {
+                  const fileName =
+                    file.fileName || file.name || file.image.name;
+                  return (
                     <TableRow key={index}>
                       <TableCell>
                         <Typography
@@ -184,8 +193,21 @@ const FileManagement = ({
                               : "inherit",
                           }}
                         >
-                          {file.fileName || file.name || file.image.name}
+                          {fileName}
                         </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <TextField
+                          variant="outlined"
+                          fullWidth
+                          placeholder="Enter meta data"
+                          multiline
+                          maxRows={4}
+                          value={metadata[fileName] || ""}
+                          onChange={(e) =>
+                            handleMetadataChange(fileName, e.target.value)
+                          }
+                        />
                       </TableCell>
                       <TableCell align="right">
                         <Button
@@ -222,8 +244,8 @@ const FileManagement = ({
                         </IconButton>
                       </TableCell>
                     </TableRow>
-                  ))
-              )}
+                  );
+                })}
             </TableBody>
           </Table>
         </Box>

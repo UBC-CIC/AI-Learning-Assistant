@@ -27,12 +27,13 @@ function generateAccessCode() {
   return code.match(/.{1,4}/g).join("-");
 }
 
-
-
 function formatInstructors(instructorsArray) {
   return instructorsArray.map((instructor, index) => ({
     id: index + 1,
-    name: `${instructor.first_name} ${instructor.last_name}`,
+    name:
+      instructor.first_name && instructor.last_name
+        ? `${instructor.first_name} ${instructor.last_name}`
+        : instructor.user_email,
     email: instructor.user_email,
   }));
 }
@@ -51,7 +52,8 @@ export const AdminCreateCourse = ({ setSelectedComponent }) => {
 
   const handleCourseCodeChange = (e) => {
     const value = e.target.value;
-    if (/^\d*$/.test(value)) { // This regex ensures only digits
+    if (/^\d*$/.test(value)) {
+      // This regex ensures only digits
       setCourseCode(value);
     }
   };
@@ -92,7 +94,7 @@ export const AdminCreateCourse = ({ setSelectedComponent }) => {
       const session = await fetchAuthSession();
       const token = session.tokens.idToken.toString();
       const numericCourseCode = Number(courseCode);
-      
+
       if (isNaN(numericCourseCode)) {
         toast.error("access code must be a number", {
           position: "top-center",
@@ -106,9 +108,19 @@ export const AdminCreateCourse = ({ setSelectedComponent }) => {
         });
         return; // Stop further execution if access code is invalid
       }
-      
+
       const response = await fetch(
-        `${import.meta.env.VITE_API_ENDPOINT}admin/create_course?course_name=${encodeURIComponent(courseName)}&course_department=${encodeURIComponent(courseDepartment)}&course_number=${encodeURIComponent(courseCode)}&course_access_code=${encodeURIComponent(access_code)}&course_student_access=${encodeURIComponent(isActive)}`,
+        `${
+          import.meta.env.VITE_API_ENDPOINT
+        }admin/create_course?course_name=${encodeURIComponent(
+          courseName
+        )}&course_department=${encodeURIComponent(
+          courseDepartment
+        )}&course_number=${encodeURIComponent(
+          courseCode
+        )}&course_access_code=${encodeURIComponent(
+          access_code
+        )}&course_student_access=${encodeURIComponent(isActive)}`,
         {
           method: "POST",
           headers: {
@@ -120,14 +132,18 @@ export const AdminCreateCourse = ({ setSelectedComponent }) => {
           }),
         }
       );
-      
+
       if (response.ok) {
         const data = await response.json();
         const { course_id } = data;
-        
+
         const enrollPromises = selectedInstructors.map((instructor) =>
           fetch(
-            `${import.meta.env.VITE_API_ENDPOINT}admin/enroll_instructor?course_id=${encodeURIComponent(course_id)}&instructor_email=${encodeURIComponent(instructor)}`,
+            `${
+              import.meta.env.VITE_API_ENDPOINT
+            }admin/enroll_instructor?course_id=${encodeURIComponent(
+              course_id
+            )}&instructor_email=${encodeURIComponent(instructor)}`,
             {
               method: "POST",
               headers: {
@@ -142,7 +158,10 @@ export const AdminCreateCourse = ({ setSelectedComponent }) => {
                 return { success: true };
               });
             } else {
-              console.error("Failed to enroll instructor:", enrollResponse.statusText);
+              console.error(
+                "Failed to enroll instructor:",
+                enrollResponse.statusText
+              );
               toast.error("Enroll Instructor Failed", {
                 position: "top-center",
                 autoClose: 1000,
@@ -157,10 +176,12 @@ export const AdminCreateCourse = ({ setSelectedComponent }) => {
             }
           })
         );
-        
+
         const enrollResults = await Promise.all(enrollPromises);
-        const allEnrolledSuccessfully = enrollResults.every((result) => result.success);
-  
+        const allEnrolledSuccessfully = enrollResults.every(
+          (result) => result.success
+        );
+
         if (allEnrolledSuccessfully || selectedInstructors.length === 0) {
           toast.success("🦄 Course Created!", {
             position: "top-center",
@@ -215,7 +236,6 @@ export const AdminCreateCourse = ({ setSelectedComponent }) => {
       });
     }
   };
-  
 
   const handleChange = (event) => {
     setSelectedInstructors(event.target.value);
@@ -267,7 +287,7 @@ export const AdminCreateCourse = ({ setSelectedComponent }) => {
             onChange={handleCourseCodeChange}
             margin="normal"
             backgroundColor="default"
-            inputProps={{ maxLength: 10, min: 0, step: 1}}
+            inputProps={{ maxLength: 10, min: 0, step: 1 }}
           />
           <FormControl fullWidth sx={{ marginBottom: 2, marginTop: 2 }}>
             <InputLabel id="select-instructors-label">

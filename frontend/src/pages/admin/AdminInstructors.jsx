@@ -17,7 +17,7 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
-  Button
+  Button,
 } from "@mui/material";
 import { useState, useEffect } from "react";
 import { fetchAuthSession, fetchUserAttributes } from "aws-amplify/auth";
@@ -33,7 +33,7 @@ const fetchInstructors = async () => {
     const response = await fetch(
       `${
         import.meta.env.VITE_API_ENDPOINT
-      }/admin/instructors?instructor_email=${encodeURIComponent(adminEmail)}`,
+      }admin/instructors?instructor_email=${adminEmail}`,
       {
         method: "GET",
         headers: {
@@ -61,8 +61,8 @@ const createData = (user, last, email) => {
 function getInstructorInfo(coursesArray) {
   return coursesArray.map((instructor) =>
     createData(
-      instructor.first_name,
-      instructor.last_name,
+      instructor.first_name || "Waiting for user to sign in",
+      instructor.last_name || "Waiting for user to sign in",
       instructor.user_email
     )
   );
@@ -76,6 +76,7 @@ export const AdminInstructors = ({ setSelectedInstructor }) => {
   const [instructors, setInstructors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
+
   const handleClickOpen = () => {
     setOpen(true);
   };
@@ -146,17 +147,62 @@ export const AdminInstructors = ({ setSelectedInstructor }) => {
     setPage(0);
   };
 
-  const filteredRows = rows.filter((row) =>
-    row.user.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredRows = rows.filter(
+    (row) =>
+      row &&
+      row.user &&
+      row.user.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const handleRowClick = (user) => {
     setSelectedInstructor(user);
   };
 
-  const handleAddInstructor = () => {
-    // Logic for adding an instructor goes here
-    console.log("Add Instructor button clicked");
+  const handleAddInstructor = async (email) => {
+    try {
+      const session = await fetchAuthSession();
+      const userAtrributes = await fetchUserAttributes();
+      const token = session.tokens.idToken.toString();
+      const adminEmail = userAtrributes.email;
+      console.log("admin email", email);
+
+      const response = await fetch(
+        `${
+          import.meta.env.VITE_API_ENDPOINT
+        }admin/elevate_instructor?email=${email}`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: token,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      if (!response.ok) {
+        throw new Error(`Error Status: ${response.status}`);
+      }
+      const data = await response.json();
+      setInstructors((prevInstructors) => [
+        ...prevInstructors,
+        {
+          first_name: "Waiting for user to sign in",
+          last_name: "Waiting for user to sign in",
+          user_email: email,
+        },
+      ]);
+  
+      // Optionally, you can also update the rows state if needed
+      setRows((prevRows) => [
+        ...prevRows,
+        {
+          user: "Waiting for user to sign in",
+          last: "Waiting for user to sign in",
+          email: email,
+        },
+      ]);
+    } catch (error) {
+      console.error("Error elevating instructor", error);
+    }
   };
 
   return (
@@ -241,8 +287,6 @@ export const AdminInstructors = ({ setSelectedInstructor }) => {
               </TableFooter>
             </Table>
           </TableContainer>
-
-          {/* Add Instructor Button */}
           <Button
             variant="contained"
             color="primary"
@@ -257,14 +301,13 @@ export const AdminInstructors = ({ setSelectedInstructor }) => {
         open={open}
         onClose={handleClose}
         PaperProps={{
-          component: 'form',
+          component: "form",
           onSubmit: (event) => {
             event.preventDefault();
             const formData = new FormData(event.currentTarget);
-            const formJson = Object.fromEntries((formData).entries());
+            const formJson = Object.fromEntries(formData.entries());
             const email = formJson.email;
-            console.log(email);
-            handleAddInstructor();
+            handleAddInstructor(email);
           },
         }}
       >

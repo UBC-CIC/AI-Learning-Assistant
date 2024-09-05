@@ -349,14 +349,16 @@ const CourseDetails = ({ course, onBack }) => {
                     }}
                   >
                     {selected.map((value) => (
-                      <Chip key={value.user_email} label={value.first_name} />
+                      <Chip key={value.user_email} label={value.user_email} />
                     ))}
                   </Box>
                 )}
               >
                 {allInstructors.map((instructor) => (
                   <MenuItem key={instructor.user_email} value={instructor}>
-                    {instructor.first_name} {instructor.last_name}
+                    {instructor.first_name && instructor.last_name
+                      ? `${instructor.first_name} ${instructor.last_name}`
+                      : instructor.user_email}
                   </MenuItem>
                 ))}
               </Select>

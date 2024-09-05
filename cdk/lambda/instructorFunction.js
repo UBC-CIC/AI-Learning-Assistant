@@ -279,6 +279,62 @@ exports.handler = async (event) => {
           });
         }
         break;
+      case "PUT /instructor/update_metadata":
+        if (
+          event.queryStringParameters != null &&
+          event.queryStringParameters.module_id &&
+          event.queryStringParameters.filename
+        ) {
+          const moduleId = event.queryStringParameters.module_id;
+          const filename = event.queryStringParameters.filename;
+          const { metadata } = JSON.parse(event.body);
+
+          try {
+            // Query to find the file with the given module_id and filename
+            const existingFile = await sqlConnection`
+                      SELECT * FROM "Module_Files"
+                      WHERE module_id = ${moduleId}
+                      AND filename = ${filename};
+                  `;
+
+            if (existingFile.length === 0) {
+              response.statusCode = 404;
+              response.body = JSON.stringify({
+                error: "File not found with the given module_id and filename.",
+              });
+              break;
+            }
+
+            // Update the metadata field
+            const result = await sqlConnection`
+                      UPDATE "Module_Files"
+                      SET metadata = ${metadata}
+                      WHERE module_id = ${moduleId}
+                      AND filename = ${filename}
+                      RETURNING *;
+                  `;
+
+            if (result.length > 0) {
+              response.statusCode = 200;
+              response.body = JSON.stringify(result[0]);
+            } else {
+              response.statusCode = 500;
+              response.body = JSON.stringify({
+                error: "Failed to update metadata.",
+              });
+            }
+          } catch (err) {
+            response.statusCode = 500;
+            console.error(err);
+            response.body = JSON.stringify({ error: "Internal server error" });
+          }
+        } else {
+          response.statusCode = 400;
+          response.body = JSON.stringify({
+            error: "module_id and filename are required",
+          });
+        }
+        break;
       case "POST /instructor/create_module":
         if (
           event.queryStringParameters != null &&

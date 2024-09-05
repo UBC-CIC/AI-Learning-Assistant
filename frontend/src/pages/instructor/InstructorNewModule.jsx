@@ -1,4 +1,4 @@
-import  { useState, useEffect} from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -25,6 +25,8 @@ export const InstructorNewModule = ({ courseId }) => {
   const [newFiles, setNewFiles] = useState([]);
   const [savedFiles, setSavedFiles] = useState([]);
   const [deletedFiles, setDeletedFiles] = useState([]);
+  const [metadata, setMetadata] = useState({});
+
 
   const [savedImagesWithText, setSavedImagesWithText] = useState([]);
   const [newImagesWithText, setNewImagesWithText] = useState([]);
@@ -142,7 +144,7 @@ export const InstructorNewModule = ({ courseId }) => {
         }instructor/generate_presigned_url?course_id=${encodeURIComponent(
           course_id
         )}&module_id=${encodeURIComponent(
-          module.module_id
+          moduleid
         )}&module_name=${encodeURIComponent(
           moduleName
         )}&file_type=${encodeURIComponent(
@@ -160,6 +162,7 @@ export const InstructorNewModule = ({ courseId }) => {
       )
         .then((response) => response.json())
         .then((presignedUrl) => {
+          console.log('presignedurl', presignedUrl);
           return fetch(presignedUrl.presignedurl, {
             method: "PUT",
             headers: {
@@ -226,6 +229,7 @@ export const InstructorNewModule = ({ courseId }) => {
         const updatedModule = await response.json();
         console.log(`Created module ${updatedModule.module_id} successfully.`);
         await uploadFiles(newFiles, token, updatedModule.module_id);
+        console.log("to be uploaded", newImagesWithText);
         await uploadImagesWithText(
           newImagesWithText,
           token,
@@ -310,6 +314,8 @@ export const InstructorNewModule = ({ courseId }) => {
           setSavedImagesWithText={setSavedImagesWithText}
           deletedImagesWithText={deletedImagesWithText}
           setDeletedImagesWithText={setDeletedImagesWithText}
+          metadata={metadata}
+          setMetadata={setMetadata}
         />
 
         <ImagesWithText

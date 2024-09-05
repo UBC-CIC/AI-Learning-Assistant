@@ -44,7 +44,8 @@ exports.handler = async (event) => {
           const instructors = await sqlConnectionTableCreator`
                 SELECT user_email, first_name, last_name
                 FROM "Users"
-                WHERE roles @> ARRAY['instructor']::varchar[];
+                WHERE roles @> ARRAY['instructor']::varchar[]
+                ORDER BY last_name ASC;
               `;
 
           response.body = JSON.stringify(instructors);
@@ -64,7 +65,8 @@ exports.handler = async (event) => {
           // Query all courses from Courses table
           const courses = await sqlConnectionTableCreator`
                     SELECT *
-                    FROM "Courses";
+                    FROM "Courses"
+                    ORDER BY course_department ASC, course_number ASC;
                 `;
 
           response.body = JSON.stringify(courses);
@@ -355,6 +357,76 @@ exports.handler = async (event) => {
         } else {
           response.statusCode = 400;
           response.body = "course_id query parameter is required";
+        }
+        break;
+      case "POST /admin/elevate_instructor":
+        if (
+          event.queryStringParameters != null &&
+          event.queryStringParameters.email
+        ) {
+          const instructorEmail = event.queryStringParameters.email;
+
+          try {
+            // Check if the user exists
+            const existingUser = await sqlConnectionTableCreator`
+                        SELECT * FROM "Users"
+                        WHERE user_email = ${instructorEmail};
+                    `;
+
+            if (existingUser.length > 0) {
+              const userRoles = existingUser[0].roles;
+
+              // Check if the role is already 'instructor' or 'admin'
+              if (
+                userRoles.includes("instructor") ||
+                userRoles.includes("admin")
+              ) {
+                response.statusCode = 200;
+                response.body = JSON.stringify({
+                  message:
+                    "No changes made. User is already an instructor or admin.",
+                });
+                break;
+              }
+
+              // If the role is 'student', elevate to 'instructor'
+              if (userRoles.includes("student")) {
+                const newRoles = userRoles.map((role) =>
+                  role === "student" ? "instructor" : role
+                );
+
+                await sqlConnectionTableCreator`
+                              UPDATE "Users"
+                              SET roles = ARRAY['instructor']}
+                              WHERE user_email = ${instructorEmail};
+                          `;
+
+                response.statusCode = 200;
+                response.body = JSON.stringify({
+                  message: "User role updated to instructor.",
+                });
+                break;
+              }
+            } else {
+              // Create a new user with the role 'instructor'
+              await sqlConnectionTableCreator`
+                            INSERT INTO "Users" (user_email, roles)
+                            VALUES (${instructorEmail}, ARRAY['instructor']);
+                        `;
+
+              response.statusCode = 201;
+              response.body = JSON.stringify({
+                message: "New user created and elevated to instructor.",
+              });
+            }
+          } catch (err) {
+            response.statusCode = 500;
+            console.error(err);
+            response.body = JSON.stringify({ error: "Internal server error" });
+          }
+        } else {
+          response.statusCode = 400;
+          response.body = JSON.stringify({ error: "Email is required" });
         }
         break;
 

@@ -24,6 +24,7 @@ import ImagesWithText from "../../components/ImagesWithText";
 const InstructorEditCourse = () => {
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [metadata, setMetadata] = useState({});
 
   const [files, setFiles] = useState([]);
   const [newFiles, setNewFiles] = useState([]);
@@ -134,29 +135,10 @@ const InstructorEditCourse = () => {
     }
   }, [module]);
 
-  const handleRemoveSavedImage = (imgFileObject) => {
-    setDeletedImagesWithText((prevDeletedFiles) => [
-      ...prevDeletedFiles,
-      imgFileObject,
-    ]);
-    const updatedFiles = savedFiles.filter(
-      (file) => file.image.name !== imgFileObject.name
-    );
-    setSavedImagesWithText(updatedFiles);
-  };
-
   const handleDelete = async () => {
     try {
       const session = await fetchAuthSession();
       var token = session.tokens.idToken.toString();
-      await deleteFiles(deletedFiles, token);
-      await deleteFiles(savedFiles, token);
-      await deleteFiles(newFiles, token);
-      await deleteFiles(files, token);
-      await deleteImagesWithText(savedImagesWithText, token)
-      await deleteImagesWithText(newImagesWithText, token)
-      await deleteImagesWithText(deletedImagesWithText, token)
-
       const response = await fetch(
         `${
           import.meta.env.VITE_API_ENDPOINT
@@ -288,26 +270,8 @@ const InstructorEditCourse = () => {
       );
     });
   };
-
-  const handleRemoveFile = async (file_name) => {
-    setDeletedFiles((prevDeletedFiles) => [...prevDeletedFiles, file_name]);
-    const updatedFiles = files.filter((file) => file.fileName !== file_name);
-    setFiles(updatedFiles);
-  };
-
-  const handleSavedRemoveFile = async (file_name) => {
-    setDeletedFiles((prevDeletedFiles) => [...prevDeletedFiles, file_name]);
-    const updatedFiles = files.filter((file) => file.fileName !== file_name);
-    setSavedFiles(updatedFiles);
-  };
-
-  const handleRemoveNewFile = (file_name) => {
-    const updatedFiles = newFiles.filter((file) => file.name !== file_name);
-    setNewFiles(updatedFiles);
-  };
-
   const deleteImagesWithText = async (deletedImagesWithText, token) => {
-    console.log('deletedImagesWithText: ', deletedImagesWithText)
+    console.log("deletedImagesWithText: ", deletedImagesWithText);
     const deletedFilePromises = deletedImagesWithText.map((file) => {
       const fileType = getFileType(file.image.name);
       const fileName = removeFileExtension(file.image.name);
@@ -424,6 +388,8 @@ const InstructorEditCourse = () => {
       const { token } = await getAuthSessionAndEmail();
       await deleteFiles(deletedFiles, token);
       await uploadFiles(newFiles, token);
+      await updateMetaData(savedFiles, token);
+      // also do for saved Images
       await deleteImagesWithText(deletedImagesWithText, token);
       await uploadImagesWithText(newImagesWithText, token);
 
@@ -466,6 +432,30 @@ const InstructorEditCourse = () => {
     }
   };
 
+  const updateMetaData = (files, token) => {
+    [files].forEach((file) => {
+      const fileNameWithExtension = file.fileName || file.name || file.image.name;
+      const fileMetadata = metadata[fileName] || "";
+      const fileName = removeFileExtension(fileNameWithExtension);
+      return fetch(
+        `${
+          import.meta.env.VITE_API_ENDPOINT
+        }instructor/update_metadata?&module_id=${encodeURIComponent(
+          module.module_id
+        )}&filename=${encodeURIComponent(
+          fileName
+        )}`,
+        {
+          method: "PUT",
+          headers: {
+            Authorization: token,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ metadata: fileMetadata })
+        }
+      );
+    });
+  };
   const getAuthSessionAndEmail = async () => {
     const session = await fetchAuthSession();
     const token = session.tokens.idToken.toString();
@@ -521,6 +511,8 @@ const InstructorEditCourse = () => {
           setSavedImagesWithText={setSavedImagesWithText}
           deletedImagesWithText={deletedImagesWithText}
           setDeletedImagesWithText={setDeletedImagesWithText}
+          metadata={metadata}
+          setMetadata={setMetadata}
         />
 
         <ImagesWithText

@@ -47,6 +47,7 @@ export const Login = () => {
   const [newSignUp, setNewSignUp] = useState(false);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("")
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [role, setRole] = useState("");
@@ -85,40 +86,6 @@ export const Login = () => {
     } catch (error) {
       console.error("Token verification failed:", error);
       throw new Error("Unauthorized jwt token");
-    }
-  };
-
-  // send user data to api
-  const sendUserDataToBackend = async () => {
-    try {
-      const session = await fetchAuthSession();
-      const token = session.tokens.idToken.toString();
-      console.log("id token", token);
-
-      const response = await fetch(
-        `${
-          import.meta.env.VITE_API_ENDPOINT
-        }student/create_user?user_email=${encodeURIComponent(
-          username
-        )}&username=${encodeURIComponent(
-          username
-        )}&first_name=${encodeURIComponent(
-          firstName
-        )}&last_name=${encodeURIComponent(
-          lastName
-        )}&preferred_name=${encodeURIComponent(firstName)}`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: token,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-      const data = await response.json();
-      console.log("Response from backend:", data);
-    } catch (error) {
-      console.log("Error sending user data to backend:", error);
     }
   };
 
@@ -170,19 +137,57 @@ export const Login = () => {
   // user signs up
   const handleSignUp = async (event) => {
     event.preventDefault();
-    const confirmPassword = event.target.confirmPassword.value;
-
+    if (
+      username == "" ||
+      password == "" ||
+      confirmPassword == "" ||
+      firstName == "" ||
+      lastName == ""
+    ) {
+      toast.error("All fields are required", {
+        position: "top-center",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "colored",
+      });
+      return;
+    }
     // password specifications
     if (password !== confirmPassword) {
       setPasswordError("Passwords do not match");
+      toast.error("Passwords do not match", {
+        position: "top-center",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "colored",
+      });
       return;
     } else if (password.length < 8) {
       setPasswordError("Password must be at least 8 characters long");
+      toast.error("Password must be at least 8 characters long", {
+        position: "top-center",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "colored",
+      });
       return;
     }
     setPasswordError("");
     try {
       setLoading(true);
+      console.log("signing up");
       const { isSignUpComplete, userId, nextStep } = await signUp({
         username: username,
         password: password,
@@ -190,6 +195,7 @@ export const Login = () => {
           email: username,
         },
       });
+      console.log("signed up");
       setNewSignUp(false);
       console.log("User signed up:", isSignUpComplete, userId, nextStep);
       if (!isSignUpComplete) {
@@ -199,7 +205,7 @@ export const Login = () => {
         }
       }
     } catch (error) {
-      toast.error(`Error logging in: ${error}`, {
+      toast.error(`Error signing up: ${error}`, {
         position: "top-center",
         autoClose: 3000,
         hideProgressBar: false,
@@ -251,6 +257,16 @@ export const Login = () => {
         window.location.reload();
       }
     } catch (error) {
+      toast.error(`Error: ${error}`, {
+        position: "top-center",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "colored",
+      });
       console.log("Error setting new password:", error);
       setLoading(false);
       setNewUserPassword(false);
@@ -261,31 +277,6 @@ export const Login = () => {
   const handleConfirmSignUp = async (event) => {
     event.preventDefault();
     const confirmationCode = event.target.confirmationCode.value;
-
-    // try {
-    //   setLoading(true);
-    //   const user = await confirmSignUp({
-    //     username: username,
-    //     confirmationCode: confirmationCode,
-    //   });
-
-    //   setLoading(false);
-    //   console.log(
-    //     "User logged in:",
-    //     user.isSignUpComplete,
-    //     user.nextStep.signInStep
-    //   );
-    //   if (user.isSignUpComplete) {
-    //     setNewSignUp(false);
-    //     window.location.reload();
-    //   }
-    // } catch (error) {
-    //   console.log("Error setting new password:", error);
-    //   console.log(credentials);
-    //   setConfirmationError("Invalid confirmation code");
-    //   setLoading(false);
-    // }
-
     try {
       setLoading(true);
       await confirmSignUp({
@@ -339,6 +330,16 @@ export const Login = () => {
         setError("Automatic login failed. Please try signing in manually.");
       }
     } catch (error) {
+      toast.error(`Error: ${error}`, {
+        position: "top-center",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "colored",
+      });
       console.log("Error confirming sign-up:", error);
       setLoading(false);
       setConfirmationError(error.message);
@@ -352,6 +353,16 @@ export const Login = () => {
       setLoading(false);
       setConfirmationError("");
     } catch (error) {
+      toast.error(`Error: ${error}`, {
+        position: "top-center",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "colored",
+      });
       console.log("Error resending confirmation code:", error);
       setLoading(false);
     }
@@ -364,6 +375,16 @@ export const Login = () => {
       handleResetPasswordNextSteps(output);
       console.log("username", username);
     } catch (error) {
+      toast.error(`Error: ${error}`, {
+        position: "top-center",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "colored",
+      });
       console.log(error);
       setError(error.message);
       setMessage("");
@@ -404,6 +425,16 @@ export const Login = () => {
       setStep("done");
       setError("");
     } catch (error) {
+      toast.error(`Error: ${error}`, {
+        position: "top-center",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "colored",
+      });
       console.log(error);
       console.log(username);
       console.log(confirmationCode);
@@ -476,6 +507,7 @@ export const Login = () => {
                       autoFocus
                       value={username}
                       onChange={(e) => setUsername(e.target.value)}
+                      inputProps={{ maxLength: 40 }}
                     />
                     <TextField
                       margin="normal"
@@ -488,6 +520,7 @@ export const Login = () => {
                       autoComplete="current-password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
+                      inputProps={{ maxLength: 50 }}
                     />
                     <Button
                       type="submit"
@@ -538,9 +571,6 @@ export const Login = () => {
                   Create your account
                 </Typography>
                 <Box
-                  component="form"
-                  noValidate
-                  onSubmit={handleSignUp}
                   sx={{ mt: 1 }}
                 >
                   <Grid container spacing={2}>
@@ -555,6 +585,7 @@ export const Login = () => {
                         autoFocus
                         value={firstName}
                         onChange={(e) => setFirstName(e.target.value)}
+                        inputProps={{ maxLength: 30 }}
                       />
                     </Grid>
                     <Grid item xs={12} sm={6}>
@@ -567,6 +598,7 @@ export const Login = () => {
                         autoComplete="family-name"
                         value={lastName}
                         onChange={(e) => setLastName(e.target.value)}
+                        inputProps={{ maxLength: 30 }}
                       />
                     </Grid>
                     <Grid item xs={12}>
@@ -579,6 +611,7 @@ export const Login = () => {
                         autoComplete="email"
                         value={username}
                         onChange={(e) => setUsername(e.target.value)}
+                        inputProps={{ maxLength: 40 }}
                       />
                     </Grid>
                     <Grid item xs={12}>
@@ -592,6 +625,7 @@ export const Login = () => {
                         autoComplete="new-password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
+                        inputProps={{ maxLength: 50 }}
                       />
                     </Grid>
                     <Grid item xs={12}>
@@ -603,14 +637,17 @@ export const Login = () => {
                         type="password"
                         id="confirmPassword"
                         autoComplete="new-password"
+                        value = {confirmPassword}
+                        onChange = {(e)=> setConfirmPassword(e.target.value)}
+                        inputProps={{ maxLength: 50 }}
                       />
                     </Grid>
                   </Grid>
                   <Button
-                    type="submit"
                     fullWidth
                     variant="contained"
                     color="primary"
+                    onClick={handleSignUp}
                     sx={{ mt: 3, mb: 2 }}
                   >
                     Sign Up
@@ -620,7 +657,6 @@ export const Login = () => {
                       <Link
                         href="#"
                         variant="body2"
-                        onSubmit
                         onClick={() => setNewSignUp(false)}
                       >
                         Already have an account? {"Sign in"}
@@ -706,6 +742,7 @@ export const Login = () => {
                     name="confirmationCode"
                     placeholder="Confirmation Code"
                     type="password"
+                    maxLength={15}
                     required
                   />
                   {confirmationError && (
@@ -756,11 +793,12 @@ export const Login = () => {
                   <>
                     <Grid item xs={12}>
                       <TextField
-                        label="Username"
+                        label="Email"
                         value={username}
                         onChange={(e) => setUsername(e.target.value)}
                         fullWidth
                         margin="normal"
+                        inputProps={{ maxLength: 40 }}
                       />
                     </Grid>
                     <Button
@@ -791,6 +829,7 @@ export const Login = () => {
                           autoComplete="email"
                           value={username}
                           onChange={(e) => setUsername(e.target.value)}
+                          inputProps={{ maxLength: 40 }}
                         />
                       </Grid>
                       <Grid item xs={12}>
@@ -800,6 +839,7 @@ export const Login = () => {
                           onChange={(e) => setConfirmationCode(e.target.value)}
                           fullWidth
                           margin="normal"
+                          inputProps={{ maxLength: 15 }}
                         />
                       </Grid>
                       <Grid item xs={12}>
@@ -810,6 +850,7 @@ export const Login = () => {
                           onChange={(e) => setNewPassword(e.target.value)}
                           fullWidth
                           margin="normal"
+                          inputProps={{ maxLength: 50 }}
                         />
                       </Grid>
                       <Button
@@ -838,12 +879,22 @@ export const Login = () => {
                   <Link
                     href="#"
                     variant="body2"
-                    onSubmit
                     onClick={() => setForgotPassword(false)}
                   >
                     Sign in
                   </Link>
                 )}
+                <Grid container sx={{mt: 4}}>
+                  <Grid item xs>
+                    <Link
+                      href="#"
+                      variant="body2"
+                      onClick={() => setForgotPassword(false)}
+                    >
+                      Remember your Password? {"Sign in"}
+                    </Link>
+                  </Grid>
+                </Grid>
               </Box>
             </Grid>
           )}

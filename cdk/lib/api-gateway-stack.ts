@@ -958,13 +958,16 @@ export class ApiGatewayStack extends cdk.Stack {
       code: lambda.Code.fromAsset("lambda"),
       handler: "s3UploadTrigger.lambda_handler",
       timeout: Duration.seconds(300),
+      vpc: vpcStack.vpc,
+      functionName: "s3UploadTrigger",
       memorySize: 128,
       environment: {
+        SM_DB_CREDENTIALS: db.secretPathUser.secretName, // Database User Credentials
+        RDS_PROXY_ENDPOINT: db.rdsProxyEndpoint, // RDS Proxy Endpoint
         BUCKET: dataIngestionBucket.bucketName,
         REGION: this.region,
       },
-      functionName: "s3UploadTrigger",
-      layers: [powertoolsLayer],
+      layers: [psycopgLayer, powertoolsLayer],
     });
 
     // Override the Logical ID of the Lambda Function to get ARN in OpenAPI
@@ -978,6 +981,20 @@ export class ApiGatewayStack extends cdk.Stack {
     s3UploadTrigger.addEventSource(new lambdaEventSources.S3EventSource(dataIngestionBucket, {
       events: [s3.EventType.OBJECT_CREATED],
     }));
+
+    // Grant access to Secret Manager
+    s3UploadTrigger.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: [
+          //Secrets Manager
+          "secretsmanager:GetSecretValue",
+        ],
+        resources: [
+          `arn:aws:secretsmanager:${this.region}:${this.account}:secret:*`,
+        ],
+      })
+    );
 
     // Create the Lambda function for generating presigned URLs
     const generatePreSignedURL = new lambda.Function(

@@ -1,7 +1,7 @@
 import * as cdk from "aws-cdk-lib";
 import * as apigateway from "aws-cdk-lib/aws-apigateway";
 import * as lambda from "aws-cdk-lib/aws-lambda";
-import * as lambdaEventSources from 'aws-cdk-lib/aws-lambda-event-sources';
+import * as lambdaEventSources from "aws-cdk-lib/aws-lambda-event-sources";
 import * as iam from "aws-cdk-lib/aws-iam";
 import { Construct } from "constructs";
 import { Duration } from "aws-cdk-lib";
@@ -94,21 +94,26 @@ export class ApiGatewayStack extends cdk.Stack {
      *
      * Create Lambda layer for LangChain Experimental
      */
-    const langchainExperimentalLayer = new LayerVersion(this, "langchain_experimental", {
-      code: Code.fromAsset("./layers/langchain_experimental.zip"),
-      compatibleRuntimes: [Runtime.PYTHON_3_9],
-      description: "Lambda layer containing the LangChain Experimental Python library",
-    });
+    const langchainExperimentalLayer = new LayerVersion(
+      this,
+      "langchain_experimental",
+      {
+        code: Code.fromAsset("./layers/langchain_experimental.zip"),
+        compatibleRuntimes: [Runtime.PYTHON_3_9],
+        description:
+          "Lambda layer containing the LangChain Experimental Python library",
+      }
+    );
 
     /**
      *
      * Create Lambda layer for Torch
      */
-    const torchLayer = new LayerVersion(this, "torch", {
-      code: Code.fromAsset("./layers/torch.zip"),
-      compatibleRuntimes: [Runtime.PYTHON_3_9],
-      description: "Lambda layer containing the Torch Python library",
-    });
+    // const torchLayer = new LayerVersion(this, "torch", {
+    //   code: Code.fromAsset("./layers/torch.zip"),
+    //   compatibleRuntimes: [Runtime.PYTHON_3_9],
+    //   description: "Lambda layer containing the Torch Python library",
+    // });
 
     /**
      *
@@ -121,14 +126,18 @@ export class ApiGatewayStack extends cdk.Stack {
     });
 
     // powertoolsLayer does not follow the format of layerList
-    const powertoolsLayer = lambda.LayerVersion.fromLayerVersionArn(this, 'PowertoolsLayer', `arn:aws:lambda:${this.region}:017000801446:layer:AWSLambdaPowertoolsPythonV2:78`);
+    const powertoolsLayer = lambda.LayerVersion.fromLayerVersionArn(
+      this,
+      "PowertoolsLayer",
+      `arn:aws:lambda:${this.region}:017000801446:layer:AWSLambdaPowertoolsPythonV2:78`
+    );
 
     this.layerList["psycopg2"] = psycopgLayer;
     this.layerList["postgres"] = postgres;
     this.layerList["jwt"] = jwt;
     this.layerList["langchain"] = langchainLayer;
     this.layerList["langchain_experimental"] = langchainExperimentalLayer;
-    this.layerList["torcj"] = torchLayer;
+    // this.layerList["torcj"] = torchLayer;
     this.layerList["open_clip_torch"] = opencliptorchLayer;
 
     // Create Cognito user pool
@@ -660,7 +669,11 @@ export class ApiGatewayStack extends cdk.Stack {
         statements: [
           new iam.PolicyStatement({
             effect: iam.Effect.ALLOW,
-            actions: ["cognito-idp:AdminAddUserToGroup", "cognito-idp:AdminGetUser", "cognito-idp:AdminListGroupsForUser"],
+            actions: [
+              "cognito-idp:AdminAddUserToGroup",
+              "cognito-idp:AdminGetUser",
+              "cognito-idp:AdminListGroupsForUser",
+            ],
             resources: [
               `arn:aws:cognito-idp:${this.region}:${this.account}:userpool/${this.userPool.userPoolId}`,
             ],
@@ -678,7 +691,7 @@ export class ApiGatewayStack extends cdk.Stack {
         actions: [
           // Secrets Manager
           "secretsmanager:GetSecretValue",
-          "secretsmanager:PutSecretValue"
+          "secretsmanager:PutSecretValue",
         ],
         resources: [
           `arn:aws:secretsmanager:${this.region}:${this.account}:secret:AILA/*`,
@@ -695,7 +708,7 @@ export class ApiGatewayStack extends cdk.Stack {
       functionName: "addStudentOnSignUp",
       memorySize: 128,
       role: coglambdaRole,
-    })
+    });
 
     const adjustUserRoles = new lambda.Function(this, "adjustUserRoles", {
       runtime: lambda.Runtime.NODEJS_16_X, // Execution environment
@@ -711,7 +724,7 @@ export class ApiGatewayStack extends cdk.Stack {
       memorySize: 512,
       layers: [postgres],
       role: coglambdaRole,
-    })
+    });
 
     this.userPool.addTrigger(
       cognito.UserPoolOperation.POST_AUTHENTICATION,
@@ -852,11 +865,17 @@ export class ApiGatewayStack extends cdk.Stack {
         SM_DB_CREDENTIALS: db.secretPathUser.secretName, // Database User Credentials
         RDS_PROXY_ENDPOINT: db.rdsProxyEndpoint, // RDS Proxy Endpoint
       },
-      layers: [psycopgLayer, langchainLayer, langchainExperimentalLayer, torchLayer, opencliptorchLayer,],
+      layers: [
+        psycopgLayer,
+        langchainLayer,
+        langchainExperimentalLayer,
+        opencliptorchLayer,
+      ],
     });
 
     // Override the Logical ID of the Lambda Function to get ARN in OpenAPI
-    const cfnTextGenFunc = textGenLambdaFunc.node.defaultChild as lambda.CfnFunction;
+    const cfnTextGenFunc = textGenLambdaFunc.node
+      .defaultChild as lambda.CfnFunction;
     cfnTextGenFunc.overrideLogicalId("TextGenLambdaFunc");
 
     // Add the permission to the Lambda function's policy to allow API Gateway access
@@ -869,11 +888,12 @@ export class ApiGatewayStack extends cdk.Stack {
     // Custom policy statement for Bedrock access
     const bedrockPolicyStatement = new iam.PolicyStatement({
       effect: iam.Effect.ALLOW,
-      actions: [
-        'bedrock:InvokeModel',
-        'bedrock:InvokeEndpoint'
+      actions: ["bedrock:InvokeModel", "bedrock:InvokeEndpoint"],
+      resources: [
+        "arn:aws:bedrock:" +
+          this.region +
+          "::foundation-model/meta.llama3-70b-instruct-v1:0",
       ],
-      resources: ["arn:aws:bedrock:" + this.region + "::foundation-model/meta.llama3-70b-instruct-v1:0"],
     });
 
     // Attach the custom Bedrock policy to Lambda function
@@ -904,9 +924,7 @@ export class ApiGatewayStack extends cdk.Stack {
           "dynamodb:PutItem", // if your function needs to put items into tables
           "dynamodb:GetItem", // if your function needs to get items from tables
         ],
-        resources: [
-          `arn:aws:dynamodb:${this.region}:${this.account}:table/*`,
-        ],
+        resources: [`arn:aws:dynamodb:${this.region}:${this.account}:table/*`],
       })
     );
 
@@ -932,30 +950,40 @@ export class ApiGatewayStack extends cdk.Stack {
     });
 
     // Create the Lambda function for generating presigned URLs
-    const generatePreSignedURL = new lambda.Function(this, "GeneratePreSignedURLFunc", {
-      runtime: lambda.Runtime.PYTHON_3_9,
-      code: lambda.Code.fromAsset("lambda"),
-      handler: "generatePreSignedURL.lambda_handler",
-      timeout: Duration.seconds(300),
-      memorySize: 128,
-      environment: {
-        BUCKET: dataIngestionBucket.bucketName,
-        REGION: this.region,
-      },
-      functionName: "GeneratePreSignedURLFunc",
-      layers: [powertoolsLayer],
-    });
+    const generatePreSignedURL = new lambda.Function(
+      this,
+      "GeneratePreSignedURLFunc",
+      {
+        runtime: lambda.Runtime.PYTHON_3_9,
+        code: lambda.Code.fromAsset("lambda"),
+        handler: "generatePreSignedURL.lambda_handler",
+        timeout: Duration.seconds(300),
+        memorySize: 128,
+        environment: {
+          BUCKET: dataIngestionBucket.bucketName,
+          REGION: this.region,
+        },
+        functionName: "GeneratePreSignedURLFunc",
+        layers: [powertoolsLayer],
+      }
+    );
 
     // Override the Logical ID of the Lambda Function to get ARN in OpenAPI
-    const cfnGeneratePreSignedURL = generatePreSignedURL.node.defaultChild as lambda.CfnFunction;
+    const cfnGeneratePreSignedURL = generatePreSignedURL.node
+      .defaultChild as lambda.CfnFunction;
     cfnGeneratePreSignedURL.overrideLogicalId("GeneratePreSignedURLFunc");
 
     // Grant the Lambda function the necessary permissions
     dataIngestionBucket.grantReadWrite(generatePreSignedURL);
-    generatePreSignedURL.addToRolePolicy(new iam.PolicyStatement({
-      actions: ["s3:PutObject", "s3:GetObject"],
-      resources: [dataIngestionBucket.bucketArn, `${dataIngestionBucket.bucketArn}/*`],
-    }));
+    generatePreSignedURL.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ["s3:PutObject", "s3:GetObject"],
+        resources: [
+          dataIngestionBucket.bucketArn,
+          `${dataIngestionBucket.bucketArn}/*`,
+        ],
+      })
+    );
 
     // Add the permission to the Lambda function's policy to allow API Gateway access
     generatePreSignedURL.addPermission("AllowApiGatewayInvoke", {
@@ -963,7 +991,7 @@ export class ApiGatewayStack extends cdk.Stack {
       action: "lambda:InvokeFunction",
       sourceArn: `arn:aws:execute-api:${this.region}:${this.account}:${this.api.restApiId}/*/*/instructor*`,
     });
-    
+
     /**
      *
      * Create Lambda with container image for data ingestion workflow in RAG pipeline
@@ -1009,7 +1037,8 @@ export class ApiGatewayStack extends cdk.Stack {
     });
 
     // Override the Logical ID of the Lambda Function to get ARN in OpenAPI
-    const cfnGetFilesFunction = getFilesFunction.node.defaultChild as lambda.CfnFunction;
+    const cfnGetFilesFunction = getFilesFunction.node
+      .defaultChild as lambda.CfnFunction;
     cfnGetFilesFunction.overrideLogicalId("GetFilesFunction");
 
     // Grant the Lambda function read-only permissions to the S3 bucket

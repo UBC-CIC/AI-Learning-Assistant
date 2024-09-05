@@ -38,7 +38,7 @@ def lambda_handler(event, context):
         }
 
     try:
-        # Allowed file types for ducuments
+        # Allowed file types for documents
         allowed_document_types = {"pdf", "docx", "pptx", "txt", "xlsx", "xps", "mobi", "cbz"}
         
         # Allowed file types for images
@@ -48,10 +48,15 @@ def lambda_handler(event, context):
         }
 
         folder = None
+        objects_to_delete = []
+
         if file_type in allowed_document_types:
             folder = "documents"
+            objects_to_delete.append({"Key": f"{course_id}/{module_name}_{module_id}/{folder}/{file_name}.{file_type}"})
         elif file_type in allowed_images_types:
             folder = "images"
+            objects_to_delete.append({"Key": f"{course_id}/{module_name}_{module_id}/{folder}/{file_name}.{file_type}"})
+            objects_to_delete.append({"Key": f"{course_id}/{module_name}_{module_id}/{folder}/{file_name}.txt"})
         else:
             return {
                 'statusCode': 400,
@@ -64,18 +69,16 @@ def lambda_handler(event, context):
                 'body': json.dumps('Unsupported file type')
             }
 
-        file_key = f"{course_id}/{module_name}_{module_id}/{folder}/{file_name}.{file_type}"
-        
         response = s3.delete_objects(
             Bucket=BUCKET,
             Delete={
-                "Objects": [{"Key": file_key}],
+                "Objects": objects_to_delete,
                 "Quiet": True,
             },
         )
         
         logger.info(f"Response: {response}")
-        logger.info(f"File {file_key} deleted successfully.")
+        logger.info(f"File {file_name}.{file_type} and any associated files deleted successfully.")
         return {
             'statusCode': 200,
             "headers": {

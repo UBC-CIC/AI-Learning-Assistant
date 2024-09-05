@@ -931,6 +931,36 @@ export class ApiGatewayStack extends cdk.Stack {
       removalPolicy: cdk.RemovalPolicy.RETAIN,
     });
 
+    /**
+     *
+     * Create Lambda function that is triggered when a file is uploaded
+     */
+    const s3UploadTrigger = new lambda.Function(this, "s3UploadTrigger", {
+      runtime: lambda.Runtime.PYTHON_3_9,
+      code: lambda.Code.fromAsset("lambda"),
+      handler: "s3UploadTrigger.lambda_handler",
+      timeout: Duration.seconds(300),
+      memorySize: 128,
+      environment: {
+        BUCKET: dataIngestionBucket.bucketName,
+        REGION: this.region,
+      },
+      functionName: "s3UploadTrigger",
+      layers: [powertoolsLayer],
+    });
+
+    // Override the Logical ID of the Lambda Function to get ARN in OpenAPI
+    const cfns3UploadTrigger = s3UploadTrigger.node.defaultChild as lambda.CfnFunction;
+    cfns3UploadTrigger.overrideLogicalId("s3UploadTrigger");
+
+    // Grant the Lambda function read-only permissions to the S3 bucket
+    dataIngestionBucket.grantRead(s3UploadTrigger);
+
+    // Add S3 event source to trigger the Lambda function on object creation
+    s3UploadTrigger.addEventSource(new lambdaEventSources.S3EventSource(dataIngestionBucket, {
+      events: [s3.EventType.OBJECT_CREATED],
+    }));
+
     // Create the Lambda function for generating presigned URLs
     const generatePreSignedURL = new lambda.Function(this, "GeneratePreSignedURLFunc", {
       runtime: lambda.Runtime.PYTHON_3_9,

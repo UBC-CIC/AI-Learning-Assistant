@@ -66,21 +66,35 @@ def lambda_handler(event, context):
 
     txt_key = None
 
-    # Allowed file types for ducuments
-    allowed_document_types = {"pdf", "docx", "pptx", "txt", "xlsx", "xps", "mobi", "cbz"}
-    
-    # Allowed file types for images
+    # Allowed file types for documents with their corresponding MIME types
+    allowed_document_types = {
+        "pdf": "application/pdf",
+        "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        "txt": "text/plain",
+        "xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "xps": "application/oxps",  # or "application/vnd.ms-xpsdocument" for legacy XPS
+        "mobi": "application/x-mobipocket-ebook",
+        "cbz": "application/vnd.comicbook+zip"
+    }
+
+    # Allowed file types for images with their corresponding MIME types
     allowed_images_types = {
-        'bmp': 'bmp', 'eps': 'eps', 'gif': 'gif', 'icns': 'icns', 'ico': 'ico', 'im': 'im', 'jpeg': 'jpeg', 'jpg': 'jpeg', 'j2k': 'j2k', 'jp2': 'jp2', 'msp': 'msp', 
-        'pcx': 'pcx', 'png': 'png', 'ppm': 'ppm', 'pgm': 'pgm', 'pbm': 'pbm', 'sgi': 'sgi', 'tga': 'tga', 'tiff': 'tiff', 'tif': 'tif', 'webp': 'webp', 'xbm': 'xbm'
+        'bmp': 'image/bmp', 'eps': 'application/postscript', 'gif': 'image/gif',
+        'icns': 'image/icns', 'ico': 'image/vnd.microsoft.icon', 'im': 'application/x-im',
+        'jpeg': 'image/jpeg', 'jpg': 'image/jpeg', 'j2k': 'image/jp2', 'jp2': 'image/jp2',
+        'msp': 'application/vnd.ms-paint', 'pcx': 'image/x-pcx', 'png': 'image/png',
+        'ppm': 'image/x-portable-pixmap', 'pgm': 'image/x-portable-graymap', 
+        'pbm': 'image/x-portable-bitmap', 'sgi': 'image/sgi', 'tga': 'image/x-tga', 
+        'tiff': 'image/tiff', 'tif': 'image/tiff', 'webp': 'image/webp', 'xbm': 'image/x-xbitmap'
     }
     
     if file_type in allowed_document_types:
         key = f"{course_id}/{module_name}_{module_id}/documents/{file_name}.{file_type}"
-        content_type = f"application/{file_type}"
+        content_type = allowed_document_types[file_type]
     elif file_type in allowed_images_types:
         key = f"{course_id}/{module_name}_{module_id}/images/{file_name}.{file_type}"
-        content_type = f"image/{allowed_images_types[file_type]}"
+        content_type = allowed_images_types[file_type]
         txt_key = f"{course_id}/{module_name}_{module_id}/images/{file_name}.txt" if txt_file_contents else None
     else:
         return {

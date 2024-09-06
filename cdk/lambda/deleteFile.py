@@ -1,12 +1,74 @@
 import os
 import json
 import boto3
+import psycopg2
 from aws_lambda_powertools import Logger
 
 logger = Logger()
 
 s3 = boto3.client('s3')
 BUCKET = os.environ["BUCKET"]
+DB_SECRET_NAME = os.environ["SM_DB_CREDENTIALS"]
+
+def get_secret():
+    # secretsmanager client to get db credentials
+    sm_client = boto3.client("secretsmanager")
+    response = sm_client.get_secret_value(SecretId=DB_SECRET_NAME)["SecretString"]
+    secret = json.loads(response)
+    return secret
+
+def connect_to_db():
+    try:
+        db_secret = get_secret()
+        connection_params = {
+            'dbname': db_secret["dbname"],
+            'user': db_secret["username"],
+            'password': db_secret["password"],
+            'host': db_secret["host"],
+            'port': db_secret["port"]
+        }
+        connection_string = " ".join([f"{key}={value}" for key, value in connection_params.items()])
+        connection = psycopg2.connect(connection_string)
+        logger.info("Connected to the database!")
+        return connection
+    except Exception as e:
+        logger.error(f"Failed to connect to database: {e}")
+        if connection:
+            connection.rollback()
+            connection.close()
+        return None
+
+def delete_file_from_db(module_id, file_name, file_type):
+    connection = connect_to_db()
+    if connection is None:
+        logger.error("No database connection available.")
+        return {
+            "statusCode": 500,
+            "body": json.dumps("Database connection failed.")
+        }
+    
+    try:
+        cur = connection.cursor()
+
+        delete_query = """
+            DELETE FROM "Module_Files" 
+            WHERE module_id = %s AND filename = %s AND filetype = %s;
+        """
+        cur.execute(delete_query, (module_id, file_name, file_type))
+
+        connection.commit()
+        logger.info(f"Successfully deleted file {file_name}.{file_type} for module {module_id}.")
+
+        cur.close()
+        connection.close()
+    except Exception as e:
+        if cur:
+            cur.close()
+        if connection:
+            connection.rollback()
+            connection.close()
+        logger.error(f"Error deleting file {file_name}.{file_type} from database: {e}")
+        raise
 
 @logger.inject_lambda_context
 def lambda_handler(event, context):
@@ -50,6 +112,7 @@ def lambda_handler(event, context):
         folder = None
         objects_to_delete = []
 
+        # Determine the folder based on the file type
         if file_type in allowed_document_types:
             folder = "documents"
             objects_to_delete.append({"Key": f"{course_id}/{module_name}_{module_id}/{folder}/{file_name}.{file_type}"})
@@ -69,6 +132,7 @@ def lambda_handler(event, context):
                 'body': json.dumps('Unsupported file type')
             }
 
+        # Delete the file from S3
         response = s3.delete_objects(
             Bucket=BUCKET,
             Delete={
@@ -77,8 +141,26 @@ def lambda_handler(event, context):
             },
         )
         
-        logger.info(f"Response: {response}")
-        logger.info(f"File {file_name}.{file_type} and any associated files deleted successfully.")
+        logger.info(f"S3 Response: {response}")
+        logger.info(f"File {file_name}.{file_type} and any associated files deleted successfully from S3.")
+
+        # Delete the file from the database
+        try:
+            delete_file_from_db(module_id, file_name, file_type)
+            logger.info(f"File {file_name}.{file_type} deleted from the database.")
+        except Exception as e:
+            logger.error(f"Error deleting file {file_name}.{file_type} from the database: {e}")
+            return {
+                'statusCode': 500,
+                "headers": {
+                    "Content-Type": "application/json",
+                    "Access-Control-Allow-Headers": "*",
+                    "Access-Control-Allow-Origin": "*",
+                    "Access-Control-Allow-Methods": "*",
+                },
+                'body': json.dumps(f"Error deleting file {file_name}.{file_type} from the database")
+            }
+
         return {
             'statusCode': 200,
             "headers": {

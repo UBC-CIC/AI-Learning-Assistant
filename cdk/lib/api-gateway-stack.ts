@@ -1059,12 +1059,15 @@ export class ApiGatewayStack extends cdk.Stack {
       handler: "deleteFile.lambda_handler",
       timeout: Duration.seconds(300),
       memorySize: 128,
+      vpc: vpcStack.vpc,
       environment: {
+        SM_DB_CREDENTIALS: db.secretPathUser.secretName, // Database User Credentials
+        RDS_PROXY_ENDPOINT: db.rdsProxyEndpoint, // RDS Proxy Endpoint
         BUCKET: dataIngestionBucket.bucketName,
         REGION: this.region,
       },
       functionName: "DeleteFileFunc",
-      layers: [powertoolsLayer],
+      layers: [psycopgLayer, powertoolsLayer],
     });
 
     // Override the Logical ID of the Lambda Function to get ARN in OpenAPI
@@ -1073,6 +1076,20 @@ export class ApiGatewayStack extends cdk.Stack {
 
     // Grant the Lambda function the necessary permissions
     dataIngestionBucket.grantDelete(deleteFile);
+
+    // Grant access to Secret Manager
+    deleteFile.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: [
+          //Secrets Manager
+          "secretsmanager:GetSecretValue",
+        ],
+        resources: [
+          `arn:aws:secretsmanager:${this.region}:${this.account}:secret:*`,
+        ],
+      })
+    );
 
     // Add the permission to the Lambda function's policy to allow API Gateway access
     deleteFile.addPermission("AllowApiGatewayInvoke", {

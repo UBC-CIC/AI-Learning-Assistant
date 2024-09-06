@@ -397,7 +397,7 @@ exports.handler = async (event) => {
 
                 await sqlConnectionTableCreator`
                               UPDATE "Users"
-                              SET roles = ARRAY['instructor']}
+                              SET roles = ARRAY['instructor']
                               WHERE user_email = ${instructorEmail};
                           `;
 
@@ -427,6 +427,60 @@ exports.handler = async (event) => {
         } else {
           response.statusCode = 400;
           response.body = JSON.stringify({ error: "Email is required" });
+        }
+        break;
+      case "POST /admin/lower_instructor":
+        if (
+          event.queryStringParameters != null &&
+          event.queryStringParameters.email
+        ) {
+          try {
+            const userEmail = event.queryStringParameters.email;
+
+            // Fetch the roles for the user
+            const userRoleData = await sqlConnection`
+                SELECT roles
+                FROM "Users"
+                WHERE user_email = ${userEmail};
+              `;
+
+            const userRoles = userRoleData[0]?.roles;
+
+            if (!userRoles || !userRoles.includes("instructor")) {
+              response.statusCode = 400;
+              response.body = JSON.stringify({
+                error: "User is not an instructor or doesn't exist",
+              });
+              break;
+            }
+
+            // Replace 'instructor' with 'student'
+            const updatedRoles = userRoles
+              .filter((role) => role !== "instructor")
+              .concat("student");
+
+            // Update the roles in the database
+            await sqlConnection`
+                UPDATE "Users"
+                SET roles = ${updatedRoles}
+                WHERE user_email = ${userEmail};
+              `;
+
+            // Success response
+            response.statusCode = 200;
+            response.body = JSON.stringify({
+              message: `User role updated to student for ${userEmail}`,
+            });
+          } catch (err) {
+            console.log(err);
+            response.statusCode = 500;
+            response.body = JSON.stringify({ error: "Internal server error" });
+          }
+        } else {
+          response.statusCode = 400;
+          response.body = JSON.stringify({
+            error: "email query parameter is missing",
+          });
         }
         break;
 

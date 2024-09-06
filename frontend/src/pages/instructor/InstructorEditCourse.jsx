@@ -433,8 +433,11 @@ const InstructorEditCourse = () => {
   };
 
   const updateMetaData = (files, token) => {
-    [files].forEach((file) => {
-      const fileNameWithExtension = file.fileName || file.name || file.image.name;
+    console.log(files);
+    files.forEach((file) => {
+      console.log(file);
+      const fileNameWithExtension =
+        file.fileName || file.name || file.image.name;
       const fileMetadata = metadata[fileName] || "";
       const fileName = removeFileExtension(fileNameWithExtension);
       return fetch(
@@ -442,16 +445,14 @@ const InstructorEditCourse = () => {
           import.meta.env.VITE_API_ENDPOINT
         }instructor/update_metadata?&module_id=${encodeURIComponent(
           module.module_id
-        )}&filename=${encodeURIComponent(
-          fileName
-        )}`,
+        )}&filename=${encodeURIComponent(fileName)}`,
         {
           method: "PUT",
           headers: {
             Authorization: token,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ metadata: fileMetadata })
+          body: JSON.stringify({ metadata: fileMetadata }),
         }
       );
     });

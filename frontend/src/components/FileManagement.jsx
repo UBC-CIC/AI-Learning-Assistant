@@ -31,7 +31,7 @@ const FileManagement = ({
   deletedImagesWithText,
   setDeletedImagesWithText,
   metadata,
-  setMetadata
+  setMetadata,
 }) => {
   const handleMetadataChange = (fileName, value) => {
     setMetadata((prev) => ({ ...prev, [fileName]: value }));
@@ -40,9 +40,6 @@ const FileManagement = ({
   const handleDownloadClick = (url) => {
     window.open(url, "_blank");
   };
-
-
-  
 
   const handleFileUpload = async (event) => {
     const uploadedFiles = Array.from(event);
@@ -158,7 +155,8 @@ const FileManagement = ({
             <TableHead>
               <TableRow>
                 <TableCell>File Name</TableCell>
-                <TableCell align='center' >Meta Data</TableCell> {/* New Meta Data column */}
+                <TableCell align="center">Meta Data</TableCell>{" "}
+                {/* New Meta Data column */}
                 <TableCell align="right" sx={{ pr: 5 }}>
                   Download
                 </TableCell>
@@ -167,85 +165,97 @@ const FileManagement = ({
             </TableHead>
             <TableBody>
               {[...files, ...savedFiles, ...newFiles, ...savedImagesWithText]
-                .sort((a, b) => {
-                  if (newFiles.includes(a) && !newFiles.includes(b)) return 1;
-                  if (!newFiles.includes(a) && newFiles.includes(b)) return -1;
+                .length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={4}>
+                    <Typography variant="body2" align="center">
+                      No files found
+                    </Typography>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                [...files, ...savedFiles, ...newFiles, ...savedImagesWithText]
+                  .sort((a, b) => {
+                    if (newFiles.includes(a) && !newFiles.includes(b)) return 1;
+                    if (!newFiles.includes(a) && newFiles.includes(b))
+                      return -1;
 
-                  const nameA = a.fileName || a.name;
-                  const nameB = b.fileName || b.name;
+                    const nameA = a.fileName || a.name;
+                    const nameB = b.fileName || b.name;
 
-                  if (nameA < nameB) return -1;
-                  if (nameA > nameB) return 1;
+                    if (nameA < nameB) return -1;
+                    if (nameA > nameB) return 1;
 
-                  return 0;
-                })
-                .map((file, index) => {
-                  const fileName =
-                    file.fileName || file.name || file.image.name;
-                  return (
-                    <TableRow key={index}>
-                      <TableCell>
-                        <Typography
-                          variant="body2"
-                          sx={{
-                            color: newFiles.includes(file)
-                              ? "#db1212"
-                              : "inherit",
-                          }}
-                        >
-                          {fileName}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
-                        <TextField
-                          variant="outlined"
-                          fullWidth
-                          placeholder="Enter meta data"
-                          multiline
-                          maxRows={4}
-                          value={metadata[fileName] || ""}
-                          onChange={(e) =>
-                            handleMetadataChange(fileName, e.target.value)
-                          }
-                        />
-                      </TableCell>
-                      <TableCell align="right">
-                        <Button
-                          variant="contained"
-                          color="primary"
-                          onClick={() => {
-                            if (file.url) {
-                              handleDownloadClick(file.url);
-                            } else if (file.fileName) {
-                              handleDownloadFile(file);
-                            } else {
-                              handleDownloadFile(file.image);
+                    return 0;
+                  })
+                  .map((file, index) => {
+                    const fileName =
+                      file.fileName || file.name || file.image.name;
+                    return (
+                      <TableRow key={index}>
+                        <TableCell>
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              color: newFiles.includes(file)
+                                ? "#db1212"
+                                : "inherit",
+                            }}
+                          >
+                            {fileName}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <TextField
+                            variant="outlined"
+                            fullWidth
+                            placeholder="Enter meta data"
+                            multiline
+                            maxRows={4}
+                            value={metadata[fileName] || ""}
+                            onChange={(e) =>
+                              handleMetadataChange(fileName, e.target.value)
                             }
-                          }}
-                        >
-                          Download
-                        </Button>
-                      </TableCell>
-                      <TableCell align="right">
-                        <IconButton
-                          onClick={() => {
-                            if (file.fileName) {
-                              handleRemoveFile(file.fileName);
-                            } else if (savedFiles.includes(file)) {
-                              handleSavedRemoveFile(file.name);
-                            } else if (file.name) {
-                              handleRemoveNewFile(file.name);
-                            } else {
-                              handleRemoveSavedImage(file.image);
-                            }
-                          }}
-                        >
-                          <DeleteIcon />
-                        </IconButton>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
+                          />
+                        </TableCell>
+                        <TableCell align="right">
+                          <Button
+                            variant="contained"
+                            color="primary"
+                            onClick={() => {
+                              if (file.url) {
+                                handleDownloadClick(file.url);
+                              } else if (file.fileName) {
+                                handleDownloadFile(file);
+                              } else {
+                                handleDownloadFile(file.image);
+                              }
+                            }}
+                          >
+                            Download
+                          </Button>
+                        </TableCell>
+                        <TableCell align="right">
+                          <IconButton
+                            onClick={() => {
+                              if (file.fileName) {
+                                handleRemoveFile(file.fileName);
+                              } else if (savedFiles.includes(file)) {
+                                handleSavedRemoveFile(file.name);
+                              } else if (file.name) {
+                                handleRemoveNewFile(file.name);
+                              } else {
+                                handleRemoveSavedImage(file.image);
+                              }
+                            }}
+                          >
+                            <DeleteIcon />
+                          </IconButton>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
+              )}
             </TableBody>
           </Table>
         </Box>

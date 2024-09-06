@@ -116,11 +116,11 @@ const InstructorDetails = ({ instructorData, onBack }) => {
       const response = await fetch(
         `${
           import.meta.env.VITE_API_ENDPOINT
-        }admin/instructorCourses?instructor_email=${encodeURIComponent(
+        }admin/lower_instructor?email=${encodeURIComponent(
           instructorData.email
         )}`,
         {
-          method: "GET",
+          method: "POST",
           headers: {
             Authorization: token,
             "Content-Type": "application/json",
@@ -129,14 +129,24 @@ const InstructorDetails = ({ instructorData, onBack }) => {
       );
       if (response.ok) {
         const data = await response.json();
-        setActiveCourses(data);
-        console.log(data);
-        setActiveCourseLoading(false);
+        toast.success("Instructor Demoted Successfully", {
+          position: "top-center",
+          autoClose: 1000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: "colored",
+        });
+        setTimeout(function () {
+          onBack();
+        }, 1000);
       } else {
-        console.error("Failed to fetch courses:", response.statusText);
+        console.error("Failed to demote instructor:", response.statusText);
       }
     } catch (error) {
-      console.error("Error fetching courses:", error);
+      console.error("Error demoting instructor:", error);
     }
   };
 

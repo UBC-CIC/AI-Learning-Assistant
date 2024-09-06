@@ -149,8 +149,28 @@ const InstructorEditCourse = () => {
   const handleDelete = async () => {
     try {
       const session = await fetchAuthSession();
-      var token = session.tokens.idToken.toString();
-      const response = await fetch(
+      const token = session.tokens.idToken.toString();
+      const s3Response = await fetch(
+        `${
+          import.meta.env.VITE_API_ENDPOINT
+        }instructor/delete_module_s3?course_id=${encodeURIComponent(
+          course_id
+        )}&module_id=${encodeURIComponent(
+          module.module_id
+        )}&module_name=${encodeURIComponent(module.module_name)}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: token,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (!s3Response.ok) {
+        throw new Error("Failed to delete module from S3");
+      }
+      const moduleResponse = await fetch(
         `${
           import.meta.env.VITE_API_ENDPOINT
         }instructor/delete_module?module_id=${encodeURIComponent(
@@ -164,7 +184,8 @@ const InstructorEditCourse = () => {
           },
         }
       );
-      if (response.ok) {
+
+      if (moduleResponse.ok) {
         toast.success("Successfully Deleted", {
           position: "top-center",
           autoClose: 1000,
@@ -175,24 +196,14 @@ const InstructorEditCourse = () => {
           progress: undefined,
           theme: "colored",
         });
-        setTimeout(function () {
+        setTimeout(() => {
           handleBackClick();
         }, 1000);
       } else {
-        console.error("Failed to delete module");
-        toast.error("Failed to delete module", {
-          position: "top-center",
-          autoClose: 1000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-          progress: undefined,
-          theme: "colored",
-        });
+        throw new Error("Failed to delete module");
       }
     } catch (error) {
-      console.error("Failed to delete module");
+      console.error(error.message);
       toast.error("Failed to delete module", {
         position: "top-center",
         autoClose: 1000,
@@ -205,6 +216,7 @@ const InstructorEditCourse = () => {
       });
     }
   };
+
   const handleInputChange = (e) => {
     setModuleName(e.target.value);
   };
@@ -284,8 +296,8 @@ const InstructorEditCourse = () => {
   const deleteImagesWithText = async (deletedImagesWithText, token) => {
     console.log("deletedImagesWithText: ", deletedImagesWithText);
     const deletedFilePromises = deletedImagesWithText.map((file) => {
-      const fileType = getFileType(file.image.name);
-      const fileName = removeFileExtension(file.image.name);
+      const fileType = getFileType(file.name);
+      const fileName = removeFileExtension(file.name);
       return fetch(
         `${
           import.meta.env.VITE_API_ENDPOINT
@@ -312,82 +324,158 @@ const InstructorEditCourse = () => {
   };
 
   const uploadFiles = async (newFiles, token) => {
-    const newFilePromises = newFiles.map((file) => {
+    const successfullyUploadedFiles = [];
+
+    const newFilePromises = newFiles.map(async (file) => {
       const fileType = getFileType(file.name);
       const fileName = removeFileExtension(file.name);
-      return fetch(
-        `${
-          import.meta.env.VITE_API_ENDPOINT
-        }instructor/generate_presigned_url?course_id=${encodeURIComponent(
-          course_id
-        )}&module_id=${encodeURIComponent(
-          module.module_id
-        )}&module_name=${encodeURIComponent(
-          moduleName
-        )}&file_type=${encodeURIComponent(
-          fileType
-        )}&file_name=${encodeURIComponent(fileName)}`,
-        {
-          method: "GET",
-          headers: {
-            Authorization: token,
-            "Content-Type": "application/json",
-          },
-        }
-      )
-        .then((response) => response.json())
-        .then((presignedUrl) => {
-          return fetch(presignedUrl.presignedurl, {
-            method: "PUT",
+
+      try {
+        const response = await fetch(
+          `${
+            import.meta.env.VITE_API_ENDPOINT
+          }instructor/generate_presigned_url?course_id=${encodeURIComponent(
+            course_id
+          )}&module_id=${encodeURIComponent(
+            module.module_id
+          )}&module_name=${encodeURIComponent(
+            moduleName
+          )}&file_type=${encodeURIComponent(
+            fileType
+          )}&file_name=${encodeURIComponent(fileName)}`,
+          {
+            method: "GET",
             headers: {
-              "Content-Type": file.type,
+              Authorization: token,
+              "Content-Type": "application/json",
             },
-            body: file,
-          });
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch presigned URL");
+        }
+
+        const presignedUrl = await response.json();
+        const uploadResponse = await fetch(presignedUrl.presignedurl, {
+          method: "PUT",
+          headers: {
+            "Content-Type": file.type,
+          },
+          body: file,
         });
+
+        if (!uploadResponse.ok) {
+          throw new Error("Failed to upload file");
+        }
+
+        // Add file to the successful uploads array
+        successfullyUploadedFiles.push(file);
+      } catch (error) {
+        console.error(error.message);
+      }
     });
 
-    return await Promise.all(newFilePromises);
+    // Wait for all uploads to complete
+    await Promise.all(newFilePromises);
+
+    // Update state with successfully uploaded files
+    setSavedFiles((prevFiles) => [...prevFiles, ...successfullyUploadedFiles]);
   };
 
+  function doesFileNameExist(array, fileName) {
+    return array.some((item) => item.fileName === fileName);
+  }
+
+  function doesSavedImageNameExist(array, fileName) {
+    return array.some((item) => item.image.name === fileName);
+  }
+  function doesNewImageNameExist(array, fileName) {
+    return array.filter((item) => item.image.name === fileName).length >= 2;
+  }
+
   const uploadImagesWithText = async (newImagesWithText, token) => {
-    const newFilePromises = newImagesWithText.map((file) => {
+    const successfullyUploadedFiles = [];
+
+    const newFilePromises = newImagesWithText.map(async (file) => {
+      const fileNameCheck = file.image.name;
+      console.log("saved", newImagesWithText);
+      if (
+        doesFileNameExist(files, fileNameCheck) ||
+        doesSavedImageNameExist(savedImagesWithText, fileNameCheck) ||
+        doesNewImageNameExist(newImagesWithText, fileNameCheck)
+      ) {
+        toast.error(`File "${fileNameCheck}" already exists.`, {
+          position: "top-center",
+          autoClose: 2000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: "colored",
+        });
+        return;
+      }
+
       const fileType = getFileType(file.image.name);
       const fileName = removeFileExtension(file.image.name);
-      return fetch(
-        `${import.meta.env.VITE_API_ENDPOINT
-        }instructor/generate_presigned_url?course_id=${encodeURIComponent(
-          course_id
-        )}&module_id=${encodeURIComponent(
-          module.module_id
-        )}&module_name=${encodeURIComponent(
-          moduleName
-        )}&file_type=${encodeURIComponent(
-          fileType
-        )}&file_name=${encodeURIComponent(
-          fileName
-        )}&txt_file_contents=${encodeURIComponent(file.text)}`,
-        {
-          method: "GET",
-          headers: {
-            Authorization: token,
-            "Content-Type": "application/json",
-          },
-        }
-      )
-        .then((response) => response.json())
-        .then((presignedUrl) => {
-          return fetch(presignedUrl.presignedurl, {
-            method: "PUT",
+      try {
+        const response = await fetch(
+          `${
+            import.meta.env.VITE_API_ENDPOINT
+          }instructor/generate_presigned_url?course_id=${encodeURIComponent(
+            course_id
+          )}&module_id=${encodeURIComponent(
+            module.module_id
+          )}&module_name=${encodeURIComponent(
+            moduleName
+          )}&file_type=${encodeURIComponent(
+            fileType
+          )}&file_name=${encodeURIComponent(
+            fileName
+          )}&txt_file_contents=${encodeURIComponent(file.text)}`,
+          {
+            method: "GET",
             headers: {
-              "Content-Type": file.image.type,
+              Authorization: token,
+              "Content-Type": "application/json",
             },
-            body: file.image,
-          });
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch presigned URL");
+        }
+
+        const presignedUrl = await response.json();
+        const uploadResponse = await fetch(presignedUrl.presignedurl, {
+          method: "PUT",
+          headers: {
+            "Content-Type": file.image.type,
+          },
+          body: file.image,
         });
+
+        if (!uploadResponse.ok) {
+          throw new Error("Failed to upload file");
+        }
+
+        // Add file to the successful uploads array
+        successfullyUploadedFiles.push(file);
+      } catch (error) {
+        console.error(error.message);
+      }
     });
 
-    return await Promise.all(newFilePromises);
+    // Wait for all uploads to complete
+    await Promise.all(newFilePromises);
+
+    // Update state with successfully uploaded files
+    setSavedImagesWithText((prevImagesWithText) => [
+      ...prevImagesWithText,
+      ...successfullyUploadedFiles,
+    ]);
   };
 
   const handleSave = async () => {
@@ -407,11 +495,6 @@ const InstructorEditCourse = () => {
       setFiles((prevFiles) =>
         prevFiles.filter((file) => !deletedFiles.includes(file.fileName))
       );
-      setSavedFiles((prevFiles) => [...prevFiles, ...newFiles]);
-      setSavedImagesWithText((prevImagesWithText) => [
-        ...prevImagesWithText,
-        ...newImagesWithText,
-      ]);
       setNewImagesWithText([]);
       setDeletedImagesWithText([]);
       setDeletedFiles([]);

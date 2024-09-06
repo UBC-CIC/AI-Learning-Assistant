@@ -91,7 +91,7 @@ const FileManagement = ({
 
   const handleSavedRemoveFile = async (file_name) => {
     setDeletedFiles((prevDeletedFiles) => [...prevDeletedFiles, file_name]);
-    const updatedFiles = files.filter((file) => file.fileName !== file_name);
+    const updatedFiles = savedFiles.filter((file) => file.name !== file_name);
     setSavedFiles(updatedFiles);
   };
 
@@ -238,6 +238,7 @@ const FileManagement = ({
                         <TableCell align="right">
                           <IconButton
                             onClick={() => {
+                              console.log("removing", file);
                               if (file.fileName) {
                                 handleRemoveFile(file.fileName);
                               } else if (savedFiles.includes(file)) {

@@ -283,10 +283,12 @@ exports.handler = async (event) => {
         if (
           event.queryStringParameters != null &&
           event.queryStringParameters.module_id &&
-          event.queryStringParameters.filename
+          event.queryStringParameters.filename &&
+          event.queryStringParameters.filetype
         ) {
           const moduleId = event.queryStringParameters.module_id;
           const filename = event.queryStringParameters.filename;
+          const filetype = event.queryStringParameters.filetype;
           const { metadata } = JSON.parse(event.body);
 
           try {
@@ -294,7 +296,8 @@ exports.handler = async (event) => {
             const existingFile = await sqlConnection`
                       SELECT * FROM "Module_Files"
                       WHERE module_id = ${moduleId}
-                      AND filename = ${filename};
+                      AND filename = ${filename}
+                      AND filetype = ${filetype};
                   `;
 
             if (existingFile.length === 0) {
@@ -311,6 +314,7 @@ exports.handler = async (event) => {
                       SET metadata = ${metadata}
                       WHERE module_id = ${moduleId}
                       AND filename = ${filename}
+                      AND filetype = ${filetype}
                       RETURNING *;
                   `;
 

@@ -118,17 +118,11 @@ def lambda_handler(event, context):
 
     try:
         document_prefix = f"{course_id}/{module_name}_{module_id}/documents/"
-        image_prefix = f"{course_id}/{module_name}_{module_id}/images/"
 
         document_files = list_files_in_s3_prefix(BUCKET, document_prefix)
-        image_files = list_files_in_s3_prefix(BUCKET, image_prefix)
 
-        # Filter out .txt files from the images folder
-        image_files = [file_name for file_name in image_files if not file_name.endswith('.txt')]
-
-        # Retrieve metadata and generate presigned URLs for documents and images
+        # Retrieve metadata and generate presigned URLs for documents
         document_files_urls = {}
-        image_files_urls = {}
 
         for file_name in document_files:
             file_type = file_name.split('.')[-1]  # Get the file extension
@@ -139,18 +133,8 @@ def lambda_handler(event, context):
                 "metadata": metadata
             }
 
-        for file_name in image_files:
-            file_type = file_name.split('.')[-1]  # Get the file extension
-            presigned_url = generate_presigned_url(BUCKET, f"{image_prefix}{file_name}")
-            metadata = get_file_metadata_from_db(module_id, file_name.split('.')[0], file_type)
-            image_files_urls[f"{file_name}"] = {
-                "url": presigned_url,
-                "metadata": metadata
-            }
-
         logger.info("Presigned URLs and metadata generated successfully", extra={
             "document_files": document_files_urls,
-            "image_files": image_files_urls
         })
 
         return {
@@ -162,8 +146,7 @@ def lambda_handler(event, context):
                 "Access-Control-Allow-Methods": "*",
             },
             'body': json.dumps({
-                'document_files': document_files_urls,
-                'image_files': image_files_urls
+                'document_files': document_files_urls
             })
         }
     except Exception as e:

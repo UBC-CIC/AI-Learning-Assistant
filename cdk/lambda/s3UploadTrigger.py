@@ -38,7 +38,7 @@ def connect_to_db():
         return None
 
 def parse_s3_file_path(file_key):
-    # Assuming the file path is of the format: {course_id}/{module_name}_{module_id}/{documents_or_images}/{file_name}.{file_type}
+    # Assuming the file path is of the format: {course_id}/{module_name}_{module_id}/{documents}/{file_name}.{file_type}
     try:
         course_id, module_and_id, file_category, filename_with_ext = file_key.split('/')
         module_name, module_id = module_and_id.split('_')
@@ -113,10 +113,6 @@ def lambda_handler(event, context):
                     "statusCode": 400,
                     "body": json.dumps("Error parsing S3 file path.")
                 }
-            
-            if file_category == "images" and file_type == "txt":
-                logger.info(f"Skipping .txt file in images folder: {file_name}.{file_type}")
-                continue
 
             # Insert the file into the PostgreSQL database
             try:

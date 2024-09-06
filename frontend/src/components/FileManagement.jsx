@@ -26,10 +26,6 @@ const FileManagement = ({
   savedFiles,
   setSavedFiles,
   loading,
-  savedImagesWithText,
-  setSavedImagesWithText,
-  deletedImagesWithText,
-  setDeletedImagesWithText,
   metadata,
   setMetadata,
 }) => {
@@ -99,17 +95,6 @@ const FileManagement = ({
     const updatedFiles = newFiles.filter((file) => file.name !== file_name);
     setNewFiles(updatedFiles);
   };
-
-  const handleRemoveSavedImage = (imgFileObject) => {
-    setDeletedImagesWithText((prevDeletedFiles) => [
-      ...prevDeletedFiles,
-      imgFileObject,
-    ]);
-    const updatedFiles = savedFiles.filter(
-      (file) => file.image.name !== imgFileObject.name
-    );
-    setSavedImagesWithText(updatedFiles);
-  };
   return (
     <Box sx={{ border: 1, borderRadius: 3, borderColor: "grey.400", p: 1 }}>
       <Typography variant="h6" sx={{ pt: 1 }}>
@@ -164,7 +149,7 @@ const FileManagement = ({
               </TableRow>
             </TableHead>
             <TableBody>
-              {[...files, ...savedFiles, ...newFiles, ...savedImagesWithText]
+              {[...files, ...savedFiles, ...newFiles]
                 .length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={4}>
@@ -174,7 +159,7 @@ const FileManagement = ({
                   </TableCell>
                 </TableRow>
               ) : (
-                [...files, ...savedFiles, ...newFiles, ...savedImagesWithText]
+                [...files, ...savedFiles, ...newFiles]
                   .sort((a, b) => {
                     if (newFiles.includes(a) && !newFiles.includes(b)) return 1;
                     if (!newFiles.includes(a) && newFiles.includes(b))
@@ -246,7 +231,7 @@ const FileManagement = ({
                               } else if (file.name) {
                                 handleRemoveNewFile(file.name);
                               } else {
-                                handleRemoveSavedImage(file.image);
+                                handleRemoveNewFile(file.image);
                               }
                             }}
                           >

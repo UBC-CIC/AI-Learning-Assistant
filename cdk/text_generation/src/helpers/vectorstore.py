@@ -9,7 +9,7 @@ from helpers.helper import get_vectorstore
 def get_vectorstore_retriever(
     llm,
     vectorstore_config_dict: Dict[str, str],
-    embeddings#: OpenCLIPEmbeddings
+    embeddings#: BedrockEmbeddings
 ) -> VectorStoreRetriever:
     """
     Retrieve the vectorstore and return the history-aware retriever object.
@@ -17,7 +17,7 @@ def get_vectorstore_retriever(
     Args:
     llm: The language model instance used to generate the response.
     vectorstore_config_dict (Dict[str, str]): The configuration dictionary for the vectorstore, including parameters like collection name, database name, user, password, host, and port.
-    embeddings (OpenCLIPEmbeddings): The embeddings instance used to process the documents.
+    embeddings (BedrockEmbeddings): The embeddings instance used to process the documents.
 
     Returns:
     VectorStoreRetriever: A history-aware retriever instance.

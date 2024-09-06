@@ -36,9 +36,8 @@ def lambda_handler(event, context):
     course_id = query_params.get("course_id", "")
     module_id = query_params.get("module_id", "")
     module_name = query_params.get("module_name", "")
-    file_type = query_params.get("file_type", "")  # PDF or JPG
+    file_type = query_params.get("file_type", "")
     file_name = query_params.get("file_name", "")
-    txt_file_contents = query_params.get("txt_file_contents", "")
 
     if not course_id:
         return {
@@ -64,8 +63,6 @@ def lambda_handler(event, context):
             'body': json.dumps('Missing required parameter: file_name')
         }
 
-    txt_key = None
-
     # Allowed file types for documents with their corresponding MIME types
     allowed_document_types = {
         "pdf": "application/pdf",
@@ -77,25 +74,10 @@ def lambda_handler(event, context):
         "mobi": "application/x-mobipocket-ebook",
         "cbz": "application/vnd.comicbook+zip"
     }
-
-    # Allowed file types for images with their corresponding MIME types
-    allowed_images_types = {
-        'bmp': 'image/bmp', 'eps': 'application/postscript', 'gif': 'image/gif',
-        'icns': 'image/icns', 'ico': 'image/vnd.microsoft.icon', 'im': 'application/x-im',
-        'jpeg': 'image/jpeg', 'jpg': 'image/jpeg', 'j2k': 'image/jp2', 'jp2': 'image/jp2',
-        'msp': 'application/vnd.ms-paint', 'pcx': 'image/x-pcx', 'png': 'image/png',
-        'ppm': 'image/x-portable-pixmap', 'pgm': 'image/x-portable-graymap', 
-        'pbm': 'image/x-portable-bitmap', 'sgi': 'image/sgi', 'tga': 'image/x-tga', 
-        'tiff': 'image/tiff', 'tif': 'image/tiff', 'webp': 'image/webp', 'xbm': 'image/x-xbitmap'
-    }
     
     if file_type in allowed_document_types:
         key = f"{course_id}/{module_name}_{module_id}/documents/{file_name}.{file_type}"
         content_type = allowed_document_types[file_type]
-    elif file_type in allowed_images_types:
-        key = f"{course_id}/{module_name}_{module_id}/images/{file_name}.{file_type}"
-        content_type = allowed_images_types[file_type]
-        txt_key = f"{course_id}/{module_name}_{module_id}/images/{file_name}.txt" if txt_file_contents else None
     else:
         return {
             'statusCode': 400,
@@ -108,17 +90,9 @@ def lambda_handler(event, context):
         "module_name": module_name,
         "file_type": file_type,
         "file_name": file_name,
-        "txt_file_contents": txt_file_contents,
     })
 
     try:
-        if txt_key:
-            s3.put_object(
-                Bucket=BUCKET,
-                Key=txt_key,
-                Body=txt_file_contents,
-                ContentType="text/plain"
-            )
 
         presigned_url = s3.generate_presigned_url(
             ClientMethod="put_object",

@@ -19,7 +19,6 @@ import {
 } from "@mui/material";
 import PageContainer from "../Container";
 import FileManagement from "../../components/FileManagement";
-import ImagesWithText from "../../components/ImagesWithText";
 
 const InstructorEditCourse = () => {
   const [loading, setLoading] = useState(true);
@@ -30,10 +29,6 @@ const InstructorEditCourse = () => {
   const [newFiles, setNewFiles] = useState([]);
   const [savedFiles, setSavedFiles] = useState([]);
   const [deletedFiles, setDeletedFiles] = useState([]);
-
-  const [savedImagesWithText, setSavedImagesWithText] = useState([]);
-  const [newImagesWithText, setNewImagesWithText] = useState([]);
-  const [deletedImagesWithText, setDeletedImagesWithText] = useState([]);
 
   const location = useLocation();
   const [module, setModule] = useState(null);
@@ -293,35 +288,6 @@ const InstructorEditCourse = () => {
       );
     });
   };
-  const deleteImagesWithText = async (deletedImagesWithText, token) => {
-    console.log("deletedImagesWithText: ", deletedImagesWithText);
-    const deletedFilePromises = deletedImagesWithText.map((file) => {
-      const fileType = getFileType(file.name);
-      const fileName = removeFileExtension(file.name);
-      return fetch(
-        `${
-          import.meta.env.VITE_API_ENDPOINT
-        }instructor/delete_file?course_id=${encodeURIComponent(
-          course_id
-        )}&module_id=${encodeURIComponent(
-          module.module_id
-        )}&module_name=${encodeURIComponent(
-          moduleName
-        )}&file_type=${encodeURIComponent(
-          fileType
-        )}&file_name=${encodeURIComponent(fileName)}`,
-        {
-          method: "DELETE",
-          headers: {
-            Authorization: token,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-    });
-
-    return await Promise.all(deletedFilePromises);
-  };
 
   const uploadFiles = async (newFiles, token) => {
     const successfullyUploadedFiles = [];
@@ -383,101 +349,6 @@ const InstructorEditCourse = () => {
     setSavedFiles((prevFiles) => [...prevFiles, ...successfullyUploadedFiles]);
   };
 
-  function doesFileNameExist(array, fileName) {
-    return array.some((item) => item.fileName === fileName);
-  }
-
-  function doesSavedImageNameExist(array, fileName) {
-    return array.some((item) => item.image.name === fileName);
-  }
-  function doesNewImageNameExist(array, fileName) {
-    return array.filter((item) => item.image.name === fileName).length >= 2;
-  }
-
-  const uploadImagesWithText = async (newImagesWithText, token) => {
-    const successfullyUploadedFiles = [];
-
-    const newFilePromises = newImagesWithText.map(async (file) => {
-      const fileNameCheck = file.image.name;
-      console.log("saved", newImagesWithText);
-      if (
-        doesFileNameExist(files, fileNameCheck) ||
-        doesSavedImageNameExist(savedImagesWithText, fileNameCheck) ||
-        doesNewImageNameExist(newImagesWithText, fileNameCheck)
-      ) {
-        toast.error(`File "${fileNameCheck}" already exists.`, {
-          position: "top-center",
-          autoClose: 2000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-          progress: undefined,
-          theme: "colored",
-        });
-        return;
-      }
-
-      const fileType = getFileType(file.image.name);
-      const fileName = removeFileExtension(file.image.name);
-      try {
-        const response = await fetch(
-          `${
-            import.meta.env.VITE_API_ENDPOINT
-          }instructor/generate_presigned_url?course_id=${encodeURIComponent(
-            course_id
-          )}&module_id=${encodeURIComponent(
-            module.module_id
-          )}&module_name=${encodeURIComponent(
-            moduleName
-          )}&file_type=${encodeURIComponent(
-            fileType
-          )}&file_name=${encodeURIComponent(
-            fileName
-          )}&txt_file_contents=${encodeURIComponent(file.text)}`,
-          {
-            method: "GET",
-            headers: {
-              Authorization: token,
-              "Content-Type": "application/json",
-            },
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch presigned URL");
-        }
-
-        const presignedUrl = await response.json();
-        const uploadResponse = await fetch(presignedUrl.presignedurl, {
-          method: "PUT",
-          headers: {
-            "Content-Type": file.image.type,
-          },
-          body: file.image,
-        });
-
-        if (!uploadResponse.ok) {
-          throw new Error("Failed to upload file");
-        }
-
-        // Add file to the successful uploads array
-        successfullyUploadedFiles.push(file);
-      } catch (error) {
-        console.error(error.message);
-      }
-    });
-
-    // Wait for all uploads to complete
-    await Promise.all(newFilePromises);
-
-    // Update state with successfully uploaded files
-    setSavedImagesWithText((prevImagesWithText) => [
-      ...prevImagesWithText,
-      ...successfullyUploadedFiles,
-    ]);
-  };
-
   const handleSave = async () => {
     if (isSaving) return; // Prevent double clicking
     setIsSaving(true);
@@ -488,15 +359,10 @@ const InstructorEditCourse = () => {
       await uploadFiles(newFiles, token);
       await updateMetaData(files, token);
       await updateMetaData(savedFiles, token);
-      // also do for saved Images
-      await deleteImagesWithText(deletedImagesWithText, token);
-      await uploadImagesWithText(newImagesWithText, token);
-
       setFiles((prevFiles) =>
         prevFiles.filter((file) => !deletedFiles.includes(file.fileName))
       );
-      setNewImagesWithText([]);
-      setDeletedImagesWithText([]);
+
       setDeletedFiles([]);
       setNewFiles([]);
       toast.success("Module updated successfully", {
@@ -605,17 +471,8 @@ const InstructorEditCourse = () => {
           savedFiles={savedFiles}
           setSavedFiles={setSavedFiles}
           loading={loading}
-          savedImagesWithText={savedImagesWithText}
-          setSavedImagesWithText={setSavedImagesWithText}
-          deletedImagesWithText={deletedImagesWithText}
-          setDeletedImagesWithText={setDeletedImagesWithText}
           metadata={metadata}
           setMetadata={setMetadata}
-        />
-
-        <ImagesWithText
-          newImagesWithText={newImagesWithText}
-          setNewImagesWithText={setNewImagesWithText}
         />
 
         <Grid container spacing={2} style={{ marginTop: 16 }}>

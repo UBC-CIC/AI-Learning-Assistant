@@ -800,86 +800,80 @@ export class ApiGatewayStack extends cdk.Stack {
       "instructorLambdaAuthorizer"
     );
 
-    // /**
-    //  *
-    //  * Create Lambda function for text generation workflow in RAG pipeline
-    //  */
-    // const textGenLambdaFunc = new lambda.Function(this, "TextGenLambdaFunc", {
-    //   runtime: lambda.Runtime.PYTHON_3_9,
-    //   code: lambda.Code.fromAsset("lambda/textGenLambda"),
-    //   handler: "main.handler",
-    //   timeout: cdk.Duration.seconds(300),
-    //   vpc: vpcStack.vpc,
-    //   functionName: "TextGenLambdaFunc",
-    //   memorySize: 3008,
-    //   environment: {
-    //     SM_DB_CREDENTIALS: db.secretPathUser.secretName, // Database User Credentials
-    //     RDS_PROXY_ENDPOINT: db.rdsProxyEndpoint, // RDS Proxy Endpoint
-    //   },
-    //   layers: [
-    //     psycopgLayer,
-    //     langchainLayer,
-    //     langchainExperimentalLayer,
-    //     opencliptorchLayer,
-    //   ],
-    // });
+    /**
+     *
+     * Create Lambda with container image for text generation workflow in RAG pipeline
+     */
+    const textGenLambdaDockerFunc = new lambda.DockerImageFunction(this, "TextGenLambdaDockerFunc", {
+      code: lambda.DockerImageCode.fromImageAsset("./text_generation"),
+      memorySize: 2048,
+      timeout: cdk.Duration.seconds(300),
+      vpc: vpcStack.vpc, // Pass the VPC
+      functionName: "TextGenLambdaDockerFunc",
+      environment: {
+        SM_DB_CREDENTIALS: db.secretPathUser.secretName, // Database User Credentials
+        RDS_PROXY_ENDPOINT: db.rdsProxyEndpoint, // RDS Proxy Endpoint
+        REGION: this.region,
+      },
+    });
 
-    // // Override the Logical ID of the Lambda Function to get ARN in OpenAPI
-    // const cfnTextGenFunc = textGenLambdaFunc.node
-    //   .defaultChild as lambda.CfnFunction;
-    // cfnTextGenFunc.overrideLogicalId("TextGenLambdaFunc");
+    // Override the Logical ID of the Lambda Function to get ARN in OpenAPI
+    const cfnTextGenDockerFunc = textGenLambdaDockerFunc.node.defaultChild as lambda.CfnFunction;
+    cfnTextGenDockerFunc.overrideLogicalId("TextGenLambdaDockerFunc");
 
-    // // Add the permission to the Lambda function's policy to allow API Gateway access
-    // textGenLambdaFunc.addPermission("AllowApiGatewayInvoke", {
-    //   principal: new iam.ServicePrincipal("apigateway.amazonaws.com"),
-    //   action: "lambda:InvokeFunction",
-    //   sourceArn: `arn:aws:execute-api:${this.region}:${this.account}:${this.api.restApiId}/*/*/student*`,
-    // });
+    // Add the permission to the Lambda function's policy to allow API Gateway access
+    textGenLambdaDockerFunc.addPermission("AllowApiGatewayInvoke", {
+      principal: new iam.ServicePrincipal("apigateway.amazonaws.com"),
+      action: "lambda:InvokeFunction",
+      sourceArn: `arn:aws:execute-api:${this.region}:${this.account}:${this.api.restApiId}/*/*/student*`,
+    });
 
-    // // Custom policy statement for Bedrock access
-    // const bedrockPolicyStatement = new iam.PolicyStatement({
-    //   effect: iam.Effect.ALLOW,
-    //   actions: ["bedrock:InvokeModel", "bedrock:InvokeEndpoint"],
-    //   resources: [
-    //     "arn:aws:bedrock:" +
-    //       this.region +
-    //       "::foundation-model/meta.llama3-70b-instruct-v1:0",
-    //   ],
-    // });
+    // Custom policy statement for Bedrock access
+    const bedrockPolicyStatement = new iam.PolicyStatement({
+      effect: iam.Effect.ALLOW,
+      actions: [
+        'bedrock:InvokeModel',
+        'bedrock:InvokeEndpoint'
+      ],
+      resources: ["arn:aws:bedrock:" + this.region + "::foundation-model/meta.llama3-70b-instruct-v1:0",
+                  "arn:aws:bedrock:" + this.region + "::foundation-model/amazon.titan-embed-text-v2:0"],
+    });
 
-    // // Attach the custom Bedrock policy to Lambda function
-    // textGenLambdaFunc.addToRolePolicy(bedrockPolicyStatement);
+    // Attach the custom Bedrock policy to Lambda function
+    textGenLambdaDockerFunc.addToRolePolicy(bedrockPolicyStatement);
 
-    // // Grant access to Secret Manager
-    // textGenLambdaFunc.addToRolePolicy(
-    //   new iam.PolicyStatement({
-    //     effect: iam.Effect.ALLOW,
-    //     actions: [
-    //       //Secrets Manager
-    //       "secretsmanager:GetSecretValue",
-    //     ],
-    //     resources: [
-    //       `arn:aws:secretsmanager:${this.region}:${this.account}:secret:*`,
-    //     ],
-    //   })
-    // );
+    // Grant access to Secret Manager
+    textGenLambdaDockerFunc.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: [
+          //Secrets Manager
+          "secretsmanager:GetSecretValue",
+        ],
+        resources: [
+          `arn:aws:secretsmanager:${this.region}:${this.account}:secret:*`,
+        ],
+      })
+    );
 
-    // // Grant access to DynamoDB actions
-    // textGenLambdaFunc.addToRolePolicy(
-    //   new iam.PolicyStatement({
-    //     effect: iam.Effect.ALLOW,
-    //     actions: [
-    //       "dynamodb:ListTables",
-    //       "dynamodb:CreateTable", // if your function needs to create tables
-    //       "dynamodb:DescribeTable", // if your function needs to describe tables
-    //       "dynamodb:PutItem", // if your function needs to put items into tables
-    //       "dynamodb:GetItem", // if your function needs to get items from tables
-    //     ],
-    //     resources: [`arn:aws:dynamodb:${this.region}:${this.account}:table/*`],
-    //   })
-    // );
+    // Grant access to DynamoDB actions
+    textGenLambdaDockerFunc.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: [
+          "dynamodb:ListTables",
+          "dynamodb:CreateTable",
+          "dynamodb:DescribeTable",
+          "dynamodb:PutItem",
+          "dynamodb:GetItem",
+        ],
+        resources: [
+          `arn:aws:dynamodb:${this.region}:${this.account}:table/*`,
+        ],
+      })
+    );
 
-    // Create S3 Bucket to handle documents and images for each course
+    // Create S3 Bucket to handle documents for each course
     const dataIngestionBucket = new s3.Bucket(this, "AILADataIngestionBucket", {
       bucketName: "aila-data-ingestion-bucket",
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,

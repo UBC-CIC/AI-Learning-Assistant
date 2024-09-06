@@ -2,7 +2,7 @@ import logging
 from typing import Optional
 
 import psycopg2
-from langchain_experimental.open_clip import OpenCLIPEmbeddings
+from langchain_community.embeddings import BedrockEmbeddings
 from langchain_postgres import PGVector
 
 # Setup logging
@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 def get_vectorstore(
     collection_name: str, 
-    embeddings: OpenCLIPEmbeddings, 
+    embeddings: BedrockEmbeddings, 
     dbname: str, 
     user: str, 
     password: str, 
@@ -23,7 +23,7 @@ def get_vectorstore(
     
     Args:
     collection_name (str): The name of the collection.
-    embeddings (OpenCLIPEmbeddings): The embeddings instance.
+    embeddings (BedrockEmbeddings): The embeddings instance.
     dbname (str): The name of the database.
     user (str): The database user.
     password (str): The database password.

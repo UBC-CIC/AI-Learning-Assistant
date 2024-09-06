@@ -113,6 +113,10 @@ def lambda_handler(event, context):
                     "statusCode": 400,
                     "body": json.dumps("Error parsing S3 file path.")
                 }
+            
+            if file_category == "images" and file_type == "txt":
+                logger.info(f"Skipping .txt file in images folder: {file_name}.{file_type}")
+                continue
 
             # Insert the file into the PostgreSQL database
             try:
@@ -138,7 +142,7 @@ def lambda_handler(event, context):
                     "location": f"s3://{bucket_name}/{file_key}"
                 })
             }
-    
+
     return {
         "statusCode": 400,
         "body": json.dumps("No new file upload event found.")

@@ -109,6 +109,37 @@ const InstructorDetails = ({ instructorData, onBack }) => {
     setActiveCourses(uniqueCourses);
   };
 
+  const handleDelete = async () => {
+    try {
+      const session = await fetchAuthSession();
+      var token = session.tokens.idToken.toString();
+      const response = await fetch(
+        `${
+          import.meta.env.VITE_API_ENDPOINT
+        }admin/instructorCourses?instructor_email=${encodeURIComponent(
+          instructorData.email
+        )}`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: token,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      if (response.ok) {
+        const data = await response.json();
+        setActiveCourses(data);
+        console.log(data);
+        setActiveCourseLoading(false);
+      } else {
+        console.error("Failed to fetch courses:", response.statusText);
+      }
+    } catch (error) {
+      console.error("Error fetching courses:", error);
+    }
+  };
+
   const handleSave = async () => {
     try {
       const session = await fetchAuthSession();
@@ -290,6 +321,14 @@ const InstructorDetails = ({ instructorData, onBack }) => {
             </Button>
           </Grid>
           <Grid item xs={6} container justifyContent="flex-end">
+            <Button
+              variant="contained"
+              color="error"
+              onClick={handleDelete}
+              sx={{ width: "30%", mx: "right", mr: 2 }}
+            >
+              Delete
+            </Button>
             <Button
               variant="contained"
               color="primary"

@@ -22,6 +22,9 @@ import {
 import { useState, useEffect } from "react";
 import { fetchAuthSession, fetchUserAttributes } from "aws-amplify/auth";
 
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+
 const fetchInstructors = async () => {
   try {
     const session = await fetchAuthSession();
@@ -165,7 +168,20 @@ export const AdminInstructors = ({ setSelectedInstructor }) => {
       const token = session.tokens.idToken.toString();
       const adminEmail = userAtrributes.email;
       console.log("admin email", email);
-
+      const existingInstructor = rows.find((row) => row.email === email);
+      if (existingInstructor) {
+        toast.error(`Instructor with email ${email} already exists.`, {
+          position: "top-center",
+          autoClose: 1000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: "colored",
+        });
+        return;
+      }
       const response = await fetch(
         `${
           import.meta.env.VITE_API_ENDPOINT
@@ -190,7 +206,7 @@ export const AdminInstructors = ({ setSelectedInstructor }) => {
           user_email: email,
         },
       ]);
-  
+
       // Optionally, you can also update the rows state if needed
       setRows((prevRows) => [
         ...prevRows,
@@ -200,6 +216,16 @@ export const AdminInstructors = ({ setSelectedInstructor }) => {
           email: email,
         },
       ]);
+      toast.success(`Instructor with email ${email} elevated`, {
+        position: "top-center",
+        autoClose: 1000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "colored",
+      });
     } catch (error) {
       console.error("Error elevating instructor", error);
     }
@@ -333,6 +359,18 @@ export const AdminInstructors = ({ setSelectedInstructor }) => {
           <Button type="submit">Submit</Button>
         </DialogActions>
       </Dialog>
+      <ToastContainer
+        position="top-center"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="colored"
+      />
     </div>
   );
 };

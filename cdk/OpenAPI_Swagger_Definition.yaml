@@ -80,11 +80,11 @@ paths:
             responseTemplates:
               application/json: |
                 {}
-    get:
+    post:
       tags:
         - Student
       summary: Generate a response from the LLM
-      operationId: student_text_generation_GET
+      operationId: student_text_generation_POST
       parameters:
         - in: query
           name: session_id

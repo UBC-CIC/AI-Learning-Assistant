@@ -1167,12 +1167,6 @@ paths:
           description: Name of the file
           schema:
             type: string
-        - in: query
-          name: txt_file_contents
-          required: false
-          description: Contents of the txt file accompanying the image
-          schema:
-            type: string
       responses:
         "200":
           description: Presigned URL generated successfully
@@ -1183,7 +1177,7 @@ paths:
                 properties:
                   presignedurl:
                     type: string
-                    description: Presigned URL to upload document or image file to S3 Bucket
+                    description: Presigned URL to upload document file to S3 Bucket
         "400":
           description: Bad Request
         "401":
@@ -1228,7 +1222,7 @@ paths:
     get:
       tags:
         - Instructor
-      summary: Get a list of all the document and image files for a specific course, concept, and module
+      summary: Get a list of all the document files for a specific course, concept, and module
       operationId: instructor_get_all_files_GET
       parameters:
         - in: query

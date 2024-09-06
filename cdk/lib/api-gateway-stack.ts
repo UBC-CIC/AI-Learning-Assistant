@@ -879,7 +879,7 @@ export class ApiGatewayStack extends cdk.Stack {
     //   })
     // );
 
-    // Create S3 Bucket to handle documents and images for each course
+    // Create S3 Bucket to handle documents for each course
     const dataIngestionBucket = new s3.Bucket(this, "AILADataIngestionBucket", {
       bucketName: "aila-data-ingestion-bucket",
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,

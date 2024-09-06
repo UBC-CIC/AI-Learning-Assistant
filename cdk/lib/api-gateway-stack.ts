@@ -813,6 +813,7 @@ export class ApiGatewayStack extends cdk.Stack {
       environment: {
         SM_DB_CREDENTIALS: db.secretPathUser.secretName, // Database User Credentials
         RDS_PROXY_ENDPOINT: db.rdsProxyEndpoint, // RDS Proxy Endpoint
+        REGION: this.region,
       },
     });
 
@@ -834,7 +835,8 @@ export class ApiGatewayStack extends cdk.Stack {
         'bedrock:InvokeModel',
         'bedrock:InvokeEndpoint'
       ],
-      resources: ["arn:aws:bedrock:" + this.region + "::foundation-model/meta.llama3-70b-instruct-v1:0"],
+      resources: ["arn:aws:bedrock:" + this.region + "::foundation-model/meta.llama3-70b-instruct-v1:0",
+                  "arn:aws:bedrock:" + this.region + "::foundation-model/amazon.titan-embed-text-v2:0"],
     });
 
     // Attach the custom Bedrock policy to Lambda function

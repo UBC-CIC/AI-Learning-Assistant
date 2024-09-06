@@ -1106,8 +1106,6 @@ paths:
         httpMethod: "POST"
         type: "aws_proxy"
 
-
-
   /instructor/generate_presigned_url:
     options:
       summary: CORS support
@@ -1226,7 +1224,7 @@ paths:
             responseTemplates:
               application/json: |
                 {}
-    
+
     get:
       tags:
         - Instructor
@@ -1282,61 +1280,61 @@ paths:
         httpMethod: "POST"
         type: "aws_proxy"
   /instructor/courses:
-      options:
-        summary: CORS support
-        description: |
-          Enable CORS by returning correct headers
+    options:
+      summary: CORS support
+      description: |
+        Enable CORS by returning correct headers
+      responses:
+        200:
+          $ref: "#/components/responses/Success"
+      x-amazon-apigateway-integration:
+        type: mock
+        requestTemplates:
+          application/json: |
+            {
+              "statusCode" : 200
+            }
         responses:
-          200:
-            $ref: "#/components/responses/Success"
-        x-amazon-apigateway-integration:
-          type: mock
-          requestTemplates:
-            application/json: |
-              {
-                "statusCode" : 200
-              }
-          responses:
-            default:
-              statusCode: "200"
-              responseParameters:
-                method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key'"
-                method.response.header.Access-Control-Allow-Methods: "'*'"
-                method.response.header.Access-Control-Allow-Origin: "'*'"
-              responseTemplates:
-                application/json: |
-                  {}
-      get:
-        tags:
-          - Instructor
-        summary: Get courses where the instructor is enrolled
-        operationId: instructor_get_courses_GET
-        parameters:
-          - in: query
-            name: email
-            required: true
-            description: Email of the instructor
-            schema:
-              type: string
-        responses:
-          "200":
-            description: Courses retrieved successfully
-          "400":
-            description: Bad Request
-          "401":
-            description: Unauthorized
-          "429":
-            description: Too Many Requests
-          "500":
-            description: Internal Server Error
-        security:
-          - instructorAuthorizer: []
-        x-amazon-apigateway-integration:
-          uri:
-            Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${instructorFunction.Arn}/invocations"
-          passthroughBehavior: "when_no_match"
-          httpMethod: "POST"
-          type: "aws_proxy"
+          default:
+            statusCode: "200"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key'"
+              method.response.header.Access-Control-Allow-Methods: "'*'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+            responseTemplates:
+              application/json: |
+                {}
+    get:
+      tags:
+        - Instructor
+      summary: Get courses where the instructor is enrolled
+      operationId: instructor_get_courses_GET
+      parameters:
+        - in: query
+          name: email
+          required: true
+          description: Email of the instructor
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Courses retrieved successfully
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "429":
+          description: Too Many Requests
+        "500":
+          description: Internal Server Error
+      security:
+        - instructorAuthorizer: []
+      x-amazon-apigateway-integration:
+        uri:
+          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${instructorFunction.Arn}/invocations"
+        passthroughBehavior: "when_no_match"
+        httpMethod: "POST"
+        type: "aws_proxy"
   /instructor/delete_file:
     options:
       summary: CORS support
@@ -1400,7 +1398,7 @@ paths:
             type: string
       responses:
         "200":
-          description: File deleted successfully          
+          description: File deleted successfully
         "400":
           description: Bad Request
         "401":
@@ -1458,6 +1456,12 @@ paths:
           name: filename
           required: true
           description: Name of the file to update
+          schema:
+            type: string
+        - in: query
+          name: filetype
+          required: true
+          description: Type of the file to update
           schema:
             type: string
       requestBody:
@@ -2151,29 +2155,29 @@ paths:
         type: "aws_proxy"
   /instructor/previous_prompts:
     options:
-        summary: CORS support
-        description: |
-          Enable CORS by returning correct headers
+      summary: CORS support
+      description: |
+        Enable CORS by returning correct headers
+      responses:
+        200:
+          $ref: "#/components/responses/Success"
+      x-amazon-apigateway-integration:
+        type: mock
+        requestTemplates:
+          application/json: |
+            {
+              "statusCode" : 200
+            }
         responses:
-          200:
-            $ref: "#/components/responses/Success"
-        x-amazon-apigateway-integration:
-          type: mock
-          requestTemplates:
-            application/json: |
-              {
-                "statusCode" : 200
-              }
-          responses:
-            default:
-              statusCode: "200"
-              responseParameters:
-                method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key'"
-                method.response.header.Access-Control-Allow-Methods: "'*'"
-                method.response.header.Access-Control-Allow-Origin: "'*'"
-              responseTemplates:
-                application/json: |
-                  {}
+          default:
+            statusCode: "200"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key'"
+              method.response.header.Access-Control-Allow-Methods: "'*'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+            responseTemplates:
+              application/json: |
+                {}
     get:
       tags:
         - Instructor
@@ -2600,29 +2604,29 @@ paths:
         type: "aws_proxy"
   /instructor/get_access_code:
     options:
-        summary: CORS support
-        description: |
-          Enable CORS by returning correct headers
+      summary: CORS support
+      description: |
+        Enable CORS by returning correct headers
+      responses:
+        200:
+          $ref: "#/components/responses/Success"
+      x-amazon-apigateway-integration:
+        type: mock
+        requestTemplates:
+          application/json: |
+            {
+              "statusCode" : 200
+            }
         responses:
-          200:
-            $ref: "#/components/responses/Success"
-        x-amazon-apigateway-integration:
-          type: mock
-          requestTemplates:
-            application/json: |
-              {
-                "statusCode" : 200
-              }
-          responses:
-            default:
-              statusCode: "200"
-              responseParameters:
-                method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key'"
-                method.response.header.Access-Control-Allow-Methods: "'*'"
-                method.response.header.Access-Control-Allow-Origin: "'*'"
-              responseTemplates:
-                application/json: |
-                  {}
+          default:
+            statusCode: "200"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key'"
+              method.response.header.Access-Control-Allow-Methods: "'*'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+            responseTemplates:
+              application/json: |
+                {}
     get:
       tags:
         - Instructor
@@ -3536,7 +3540,6 @@ paths:
         httpMethod: "POST"
         type: "aws_proxy"
 
-
 components:
   securitySchemes:
     adminAuthorizer:
@@ -3583,4 +3586,3 @@ components:
           schema:
             type: string
       content: {}
-

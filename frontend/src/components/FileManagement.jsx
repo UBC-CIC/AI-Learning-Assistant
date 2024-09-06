@@ -223,8 +223,8 @@ const FileManagement = ({
                             variant="contained"
                             color="primary"
                             onClick={() => {
-                              if (file.url) {
-                                handleDownloadClick(file.url);
+                              if (file.url.url) {
+                                handleDownloadClick(file.url.url);
                               } else if (file.fileName) {
                                 handleDownloadFile(file);
                               } else {

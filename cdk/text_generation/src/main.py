@@ -1,9 +1,11 @@
+import os
 import json
+import boto3
 import logging
 import psycopg2
-from langchain_experimental.open_clip import OpenCLIPEmbeddings
+import boto3
+from langchain_community.embeddings import BedrockEmbeddings
 
-from helpers.param_manager import get_param_manager
 from helpers.vectorstore import get_vectorstore_retriever
 from helpers.chat import get_bedrock_llm, get_initial_student_query, get_student_query, create_dynamodb_history_table, get_response
 
@@ -12,11 +14,31 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger()
 
 BEDROCK_LLM_ID = "meta.llama3-70b-instruct-v1:0"
-DB_SECRET_NAME = "credentials/rdsDbCredential"
+EMBEDDING_MODEL_ID = "amazon.titan-embed-text-v2:0"
 TABLE_NAME = "API-Gateway-Test-Table-Name"
 
-param_manager = get_param_manager()
-embeddings = OpenCLIPEmbeddings()
+
+DB_SECRET_NAME = os.environ["SM_DB_CREDENTIALS"]
+REGION = os.environ["REGION"]
+
+def get_secret():
+    # secretsmanager client to get db credentials
+    sm_client = boto3.client("secretsmanager")
+    response = sm_client.get_secret_value(SecretId=DB_SECRET_NAME)["SecretString"]
+    secret = json.loads(response)
+    return secret
+
+## GETTING AMAZON TITAN EMBEDDINGS MODEL
+bedrock_runtime = boto3.client(
+        service_name="bedrock-runtime",
+        region_name=REGION,
+    )
+
+embeddings = BedrockEmbeddings(
+    model_id=EMBEDDING_MODEL_ID, 
+    client=bedrock_runtime,
+    region_name=REGION
+)
 create_dynamodb_history_table(TABLE_NAME)
 
 def get_module_name(module_id):
@@ -24,7 +46,7 @@ def get_module_name(module_id):
     cur = None
     try:
         logger.info(f"Fetching module name for module_id: {module_id}")
-        db_secret = param_manager.get_secret(DB_SECRET_NAME)
+        db_secret = get_secret()
 
         connection_params = {
             'dbname': db_secret["dbname"],
@@ -95,7 +117,8 @@ def handler(event, context):
             'body': json.dumps('Missing required parameter: module_id')
         }
     
-    topic = get_module_name(module_id)
+    # topic = get_module_name(module_id)
+    topic = "data abstraction"
 
     if topic is None:
         logger.error(f"Invalid module_id: {module_id}")
@@ -126,7 +149,7 @@ def handler(event, context):
     
     try:
         logger.info("Retrieving vectorstore config.")
-        db_secret = param_manager.get_secret(DB_SECRET_NAME)
+        db_secret = get_secret()
         vectorstore_config_dict = {
             'collection_name': 'CPSC_210', # hard coded for now
             'dbname': db_secret["dbname"],

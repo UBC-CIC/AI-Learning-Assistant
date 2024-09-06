@@ -1,26 +1,24 @@
 import os
 import json
 import boto3
-import logging
 import psycopg2
+from aws_lambda_powertools import Logger
 from datetime import datetime, timezone
 
-# Set up basic logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger()
+logger = Logger()
 
 DB_SECRET_NAME = os.environ["SM_DB_CREDENTIALS"]
 
-def get_secret(secret_name):
+def get_secret():
     # secretsmanager client to get db credentials
     sm_client = boto3.client("secretsmanager")
-    response = sm_client.get_secret_value(SecretId=secret_name)["SecretString"]
+    response = sm_client.get_secret_value(SecretId=DB_SECRET_NAME)["SecretString"]
     secret = json.loads(response)
     return secret
 
 def connect_to_db():
     try:
-        db_secret = get_secret(DB_SECRET_NAME)
+        db_secret = get_secret()
         connection_params = {
             'dbname': db_secret["dbname"],
             'user': db_secret["username"],
@@ -53,15 +51,16 @@ def parse_s3_file_path(file_key):
                     "body": json.dumps("Error parsing S3 file path.")
                 }
 
-def insert_file_metadata_into_db(module_id, file_name, file_type, file_path, bucket_name):
+def insert_file_into_db(module_id, file_name, file_type, file_path, bucket_name):    
+    connection = connect_to_db()
+    if connection is None:
+        logger.error("No database connection available.")
+        return {
+            "statusCode": 500,
+            "body": json.dumps("Database connection failed.")
+        }
+    
     try:
-        connection = connect_to_db()
-        if connection is None:
-            logger.error("No database connection available.")
-            return {
-                "statusCode": 500,
-                "body": json.dumps("Database connection failed.")
-            }
         cur = connection.cursor()
 
         insert_query = """
@@ -81,7 +80,7 @@ def insert_file_metadata_into_db(module_id, file_name, file_type, file_path, buc
         ))
 
         connection.commit()
-        logger.info(f"Successfully inserted file metadata into database for module {module_id}.")
+        logger.info(f"Successfully inserted file {file_name}.{file_type} into database for module {module_id}.")
 
         cur.close()
         connection.close()
@@ -91,7 +90,7 @@ def insert_file_metadata_into_db(module_id, file_name, file_type, file_path, buc
         if connection:
             connection.rollback()
             connection.close()
-        logger.error(f"Error inserting file metadata into database: {e}")
+        logger.error(f"Error inserting file {file_name}.{file_type} into database: {e}")
         raise
 
 def lambda_handler(event, context):
@@ -115,21 +114,21 @@ def lambda_handler(event, context):
                     "body": json.dumps("Error parsing S3 file path.")
                 }
 
-            # Insert the metadata into the PostgreSQL database
+            # Insert the file into the PostgreSQL database
             try:
-                insert_file_metadata_into_db(
+                insert_file_into_db(
                     module_id=module_id,
                     file_name=file_name,
                     file_type=file_type,
                     file_path=file_key,
                     bucket_name=bucket_name
                 )
-                logger.info(f"File metadata for {file_name} inserted successfully.")
+                logger.info(f"File {file_name}.{file_type} inserted successfully.")
             except Exception as e:
-                logger.error(f"Error inserting file metadata into database: {e}")
+                logger.error(f"Error inserting file {file_name}.{file_type} into database: {e}")
                 return {
                     "statusCode": 500,
-                    "body": json.dumps(f"Error inserting file metadata: {e}")
+                    "body": json.dumps(f"Error inserting file {file_name}.{file_type}: {e}")
                 }
 
             return {
@@ -139,7 +138,7 @@ def lambda_handler(event, context):
                     "location": f"s3://{bucket_name}/{file_key}"
                 })
             }
-
+    
     return {
         "statusCode": 400,
         "body": json.dumps("No new file upload event found.")

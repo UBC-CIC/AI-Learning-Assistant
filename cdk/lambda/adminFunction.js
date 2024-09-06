@@ -438,7 +438,7 @@ exports.handler = async (event) => {
             const userEmail = event.queryStringParameters.email;
 
             // Fetch the roles for the user
-            const userRoleData = await sqlConnection`
+            const userRoleData = await sqlConnectionTableCreator`
                 SELECT roles
                 FROM "Users"
                 WHERE user_email = ${userEmail};
@@ -460,7 +460,7 @@ exports.handler = async (event) => {
               .concat("student");
 
             // Update the roles in the database
-            await sqlConnection`
+            await sqlConnectionTableCreator`
                 UPDATE "Users"
                 SET roles = ${updatedRoles}
                 WHERE user_email = ${userEmail};

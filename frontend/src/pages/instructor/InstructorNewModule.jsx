@@ -124,7 +124,7 @@ export const InstructorNewModule = ({ courseId }) => {
           return fetch(presignedUrl.presignedurl, {
             method: "PUT",
             headers: {
-              "Content-Type": "application/pdf",
+              "Content-Type": file.type,
             },
             body: file,
           });
@@ -166,7 +166,7 @@ export const InstructorNewModule = ({ courseId }) => {
           return fetch(presignedUrl.presignedurl, {
             method: "PUT",
             headers: {
-              "Content-Type": "application/pdf",
+              "Content-Type": file.image.type,
             },
             body: file,
           });

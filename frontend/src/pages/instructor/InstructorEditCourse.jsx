@@ -41,6 +41,10 @@ const InstructorEditCourse = () => {
   const [moduleName, setModuleName] = useState("");
   const [concept, setConcept] = useState("");
   const [allConcepts, setAllConcept] = useState([]);
+
+  useEffect(() => {
+    console.log(metadata);
+  }, [metadata]);
   const handleBackClick = () => {
     window.history.back();
   };
@@ -74,7 +78,8 @@ const InstructorEditCourse = () => {
     try {
       const { token, email } = await getAuthSessionAndEmail();
       const response = await fetch(
-        `${import.meta.env.VITE_API_ENDPOINT
+        `${
+          import.meta.env.VITE_API_ENDPOINT
         }instructor/get_all_files?course_id=${encodeURIComponent(
           course_id
         )}&module_id=${encodeURIComponent(
@@ -105,7 +110,8 @@ const InstructorEditCourse = () => {
     try {
       const { token, email } = await getAuthSessionAndEmail();
       const response = await fetch(
-        `${import.meta.env.VITE_API_ENDPOINT
+        `${
+          import.meta.env.VITE_API_ENDPOINT
         }instructor/view_concepts?course_id=${encodeURIComponent(course_id)}`,
         {
           method: "GET",
@@ -145,7 +151,8 @@ const InstructorEditCourse = () => {
       const session = await fetchAuthSession();
       var token = session.tokens.idToken.toString();
       const response = await fetch(
-        `${import.meta.env.VITE_API_ENDPOINT
+        `${
+          import.meta.env.VITE_API_ENDPOINT
         }instructor/delete_module?module_id=${encodeURIComponent(
           module.module_id
         )}`,
@@ -222,7 +229,8 @@ const InstructorEditCourse = () => {
     const { token, email } = await getAuthSessionAndEmail();
 
     const editModuleResponse = await fetch(
-      `${import.meta.env.VITE_API_ENDPOINT
+      `${
+        import.meta.env.VITE_API_ENDPOINT
       }instructor/edit_module?module_id=${encodeURIComponent(
         module.module_id
       )}&instructor_email=${encodeURIComponent(
@@ -252,7 +260,8 @@ const InstructorEditCourse = () => {
       const fileType = getFileType(file_name);
       const fileName = removeFileExtension(file_name);
       return fetch(
-        `${import.meta.env.VITE_API_ENDPOINT
+        `${
+          import.meta.env.VITE_API_ENDPOINT
         }instructor/delete_file?course_id=${encodeURIComponent(
           course_id
         )}&module_id=${encodeURIComponent(
@@ -278,7 +287,8 @@ const InstructorEditCourse = () => {
       const fileType = getFileType(file.image.name);
       const fileName = removeFileExtension(file.image.name);
       return fetch(
-        `${import.meta.env.VITE_API_ENDPOINT
+        `${
+          import.meta.env.VITE_API_ENDPOINT
         }instructor/delete_file?course_id=${encodeURIComponent(
           course_id
         )}&module_id=${encodeURIComponent(
@@ -306,7 +316,8 @@ const InstructorEditCourse = () => {
       const fileType = getFileType(file.name);
       const fileName = removeFileExtension(file.name);
       return fetch(
-        `${import.meta.env.VITE_API_ENDPOINT
+        `${
+          import.meta.env.VITE_API_ENDPOINT
         }instructor/generate_presigned_url?course_id=${encodeURIComponent(
           course_id
         )}&module_id=${encodeURIComponent(
@@ -329,7 +340,7 @@ const InstructorEditCourse = () => {
           return fetch(presignedUrl.presignedurl, {
             method: "PUT",
             headers: {
-              "Content-Type": "application/pdf",
+              "Content-Type": file.type,
             },
             body: file,
           });
@@ -369,9 +380,9 @@ const InstructorEditCourse = () => {
           return fetch(presignedUrl.presignedurl, {
             method: "PUT",
             headers: {
-              "Content-Type": "application/pdf",
+              "Content-Type": file.image.type,
             },
-            body: file,
+            body: file.image,
           });
         });
     });
@@ -387,6 +398,7 @@ const InstructorEditCourse = () => {
       const { token } = await getAuthSessionAndEmail();
       await deleteFiles(deletedFiles, token);
       await uploadFiles(newFiles, token);
+      await updateMetaData(files, token);
       await updateMetaData(savedFiles, token);
       // also do for saved Images
       await deleteImagesWithText(deletedImagesWithText, token);
@@ -437,18 +449,17 @@ const InstructorEditCourse = () => {
       console.log(file);
       const fileNameWithExtension =
         file.fileName || file.name || file.image.name;
-      const fileMetadata = metadata[fileName] || "";
+      const fileMetadata = metadata[fileNameWithExtension] || "";
       const fileName = removeFileExtension(fileNameWithExtension);
       const fileType = getFileType(fileNameWithExtension);
       return fetch(
-        `${import.meta.env.VITE_API_ENDPOINT
+        `${
+          import.meta.env.VITE_API_ENDPOINT
         }instructor/update_metadata?&module_id=${encodeURIComponent(
           module.module_id
         )}&filename=${encodeURIComponent(
           fileName
-        )}&filetype=${encodeURIComponent(
-          fileType
-        )}`,
+        )}&filetype=${encodeURIComponent(fileType)}`,
         {
           method: "PUT",
           headers: {

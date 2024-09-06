@@ -134,7 +134,7 @@ def lambda_handler(event, context):
             file_type = file_name.split('.')[-1]  # Get the file extension
             presigned_url = generate_presigned_url(BUCKET, f"{document_prefix}{file_name}")
             metadata = get_file_metadata_from_db(module_id, file_name.split('.')[0], file_type)
-            document_files_urls[f"{file_name}.{file_type}"] = {
+            document_files_urls[f"{file_name}"] = {
                 "url": presigned_url,
                 "metadata": metadata
             }
@@ -143,7 +143,7 @@ def lambda_handler(event, context):
             file_type = file_name.split('.')[-1]  # Get the file extension
             presigned_url = generate_presigned_url(BUCKET, f"{image_prefix}{file_name}")
             metadata = get_file_metadata_from_db(module_id, file_name.split('.')[0], file_type)
-            image_files_urls[f"{file_name}.{file_type}"] = {
+            image_files_urls[f"{file_name}"] = {
                 "url": presigned_url,
                 "metadata": metadata
             }

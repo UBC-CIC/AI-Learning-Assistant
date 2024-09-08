@@ -63,25 +63,58 @@ def insert_file_into_db(module_id, file_name, file_type, file_path, bucket_name)
     try:
         cur = connection.cursor()
 
-        insert_query = """
-            INSERT INTO "Module_Files" 
-            (module_id, filetype, s3_bucket_reference, filepath, filename, time_uploaded, metadata)
-            VALUES (%s, %s, %s, %s, %s, %s, %s);
+        # Check if a record already exists
+        select_query = """
+        SELECT * FROM "Module_Files"
+        WHERE module_id = %s
+        AND filename = %s
+        AND filetype = %s;
         """
-        timestamp = datetime.now(timezone.utc)
-        cur.execute(insert_query, (
-            module_id,  # module_id
-            file_type,  # filetype
-            bucket_name,  # s3_bucket_reference
-            file_path,  # filepath
-            file_name,  # filename
-            timestamp,  # time_uploaded
-            ""  # metadata
-        ))
+        cur.execute(select_query, (module_id, file_name, file_type))
 
-        connection.commit()
+        existing_file = cur.fetchone()
+
+        if existing_file:
+            # Update the existing record
+            update_query = """
+                UPDATE "Module_Files"
+                SET s3_bucket_reference = %s,
+                filepath = %s,
+                time_uploaded = %s,
+                WHERE module_id = %s
+                AND filename = %s
+                AND filetype = %s;
+            """
+            timestamp = datetime.now(timezone.utc)
+            cur.execute(update_query, (
+                bucket_name,  # s3_bucket_reference
+                file_path,  # filepath
+                timestamp,  # time_uploaded
+                module_id,  # module_id
+                file_name,  # filename
+                file_type  # filetype
+            ))
+            logger.info(f"Successfully updated file {file_name}.{file_type} in database for module {module_id}.")
+        else:
+            # Insert a new record
+            insert_query = """
+                INSERT INTO "Module_Files" 
+                (module_id, filetype, s3_bucket_reference, filepath, filename, time_uploaded, metadata)
+                VALUES (%s, %s, %s, %s, %s, %s, %s);
+            """
+            timestamp = datetime.now(timezone.utc)
+            cur.execute(insert_query, (
+                module_id,  # module_id
+                file_type,  # filetype
+                bucket_name,  # s3_bucket_reference
+                file_path,  # filepath
+                file_name,  # filename
+                timestamp,  # time_uploaded
+                ""  # metadata
+        ))
         logger.info(f"Successfully inserted file {file_name}.{file_type} into database for module {module_id}.")
 
+        connection.commit()
         cur.close()
         connection.close()
     except Exception as e:

@@ -34,6 +34,10 @@ export const InstructorNewModule = ({ courseId }) => {
   const location = useLocation();
   const { data, course_id } = location.state || {};
   const [nextModuleNumber, setNextModuleNumber] = useState(data.length + 1);
+
+  const cleanFileName = (fileName) => {
+    return fileName.replace(/[^a-zA-Z0-9._-]/g, "_");
+  };
   const handleBackClick = () => {
     window.history.back();
   };
@@ -92,7 +96,7 @@ export const InstructorNewModule = ({ courseId }) => {
   const uploadFiles = async (newFiles, token, moduleid) => {
     const newFilePromises = newFiles.map((file) => {
       const fileType = getFileType(file.name);
-      const fileName = removeFileExtension(file.name);
+      const fileName = cleanFileName(removeFileExtension(file.name));
       return fetch(
         `${
           import.meta.env.VITE_API_ENDPOINT

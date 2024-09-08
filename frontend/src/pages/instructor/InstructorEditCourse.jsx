@@ -46,11 +46,8 @@ const InstructorEditCourse = () => {
 
   function convertDocumentFilesToArray(files) {
     const documentFiles = files.document_files;
-    const imageFiles = files.image_files;
-    console.log("imagefiles", imageFiles);
     const resultArray = Object.entries({
       ...documentFiles,
-      ...imageFiles,
     }).map(([fileName, url]) => ({
       fileName,
       url,
@@ -265,7 +262,7 @@ const InstructorEditCourse = () => {
   const deleteFiles = async (deletedFiles, token) => {
     const deletedFilePromises = deletedFiles.map((file_name) => {
       const fileType = getFileType(file_name);
-      const fileName = removeFileExtension(file_name);
+      const fileName = cleanFileName(removeFileExtension(file_name));
       return fetch(
         `${
           import.meta.env.VITE_API_ENDPOINT
@@ -288,13 +285,16 @@ const InstructorEditCourse = () => {
       );
     });
   };
+  const cleanFileName = (fileName) => {
+    return fileName.replace(/[^a-zA-Z0-9._-]/g, "_");
+  };
 
   const uploadFiles = async (newFiles, token) => {
     const successfullyUploadedFiles = [];
-
+    // add meta data to this request
     const newFilePromises = newFiles.map(async (file) => {
       const fileType = getFileType(file.name);
-      const fileName = removeFileExtension(file.name);
+      const fileName = cleanFileName(removeFileExtension(file.name));
 
       try {
         const response = await fetch(
@@ -357,8 +357,7 @@ const InstructorEditCourse = () => {
       const { token } = await getAuthSessionAndEmail();
       await deleteFiles(deletedFiles, token);
       await uploadFiles(newFiles, token);
-      await updateMetaData(files, token);
-      await updateMetaData(savedFiles, token);
+      await Promise.all([updateMetaData(files, token), updateMetaData(savedFiles, token),updateMetaData(newFiles, token)]);
       setFiles((prevFiles) =>
         prevFiles.filter((file) => !deletedFiles.includes(file.fileName))
       );
@@ -397,14 +396,14 @@ const InstructorEditCourse = () => {
     files.forEach((file) => {
       console.log(file);
       const fileNameWithExtension =
-        file.fileName || file.name || file.image.name;
+        file.fileName || file.name;
       const fileMetadata = metadata[fileNameWithExtension] || "";
-      const fileName = removeFileExtension(fileNameWithExtension);
+      const fileName = cleanFileName(removeFileExtension(fileNameWithExtension));
       const fileType = getFileType(fileNameWithExtension);
       return fetch(
         `${
           import.meta.env.VITE_API_ENDPOINT
-        }instructor/update_metadata?&module_id=${encodeURIComponent(
+        }instructor/update_metadata?module_id=${encodeURIComponent(
           module.module_id
         )}&filename=${encodeURIComponent(
           fileName

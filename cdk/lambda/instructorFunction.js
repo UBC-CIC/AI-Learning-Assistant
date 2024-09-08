@@ -301,11 +301,14 @@ exports.handler = async (event) => {
                   `;
 
             if (existingFile.length === 0) {
-              response.statusCode = 404;
+              const result = await sqlConnection`
+                INSERT INTO "Module_Files" (module_id, filename, filetype, metadata)
+                VALUES (${moduleId}, ${filename}, ${filetype}, ${metadata})
+                RETURNING *;
+              `;
               response.body = JSON.stringify({
-                error: "File not found with the given module_id and filename.",
+                message: "File metadata added successfully",
               });
-              break;
             }
 
             // Update the metadata field

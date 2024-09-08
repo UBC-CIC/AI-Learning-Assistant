@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import AIMessage from "../../components/AIMessage";
 import Session from "../../components/Session";
 import StudentMessage from "../../components/StudentMessage";

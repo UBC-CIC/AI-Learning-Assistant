@@ -36,7 +36,9 @@ const FileManagement = ({
   const handleDownloadClick = (url) => {
     window.open(url, "_blank");
   };
-
+  const cleanFileName = (fileName) => {
+    return fileName.replace(/[^a-zA-Z0-9._-]/g, "_");
+  };
   const handleFileUpload = async (event) => {
     const uploadedFiles = Array.from(event);
     const existingFileNames = files.map((file) => file.fileName);
@@ -47,13 +49,16 @@ const FileManagement = ({
       ...savedFileNames,
       ...newFileNames,
     ];
+    const fileIsNew = uploadedFiles.filter((file) => {
+      const cleanedFileName = cleanFileName(file.name);
+      console.log(cleanedFileName);
+      if (allFileNames.includes(cleanedFileName)) {
+        return false; // File name exists, skip this file
+      }
+      return true; // File name is unique, include this file
+    });
 
-    // Filter out files with names that already exist
-    const newFile = uploadedFiles.filter(
-      (file) => !allFileNames.includes(file.name)
-    );
-
-    if (newFile.length < uploadedFiles.length) {
+    if (fileIsNew.length < uploadedFiles.length) {
       toast.error("Some files were not uploaded because they already exist.", {
         position: "top-center",
         autoClose: 2000,
@@ -66,7 +71,7 @@ const FileManagement = ({
       });
     }
 
-    setNewFiles([...newFiles, ...newFile]);
+    setNewFiles([...newFiles, ...fileIsNew]);
   };
 
   const handleDownloadFile = (file) => {
@@ -149,8 +154,7 @@ const FileManagement = ({
               </TableRow>
             </TableHead>
             <TableBody>
-              {[...files, ...savedFiles, ...newFiles]
-                .length === 0 ? (
+              {[...files, ...savedFiles, ...newFiles].length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={4}>
                     <Typography variant="body2" align="center">
@@ -174,8 +178,7 @@ const FileManagement = ({
                     return 0;
                   })
                   .map((file, index) => {
-                    const fileName =
-                      file.fileName || file.name || file.image.name;
+                    const fileName = file.fileName || file.name;
                     return (
                       <TableRow key={index}>
                         <TableCell>
@@ -187,7 +190,7 @@ const FileManagement = ({
                                 : "inherit",
                             }}
                           >
-                            {fileName}
+                            {cleanFileName(fileName)}
                           </Typography>
                         </TableCell>
                         <TableCell>
@@ -208,12 +211,10 @@ const FileManagement = ({
                             variant="contained"
                             color="primary"
                             onClick={() => {
-                              if (file.url.url) {
+                              if (file && file.url && file.url.url) {
                                 handleDownloadClick(file.url.url);
-                              } else if (file.fileName) {
+                              } else if (file) {
                                 handleDownloadFile(file);
-                              } else {
-                                handleDownloadFile(file.image);
                               }
                             }}
                           >
@@ -228,10 +229,8 @@ const FileManagement = ({
                                 handleRemoveFile(file.fileName);
                               } else if (savedFiles.includes(file)) {
                                 handleSavedRemoveFile(file.name);
-                              } else if (file.name) {
-                                handleRemoveNewFile(file.name);
                               } else {
-                                handleRemoveNewFile(file.image);
+                                handleRemoveNewFile(file.name);
                               }
                             }}
                           >

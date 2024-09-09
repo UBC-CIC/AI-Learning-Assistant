@@ -622,6 +622,7 @@ export class ApiGatewayStack extends cdk.Stack {
             effect: iam.Effect.ALLOW,
             actions: [
               "cognito-idp:AdminAddUserToGroup",
+              "cognito-idp:AdminRemoveUserFromGroup",
               "cognito-idp:AdminGetUser",
               "cognito-idp:AdminListGroupsForUser",
             ],
@@ -655,9 +656,14 @@ export class ApiGatewayStack extends cdk.Stack {
       code: lambda.Code.fromAsset("lambda"), // Code loaded from "lambda" directory
       handler: "addStudentOnSignUp.handler", // Code handler
       timeout: Duration.seconds(300),
+      environment: {
+        SM_DB_CREDENTIALS: db.secretPathTableCreator.secretName,
+        RDS_PROXY_ENDPOINT: db.rdsProxyEndpointTableCreator,
+      },
       vpc: vpcStack.vpc,
       functionName: "addStudentOnSignUp",
       memorySize: 128,
+      layers: [postgres],
       role: coglambdaRole,
     });
 

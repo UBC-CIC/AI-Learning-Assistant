@@ -1,9 +1,10 @@
 const { initializeConnection } = require("./lib.js");
 const AWS = require("aws-sdk");
+
 let { SM_DB_CREDENTIALS, RDS_PROXY_ENDPOINT } = process.env;
 let sqlConnection = global.sqlConnection;
 
-exports.handler = async (event, context, callback) => {
+exports.handler = async (event) => {
   if (!sqlConnection) {
     await initializeConnection(SM_DB_CREDENTIALS, RDS_PROXY_ENDPOINT);
     sqlConnection = global.sqlConnection;
@@ -12,41 +13,47 @@ exports.handler = async (event, context, callback) => {
   const { userName, userPoolId } = event;
 
   try {
-    // Get user attributes
-    const userAttributes = await sqlConnection`
-      SELECT roles FROM "Users" WHERE user_email = ${userName};
+    const cognitoIdp = new AWS.CognitoIdentityServiceProvider();
+    // Get user attributes from Cognito to retrieve the email
+    const userAttributes = await cognitoIdp
+      .adminGetUser({
+        UserPoolId: userPoolId,
+        Username: userName,
+      })
+      .promise();
+
+    const emailAttr = userAttributes.UserAttributes.find(
+      (attr) => attr.Name === "email"
+    );
+    const email = emailAttr ? emailAttr.Value : null;
+
+    // Retrieve roles from the database
+    const dbUser = await sqlConnection`
+      SELECT roles FROM "Users" WHERE user_email = ${email};
     `;
 
-    // Determine the group to assign based on the user's roles
-    const roles = userAttributes.length > 0 ? userAttributes[0].roles : null;
-    const groupName = roles ? roles : "student"; // Default to 'student' if no roles found
+    const dbRoles = dbUser[0]?.roles || [];
 
-    // Assign the user to the appropriate group
-    await addUserToGroup({
-      userPoolId,
-      username: userName,
-      groupName: groupName,
-    });
+    // Determine the new Cognito group based on the roles
+    const newGroupName = dbRoles.length > 0 ? dbRoles[0] : "student";
 
-    return callback(null, event);
-  } catch (error) {
-    console.error("Error assigning user to group:", error);
-    return callback(null, {
+    // Add the user to the new group without removing existing groups
+    await cognitoIdp
+      .adminAddUserToGroup({
+        UserPoolId: userPoolId,
+        Username: userName,
+        GroupName: newGroupName,
+      })
+      .promise();
+
+    return event;
+  } catch (err) {
+    console.error("Error assigning user to group:", err);
+    return {
       statusCode: 500,
       body: JSON.stringify({
         message: "Internal Server Error",
       }),
-    });
+    };
   }
 };
-
-async function addUserToGroup({ userPoolId, username, groupName }) {
-  const params = {
-    GroupName: groupName,
-    UserPoolId: userPoolId,
-    Username: username,
-  };
-
-  const cognitoIdp = new AWS.CognitoIdentityServiceProvider();
-  await cognitoIdp.adminAddUserToGroup(params).promise();
-}

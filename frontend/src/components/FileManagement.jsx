@@ -12,11 +12,17 @@ import {
   TableRow,
   TableHead,
   TextField,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+
 const FileManagement = ({
   newFiles,
   setNewFiles,
@@ -29,6 +35,9 @@ const FileManagement = ({
   metadata,
   setMetadata,
 }) => {
+  const [duplicateFile, setDuplicateFile] = useState(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+
   const handleMetadataChange = (fileName, value) => {
     setMetadata((prev) => ({ ...prev, [fileName]: value }));
   };
@@ -36,9 +45,11 @@ const FileManagement = ({
   const handleDownloadClick = (url) => {
     window.open(url, "_blank");
   };
+
   const cleanFileName = (fileName) => {
     return fileName.replace(/[^a-zA-Z0-9._-]/g, "_");
   };
+
   const handleFileUpload = async (event) => {
     const uploadedFiles = Array.from(event);
     const existingFileNames = files.map((file) => file.fileName);
@@ -49,29 +60,57 @@ const FileManagement = ({
       ...savedFileNames,
       ...newFileNames,
     ];
+
     const fileIsNew = uploadedFiles.filter((file) => {
       const cleanedFileName = cleanFileName(file.name);
-      console.log(cleanedFileName);
       if (allFileNames.includes(cleanedFileName)) {
-        return false; // File name exists, skip this file
+        setDuplicateFile(file);
+        setIsDialogOpen(true);
+        return false; 
       }
-      return true; // File name is unique, include this file
+      return true;
     });
 
-    if (fileIsNew.length < uploadedFiles.length) {
-      toast.error("Some files were not uploaded because they already exist.", {
-        position: "top-center",
-        autoClose: 2000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        theme: "colored",
-      });
-    }
+    // Filter out files larger than 500MB
+    const fileIsValidSize = fileIsNew.filter((file) => {
+      const fileSizeMB = file.size / (1024 * 1024); // Convert size to MB
+      if (fileSizeMB > 500) {
+        toast.error(`File ${file.name} is larger than 500MB and was not uploaded.`, {
+          position: "top-center",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: "colored",
+        });
+        return false;
+      }
+      return true;
+    });
 
-    setNewFiles([...newFiles, ...fileIsNew]);
+    setNewFiles([...newFiles, ...fileIsValidSize]);
+  };
+
+  const handleConfirmReplace = () => {
+    const cleanedFileName = cleanFileName(duplicateFile.name);
+
+    // Move existing file to deleted files and add the new file to newFiles
+    const updatedFiles = files.filter((file) => file.fileName !== cleanedFileName);
+    const updatedSavedFiles = savedFiles.filter((file) => file.name !== cleanedFileName);
+    const updatedNewFiles = newFiles.filter((file) => file.name !== cleanedFileName);
+    setFiles(updatedFiles);
+    setSavedFiles(updatedSavedFiles);
+    setNewFiles([...updatedNewFiles, duplicateFile]);
+    setDeletedFiles((prevDeletedFiles) => [...prevDeletedFiles, cleanedFileName]);
+    setDuplicateFile(null);
+    setIsDialogOpen(false);
+  };
+
+  const handleCancelReplace = () => {
+    setDuplicateFile(null);
+    setIsDialogOpen(false);
   };
 
   const handleDownloadFile = (file) => {
@@ -100,6 +139,7 @@ const FileManagement = ({
     const updatedFiles = newFiles.filter((file) => file.name !== file_name);
     setNewFiles(updatedFiles);
   };
+
   return (
     <Box sx={{ border: 1, borderRadius: 3, borderColor: "grey.400", p: 1 }}>
       <Typography variant="h6" sx={{ pt: 1 }}>
@@ -136,6 +176,26 @@ const FileManagement = ({
           </Typography>
         </CardContent>
       </Card>
+
+      {/* Confirmation Dialog */}
+      <Dialog open={isDialogOpen} onClose={handleCancelReplace}>
+        <DialogTitle>File Exists</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            A file with the name "{duplicateFile?.name}" already exists. Do you
+            want to replace it?
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCancelReplace} color="primary">
+            Cancel
+          </Button>
+          <Button onClick={handleConfirmReplace} color="primary">
+            Replace
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       <Typography variant="h7" fontWeight={"bold"} sx={{ pb: 3 }}>
         Uploaded Files
       </Typography>
@@ -211,11 +271,9 @@ const FileManagement = ({
                             variant="contained"
                             color="primary"
                             onClick={() => {
-                              if (file && file.url && file.url.url) {
-                                handleDownloadClick(file.url.url);
-                              } else if (file) {
-                                handleDownloadFile(file);
-                              }
+                              if (file && file.url && file.url !== "dummy")
+                                handleDownloadClick(file.url);
+                              else handleDownloadFile(file);
                             }}
                           >
                             Download
@@ -223,18 +281,16 @@ const FileManagement = ({
                         </TableCell>
                         <TableCell align="right">
                           <IconButton
+                            aria-label="delete"
                             onClick={() => {
-                              console.log("removing", file);
-                              if (file.fileName) {
-                                handleRemoveFile(file.fileName);
-                              } else if (savedFiles.includes(file)) {
-                                handleSavedRemoveFile(file.name);
-                              } else {
-                                handleRemoveNewFile(file.name);
-                              }
+                              if (newFiles.includes(file))
+                                handleRemoveNewFile(fileName);
+                              else if (savedFiles.includes(file))
+                                handleSavedRemoveFile(fileName);
+                              else handleRemoveFile(fileName);
                             }}
                           >
-                            <DeleteIcon />
+                            <DeleteIcon color="error" />
                           </IconButton>
                         </TableCell>
                       </TableRow>
@@ -245,7 +301,7 @@ const FileManagement = ({
           </Table>
         </Box>
       ) : (
-        <div>loading...</div>
+        <Typography variant="body2">Loading...</Typography>
       )}
     </Box>
   );

@@ -792,7 +792,7 @@ exports.handler = async (event) => {
 
             // Get the student_module_id for the specific student and module
             const studentModuleData = await sqlConnection`
-                SELECT student_module_id
+                SELECT student_module_id, module_score
                 FROM "Student_Modules"
                 WHERE course_module_id = ${moduleId}
                   AND enrolment_id = (
@@ -803,11 +803,21 @@ exports.handler = async (event) => {
               `;
 
             const studentModuleId = studentModuleData[0]?.student_module_id;
+            const currentScore = studentModuleData[0]?.module_score;
 
             if (!studentModuleId) {
               response.statusCode = 404;
               response.body = JSON.stringify({
                 error: "Student module not found",
+              });
+              break;
+            }
+
+            // If llm_verdict is false and the current score is 100, just pass without updating
+            if (!llmVerdict && currentScore === 100) {
+              response.statusCode = 200;
+              response.body = JSON.stringify({
+                message: "No changes made. Module score is already 100.",
               });
               break;
             }
@@ -822,6 +832,7 @@ exports.handler = async (event) => {
                 WHERE student_module_id = ${studentModuleId}
               `;
 
+            response.statusCode = 200;
             response.body = JSON.stringify({
               message: "Module score updated successfully.",
             });

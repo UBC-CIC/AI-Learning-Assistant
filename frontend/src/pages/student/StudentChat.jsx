@@ -114,13 +114,19 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
     let authToken;
     let userEmail;
     let messageContent = textareaRef.current.value.trim();
+    let getSession
 
     if (!messageContent) {
       console.warn("Message content is empty or contains only spaces.");
       return;
     }
-
-    const getSession = session ? Promise.resolve(session) : handleNewChat();
+    if (session) {
+      getSession =  Promise.resolve(session);
+    } else {
+      handleNewChat();
+      setIsSubmitting(false);
+      return
+    }
 
     getSession
       .then((retrievedSession) => {

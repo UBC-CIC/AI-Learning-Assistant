@@ -107,6 +107,12 @@ def handler(event, context):
         logger.error("Missing required parameter: session_id")
         return {
             'statusCode': 400,
+            "headers": {
+                "Content-Type": "application/json",
+                "Access-Control-Allow-Headers": "*",
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "*",
+            },
             'body': json.dumps('Missing required parameter: session_id')
         }
 
@@ -114,6 +120,12 @@ def handler(event, context):
         logger.error("Missing required parameter: module_id")
         return {
             'statusCode': 400,
+            "headers": {
+                "Content-Type": "application/json",
+                "Access-Control-Allow-Headers": "*",
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "*",
+            },
             'body': json.dumps('Missing required parameter: module_id')
         }
     
@@ -127,7 +139,7 @@ def handler(event, context):
             'body': json.dumps('Invalid module_id')
         }
     
-    body = json.loads(event.get("body", "{}"))
+    body = {} if event.get("body") is None else json.loads(event.get("body"))
     question = body.get("message_content", "")
     
     if not question:
@@ -144,6 +156,12 @@ def handler(event, context):
         logger.error(f"Error creating Bedrock LLM: {e}")
         return {
             'statusCode': 500,
+            "headers": {
+                "Content-Type": "application/json",
+                "Access-Control-Allow-Headers": "*",
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "*",
+            },
             'body': json.dumps('Error creating Bedrock LLM')
         }
     
@@ -162,6 +180,12 @@ def handler(event, context):
         logger.error(f"Error retrieving vectorstore config: {e}")
         return {
             'statusCode': 500,
+            "headers": {
+                "Content-Type": "application/json",
+                "Access-Control-Allow-Headers": "*",
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "*",
+            },
             'body': json.dumps('Error retrieving vectorstore config')
         }
     
@@ -177,6 +201,12 @@ def handler(event, context):
         logger.error(f"Error creating history-aware retriever: {e}")
         return {
             'statusCode': 500,
+            "headers": {
+                "Content-Type": "application/json",
+                "Access-Control-Allow-Headers": "*",
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "*",
+            },
             'body': json.dumps('Error creating history-aware retriever')
         }
     
@@ -194,6 +224,12 @@ def handler(event, context):
         logger.error(f"Error getting response: {e}")
         return {
             'statusCode': 500,
+            "headers": {
+                "Content-Type": "application/json",
+                "Access-Control-Allow-Headers": "*",
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "*",
+            },
             'body': json.dumps('Error getting response')
         }
     
@@ -201,8 +237,11 @@ def handler(event, context):
     return {
         "statusCode": 200,
         "headers": {
-            "Content-Type": "application/json"
-        },
+                "Content-Type": "application/json",
+                "Access-Control-Allow-Headers": "*",
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "*",
+            },
         "body": json.dumps({
             "session_name": session_name,
             "llm_output": response.get("llm_output", "LLM failed to create response"),

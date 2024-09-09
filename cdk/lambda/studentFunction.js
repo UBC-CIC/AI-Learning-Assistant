@@ -84,7 +84,6 @@ exports.handler = async (event) => {
           response.body = JSON.stringify({ error: "User data is required" });
         }
         break;
-
       case "GET /student/get_user_roles":
         if (
           event.queryStringParameters &&
@@ -776,7 +775,68 @@ exports.handler = async (event) => {
           response.body = JSON.stringify({ error: "Invalid value" });
         }
         break;
+      case "POST /student/update_module_score":
+        if (
+          event.queryStringParameters != null &&
+          event.queryStringParameters.module_id &&
+          event.queryStringParameters.student_email &&
+          event.queryStringParameters.course_id &&
+          event.queryStringParameters.llm_verdict
+        ) {
+          try {
+            const moduleId = event.queryStringParameters.module_id;
+            const studentEmail = event.queryStringParameters.student_email;
+            const courseId = event.queryStringParameters.course_id;
+            const llmVerdict =
+              event.queryStringParameters.llm_verdict === "true"; // Convert to boolean
 
+            // Get the student_module_id for the specific student and module
+            const studentModuleData = await sqlConnection`
+                SELECT student_module_id
+                FROM "Student_Modules"
+                WHERE course_module_id = ${moduleId}
+                  AND enrolment_id = (
+                    SELECT enrolment_id
+                    FROM "Enrolments"
+                    WHERE user_email = ${studentEmail} AND course_id = ${courseId}
+                  )
+              `;
+
+            const studentModuleId = studentModuleData[0]?.student_module_id;
+
+            if (!studentModuleId) {
+              response.statusCode = 404;
+              response.body = JSON.stringify({
+                error: "Student module not found",
+              });
+              break;
+            }
+
+            // Determine the new score based on llm_verdict
+            const newScore = llmVerdict ? 100 : 0;
+
+            // Update the module score for the student
+            await sqlConnection`
+                UPDATE "Student_Modules"
+                SET module_score = ${newScore}
+                WHERE student_module_id = ${studentModuleId}
+              `;
+
+            response.body = JSON.stringify({
+              message: "Module score updated successfully.",
+            });
+          } catch (err) {
+            console.log(err);
+            response.statusCode = 500;
+            response.body = JSON.stringify({ error: "Internal server error" });
+          }
+        } else {
+          response.statusCode = 400;
+          response.body = JSON.stringify({
+            error: "Invalid query parameters.",
+          });
+        }
+        break;
       default:
         throw new Error(`Unsupported route: "${pathData}"`);
     }

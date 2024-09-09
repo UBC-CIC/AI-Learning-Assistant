@@ -1,4 +1,4 @@
-import React, { useState, useContext } from "react";
+import { useState } from "react";
 // amplify
 import {
   signIn,
@@ -8,7 +8,6 @@ import {
   resendSignUpCode,
   resetPassword,
   confirmResetPassword,
-  updatePassword,
   fetchAuthSession,
 } from "aws-amplify/auth";
 // MUI
@@ -50,9 +49,7 @@ export const Login = () => {
   const [confirmPassword, setConfirmPassword] = useState("")
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
-  const [role, setRole] = useState("");
   const [newPassword, setNewPassword] = useState(false);
-  const [newResetPassword, setNewResetPassword] = useState("");
   const [newUserPassword, setNewUserPassword] = useState(false);
   // auth status variables
   const [signUpConfirmation, setSignUpConfirmation] = useState(false);
@@ -395,6 +392,7 @@ export const Login = () => {
     const { nextStep } = output;
     switch (nextStep.resetPasswordStep) {
       case "CONFIRM_RESET_PASSWORD_WITH_CODE":
+        // eslint-disable-next-line no-case-declarations
         const codeDeliveryDetails = nextStep.codeDeliveryDetails;
         console.log(
           `Confirmation code was sent to ${codeDeliveryDetails.deliveryMedium}`
@@ -438,15 +436,6 @@ export const Login = () => {
       console.log(error);
       console.log(username);
       console.log(confirmationCode);
-      setError(error.message);
-    }
-  }
-
-  async function handleUpdatePassword(oldPassword, newPassword) {
-    try {
-      await updatePassword({ oldPassword, newPassword });
-    } catch (err) {
-      console.log(err);
       setError(error.message);
     }
   }

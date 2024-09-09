@@ -4,140 +4,37 @@ import Session from "../../components/Session";
 import StudentMessage from "../../components/StudentMessage";
 import { fetchAuthSession } from "aws-amplify/auth";
 import { useNavigate } from "react-router-dom";
-import { fetchUserAttributes } from 'aws-amplify/auth';
+import { fetchUserAttributes } from "aws-amplify/auth";
 
 const StudentChat = ({ course, module, setModule, setCourse }) => {
   const textareaRef = useRef(null);
   const [sessions, setSessions] = useState([]);
   const [session, setSession] = useState(null);
   const [messages, setMessages] = useState([]);
-
-
-  async function retrieveKnowledgeBase(message) {
-    try {
-      const authSession = await fetchAuthSession();
-      const {email} = await fetchUserAttributes();
-      const token = authSession.tokens.idToken.toString();
-      try {
-        const response = await fetch(
-          `${
-            import.meta.env.VITE_API_ENDPOINT
-          }student/create_ai_message?session_id=${encodeURIComponent(
-            session.session_id
-          )}&email=${encodeURIComponent(
-            email
-          )}&course_id=${encodeURIComponent(
-            course.course_id
-          )}&module_id=${encodeURIComponent(module.module_id)}`,
-          {
-            method: "POST",
-            headers: {
-              Authorization: token,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              message_content: message.message,
-            }),
-          }
-        );
-
-        if (response.ok) {
-          const data = await response.json();
-          setMessages((prevItems) => [...prevItems, data[0]]);
-        } else {
-          console.error("Failed to retreive message:", response.statusText);
-        }
-      } catch (error) {
-        console.error("Error retreiving message:", error);
-      }
-    } catch (error) {
-      console.error("Error retrieving message from knowledge base:", error);
-    }
-  }
-
-  const handleSubmit = async () => {
-    let new_session;
-    if (!session) {
-      new_session = await handleNewChat();
-    } else {
-      new_session = session;
-    }
-    const messageContent = textareaRef.current.value.trim();
-    if (!messageContent) {
-      console.warn("Message content is empty or contains only spaces.");
-      return;
-    }
-    const authSession = await fetchAuthSession();
-    const {email} = await fetchUserAttributes();
-    const token = authSession.tokens.idToken.toString();
-    try {
-      const response = await fetch(
-        `${
-          import.meta.env.VITE_API_ENDPOINT
-        }student/create_message?session_id=${encodeURIComponent(
-          new_session.session_id
-        )}&email=${encodeURIComponent(
-          email
-        )}&course_id=${encodeURIComponent(
-          course.course_id
-        )}&module_id=${encodeURIComponent(module.module_id)}`, // change to name
-        {
-          method: "POST",
-          headers: {
-            Authorization: token,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            message_content: messageContent,
-          }),
-        }
-      );
-
-      if (response.ok) {
-        const data = await response.json();
-        setMessages((prevItems) => [...prevItems, data[0]]);
-        textareaRef.current.value = "";
-
-        const message = data[0].message_content;
-
-        try {
-          const response = await fetch(`http://127.0.0.1:5000/answer`, {
-            method: "POST",
-            headers: {
-              Authorization: token,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              message_content: message,
-            }),
-          });
-          const data = await response.json();
-
-          // Log the parsed data
-          retrieveKnowledgeBase(data);
-        } catch (error) {
-          console.error("Error creating flask:", error);
-        }
-      } else {
-        console.error("Failed to create message:", response.statusText);
-      }
-    } catch (error) {
-      console.error("Error creating message:", error);
-    }
-  };
-
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [currentSessionId, setCurrentSessionId] = useState(null);
+  const [creatingSession, setCreatingSession] = useState(false);
+  const [newMessage, setNewMessage] = useState(null);
   const navigate = useNavigate();
+  useEffect(() => {
+    if (newMessage !== null) {
+      if (currentSessionId === session.session_id) {
+        setMessages((prevItems) => [...prevItems, newMessage]);
+      }
+      setNewMessage(null);
+    }
+  }, [session, newMessage, currentSessionId]);
 
   useEffect(() => {
     const fetchModule = async () => {
       if (!course || !module) {
         console.log("Course or module not defined");
-        return; // Exit early if course or module are not defined
+        return;
       }
 
       try {
         const session = await fetchAuthSession();
-        const {email} = await fetchUserAttributes();
+        const { email } = await fetchUserAttributes();
         const token = session.tokens.idToken.toString();
         const response = await fetch(
           `${
@@ -170,6 +67,190 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
     fetchModule();
   }, [course, module]); // Added course and module to dependency array
 
+  async function retrieveKnowledgeBase(message, sessionId) {
+    try {
+      const authSession = await fetchAuthSession();
+      const { email } = await fetchUserAttributes();
+      const token = authSession.tokens.idToken.toString();
+      try {
+        const response = await fetch(
+          `${
+            import.meta.env.VITE_API_ENDPOINT
+          }student/create_ai_message?session_id=${encodeURIComponent(
+            sessionId
+          )}&email=${encodeURIComponent(email)}&course_id=${encodeURIComponent(
+            course.course_id
+          )}&module_id=${encodeURIComponent(module.module_id)}`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: token,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              message_content: message,
+            }),
+          }
+        );
+
+        if (response.ok) {
+          const data = await response.json();
+          setNewMessage(data[0]);
+        } else {
+          console.error("Failed to retreive message:", response.statusText);
+        }
+      } catch (error) {
+        console.error("Error retreiving message:", error);
+      }
+    } catch (error) {
+      console.error("Error retrieving message from knowledge base:", error);
+    }
+  }
+
+  const handleSubmit = () => {
+    if (isSubmitting || creatingSession) return;
+    setIsSubmitting(true);
+    let newSession;
+    let authToken;
+    let userEmail;
+    let messageContent = textareaRef.current.value.trim();
+
+    if (!messageContent) {
+      console.warn("Message content is empty or contains only spaces.");
+      return;
+    }
+
+    const getSession = session ? Promise.resolve(session) : handleNewChat();
+
+    getSession
+      .then((retrievedSession) => {
+        newSession = retrievedSession;
+        setCurrentSessionId(newSession.session_id);
+        return fetchAuthSession();
+      })
+      .then((authSession) => {
+        authToken = authSession.tokens.idToken.toString();
+        return fetchUserAttributes();
+      })
+      .then(({ email }) => {
+        userEmail = email;
+        const messageUrl = `${
+          import.meta.env.VITE_API_ENDPOINT
+        }student/create_message?session_id=${encodeURIComponent(
+          newSession.session_id
+        )}&email=${encodeURIComponent(
+          userEmail
+        )}&course_id=${encodeURIComponent(
+          course.course_id
+        )}&module_id=${encodeURIComponent(module.module_id)}`;
+
+        return fetch(messageUrl, {
+          method: "POST",
+          headers: {
+            Authorization: authToken,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            message_content: messageContent,
+          }),
+        });
+      })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`Failed to create message: ${response.statusText}`);
+        }
+        return response.json();
+      })
+      .then((messageData) => {
+        setNewMessage(messageData[0]);
+        textareaRef.current.value = "";
+
+        const message = messageData[0].message_content;
+
+        const textGenUrl = `${
+          import.meta.env.VITE_API_ENDPOINT
+        }student/text_generation?session_id=${encodeURIComponent(
+          newSession.session_id
+        )}&module_id=${encodeURIComponent(
+          module.module_id
+        )}&session_name=${encodeURIComponent(newSession.session_name)}`;
+
+        return fetch(textGenUrl, {
+          method: "POST",
+          headers: {
+            Authorization: authToken,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            message_content: message,
+          }),
+        });
+      })
+      .then((textGenResponse) => {
+        if (!textGenResponse.ok) {
+          throw new Error(
+            `Failed to generate text: ${textGenResponse.statusText}`
+          );
+        }
+        return textGenResponse.json();
+      })
+      .then((textGenData) => {
+        console.log(textGenData)
+        const updateSessionName = `${
+          import.meta.env.VITE_API_ENDPOINT
+        }student/update_session_name?session_id=${encodeURIComponent(
+          newSession.session_id
+        )}`;
+
+        const updateModuleScore = `${
+          import.meta.env.VITE_API_ENDPOINT
+        }student/update_module_score?module_id=${encodeURIComponent(
+          module.module_id
+        )}&student_email=${encodeURIComponent(
+          userEmail
+        )}&course_id=${encodeURIComponent(
+          course.course_id
+        )}&llm_verdict=${encodeURIComponent(textGenData.llm_verdict)}`;
+
+        return Promise.all([
+          fetch(updateSessionName, {
+            method: "PUT",
+            headers: {
+              Authorization: authToken,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              session_name: textGenData.session_name,
+            }),
+          }),
+          fetch(updateModuleScore, {
+            method: "POST",
+            headers: {
+              Authorization: authToken,
+              "Content-Type": "application/json",
+            }
+          }),
+          textGenData, 
+        ]);
+      })
+      .then(([response1, response2, textGenData]) => {
+        if (!response1.ok || !response2.ok) {
+          throw new Error("Failed to fetch endpoints");
+        }
+
+        return retrieveKnowledgeBase(
+          textGenData.llm_output,
+          newSession.session_id
+        );
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+      })
+      .finally(() => {
+        setIsSubmitting(false);
+      });
+  };
+
   const handleKeyDown = (event) => {
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
@@ -182,46 +263,92 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
     navigate(-1);
   };
 
-  const handleNewChat = async () => {
-    try {
-      const session = await fetchAuthSession();
-      const {email} = await fetchUserAttributes();
-      const token = session.tokens.idToken.toString();
-      const response = await fetch(
-        `${
+  const handleNewChat = () => {
+    let sessionData;
+    let userEmail;
+    let authToken;
+    setCreatingSession(true);
+    return fetchAuthSession()
+      .then((session) => {
+        authToken = session.tokens.idToken.toString();
+        return fetchUserAttributes();
+      })
+      .then(({ email }) => {
+        userEmail = email;
+        const session_name = "New chat";
+        const url = `${
           import.meta.env.VITE_API_ENDPOINT
         }student/create_session?email=${encodeURIComponent(
-          email
+          userEmail
         )}&course_id=${encodeURIComponent(
           course.course_id
         )}&module_id=${encodeURIComponent(
           module.module_id
-        )}&session_name=${encodeURIComponent("New chat")}`,
-        {
+        )}&session_name=${encodeURIComponent(session_name)}`;
+
+        return fetch(url, {
           method: "POST",
           headers: {
-            Authorization: token,
+            Authorization: authToken,
             "Content-Type": "application/json",
           },
+        });
+      })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`Failed to create session: ${response.statusText}`);
         }
-      );
-      if (response.ok) {
-        const data = await response.json();
-        setSessions((prevItems) => [...prevItems, data[0]]);
-        setSession(data[0]);
-        return data[0];
-      } else {
-        console.error("Failed to create session:", response.statusText);
-      }
-    } catch (error) {
-      console.error("Error fetching creating new chat:", error);
-    }
+        return response.json();
+      })
+      .then((data) => {
+        sessionData = data[0];
+        setCurrentSessionId(sessionData.session_id);
+        setSessions((prevItems) => [...prevItems, sessionData]);
+        setSession(sessionData);
+
+        const textGenUrl = `${
+          import.meta.env.VITE_API_ENDPOINT
+        }student/text_generation?session_id=${encodeURIComponent(
+          sessionData.session_id
+        )}&module_id=${encodeURIComponent(
+          module.module_id
+        )}&session_name=${encodeURIComponent("New chat")}`;
+
+        return fetch(textGenUrl, {
+          method: "POST",
+          headers: {
+            Authorization: authToken,
+            "Content-Type": "application/json",
+          },
+        });
+      })
+      .then((textResponse) => {
+        if (!textResponse.ok) {
+          throw new Error(
+            `Failed to create initial message: ${textResponse.statusText}`
+          );
+        }
+        return textResponse.json();
+      })
+      .then((textResponseData) => {
+        retrieveKnowledgeBase(
+          textResponseData.llm_output,
+          sessionData.session_id
+        );
+        return sessionData;
+      })
+      .catch((error) => {
+        console.error("Error creating new chat:", error);
+      })
+      .finally(() => {
+        setCreatingSession(false);
+      });
   };
 
   const handleDeleteSession = async (sessionDelete) => {
     try {
       const authSession = await fetchAuthSession();
-      const {email} = await fetchUserAttributes();
+      const { email } = await fetchUserAttributes();
       const token = authSession.tokens.idToken.toString();
       const response = await fetch(
         `${
@@ -248,8 +375,10 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
             (isession) => isession.session_id !== sessionDelete.session_id
           )
         );
-        setSession(null);
-        setMessages([]);
+        if (sessionDelete.session_id === session.session_id) {
+          setSession(null);
+          setMessages([]);
+        }
       } else {
         console.error("Failed to create session:", response.statusText);
       }
@@ -308,7 +437,7 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
   const getMessages = async () => {
     try {
       const authSession = await fetchAuthSession();
-      const {email} = await fetchUserAttributes();
+      const { email } = await fetchUserAttributes();
       const token = authSession.tokens.idToken.toString();
       const response = await fetch(
         `${

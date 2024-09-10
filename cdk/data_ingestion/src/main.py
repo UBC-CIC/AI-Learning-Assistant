@@ -5,11 +5,15 @@ import psycopg2
 from datetime import datetime, timezone
 import logging
 
+from helpers.vectorstore import update_vectorstore
+from langchain_community.embeddings import BedrockEmbeddings
+
 # Set up basic logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger()
 
 DB_SECRET_NAME = os.environ["SM_DB_CREDENTIALS"]
+REGION = os.environ["REGION"]
 
 def get_secret():
     # secretsmanager client to get db credentials
@@ -128,6 +132,41 @@ def insert_file_into_db(module_id, file_name, file_type, file_path, bucket_name)
         logger.error(f"Error inserting file {file_name}.{file_type} into database: {e}")
         raise
 
+def update_vectorstore_from_s3(bucket, course_id):
+    
+    bedrock_runtime = boto3.client(
+        service_name="bedrock-runtime",
+        region_name=REGION
+    )
+    
+    embeddings = BedrockEmbeddings(
+        model_id='amazon.titan-embed-text-v2:0', 
+        client=bedrock_runtime,
+        region_name=REGION
+    )
+    
+    db_secret = get_secret()
+
+    vectorstore_config_dict = {
+        'collection_name': f'{course_id}',
+        'dbname': db_secret["dbname"],
+        'user': db_secret["username"],
+        'password': db_secret["password"],
+        'host': db_secret["host"],
+        'port': db_secret["port"]
+    }
+
+    try:
+        update_vectorstore(
+            bucket=bucket,
+            course=course_id,
+            vectorstore_config_dict=vectorstore_config_dict,
+            embeddings=embeddings
+        )
+    except Exception as e:
+        logger.error(f"Error updating vectorstore for course {course_id}: {e}")
+        raise
+
 def handler(event, context):
     records = event.get('Records', [])
     if not records:
@@ -164,6 +203,17 @@ def handler(event, context):
                 return {
                     "statusCode": 500,
                     "body": json.dumps(f"Error inserting file {file_name}.{file_type}: {e}")
+                }
+            
+            # Update embeddings for course after the file is successfully inserted into the database
+            try:
+                update_vectorstore_from_s3(bucket_name, course_id)
+                logger.info(f"Vectorstore updated successfully for course {course_id}.")
+            except Exception as e:
+                logger.error(f"Error updating vectorstore for course {course_id}: {e}")
+                return {
+                    "statusCode": 500,
+                    "body": json.dumps(f"File inserted, but error updating vectorstore: {e}")
                 }
 
             return {

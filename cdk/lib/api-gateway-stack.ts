@@ -900,53 +900,6 @@ export class ApiGatewayStack extends cdk.Stack {
       removalPolicy: cdk.RemovalPolicy.RETAIN,
     });
 
-    /**
-     *
-     * Create Lambda function that is triggered when a file is uploaded
-     */
-    const s3UploadTrigger = new lambda.Function(this, "s3UploadTrigger", {
-      runtime: lambda.Runtime.PYTHON_3_9,
-      code: lambda.Code.fromAsset("lambda"),
-      handler: "s3UploadTrigger.lambda_handler",
-      timeout: Duration.seconds(300),
-      vpc: vpcStack.vpc,
-      functionName: "s3UploadTrigger",
-      memorySize: 128,
-      environment: {
-        SM_DB_CREDENTIALS: db.secretPathUser.secretName, // Database User Credentials
-        RDS_PROXY_ENDPOINT: db.rdsProxyEndpoint, // RDS Proxy Endpoint
-        BUCKET: dataIngestionBucket.bucketName,
-        REGION: this.region,
-      },
-      layers: [psycopgLayer, powertoolsLayer],
-    });
-
-    // Override the Logical ID of the Lambda Function to get ARN in OpenAPI
-    const cfns3UploadTrigger = s3UploadTrigger.node.defaultChild as lambda.CfnFunction;
-    cfns3UploadTrigger.overrideLogicalId("s3UploadTrigger");
-
-    // Grant the Lambda function read-only permissions to the S3 bucket
-    dataIngestionBucket.grantRead(s3UploadTrigger);
-
-    // Add S3 event source to trigger the Lambda function on object creation
-    s3UploadTrigger.addEventSource(new lambdaEventSources.S3EventSource(dataIngestionBucket, {
-      events: [s3.EventType.OBJECT_CREATED],
-    }));
-
-    // Grant access to Secret Manager
-    s3UploadTrigger.addToRolePolicy(
-      new iam.PolicyStatement({
-        effect: iam.Effect.ALLOW,
-        actions: [
-          //Secrets Manager
-          "secretsmanager:GetSecretValue",
-        ],
-        resources: [
-          `arn:aws:secretsmanager:${this.region}:${this.account}:secret:*`,
-        ],
-      })
-    );
-
     // Create the Lambda function for generating presigned URLs
     const generatePreSignedURL = new lambda.Function(
       this,
@@ -993,7 +946,7 @@ export class ApiGatewayStack extends cdk.Stack {
     /**
      *
      * Create Lambda with container image for data ingestion workflow in RAG pipeline
-     * This function will be triggered when a file in uploaded to the S3 Bucket
+     * This function will be triggered when a file in uploaded or deleted fro, the S3 Bucket
      */
     const dataIngestLambdaDockerFunc = new lambda.DockerImageFunction(this, "DataIngestLambdaDockerFunc", {
       code: lambda.DockerImageCode.fromImageAsset("./data_ingestion"),
@@ -1010,8 +963,8 @@ export class ApiGatewayStack extends cdk.Stack {
     });
 
     // Override the Logical ID of the Lambda Function to get ARN in OpenAPI
-    const cfnDataIngestDockerFunc = dataIngestLambdaDockerFunc.node.defaultChild as lambda.CfnFunction;
-    cfnDataIngestDockerFunc.overrideLogicalId("DataIngestLambdaDockerFunc");
+    const cfnDataIngestLambdaDockerFunc = dataIngestLambdaDockerFunc.node.defaultChild as lambda.CfnFunction;
+    cfnDataIngestLambdaDockerFunc.overrideLogicalId("DataIngestLambdaDockerFunc");
 
     // Attach the custom Bedrock policy to Lambda function
     dataIngestLambdaDockerFunc.addToRolePolicy(bedrockPolicyStatement);

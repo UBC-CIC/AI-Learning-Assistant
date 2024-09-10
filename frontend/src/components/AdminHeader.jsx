@@ -27,14 +27,8 @@ const AdminHeader = () => {
       </button> */}
       <button
         type="button"
-        variant="contained"
-        color="secondary"
+        className="bg-gray-800 text-white hover:bg-gray-700"
         onClick={handleSignOut}
-        sx={{
-          bgcolor: "purple",
-          color: "white",
-          ":hover": { bgcolor: "darkpurple" },
-        }}
       >
         Sign Out
       </button>

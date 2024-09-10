@@ -22,7 +22,7 @@ const InstructorHeader = () => {
       <div className="text-black text-3xl font-semibold p-4">Instructor </div>
       <button
         type="button"
-        className="bg-black text-white hover:bg-slate-700"
+        className="bg-gray-800 text-white hover:bg-gray-700"
         onClick={handleSignOut}
       >
         Sign Out

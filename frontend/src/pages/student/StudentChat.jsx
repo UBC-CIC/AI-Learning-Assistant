@@ -6,8 +6,29 @@ import { fetchAuthSession } from "aws-amplify/auth";
 import { useNavigate } from "react-router-dom";
 import { fetchUserAttributes } from "aws-amplify/auth";
 
+const TypingIndicator = () => (
+  <div className="flex items-center ml-28 mb-4">
+    <div className="flex space-x-1">
+      <div
+        className="w-2 h-2 bg-gray-500 rounded-full animate-bounce"
+        style={{ animationDelay: "0s" }}
+      ></div>
+      <div
+        className="w-2 h-2 bg-gray-500 rounded-full animate-bounce"
+        style={{ animationDelay: "0.2s" }}
+      ></div>
+      <div
+        className="w-2 h-2 bg-gray-500 rounded-full animate-bounce"
+        style={{ animationDelay: "0.4s" }}
+      ></div>
+    </div>
+    <span className="ml-2 text-gray-500">AI is typing...</span>
+  </div>
+);
+
 const StudentChat = ({ course, module, setModule, setCourse }) => {
   const textareaRef = useRef(null);
+  const messagesEndRef = useRef(null);
   const [sessions, setSessions] = useState([]);
   const [session, setSession] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -15,7 +36,15 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
   const [currentSessionId, setCurrentSessionId] = useState(null);
   const [creatingSession, setCreatingSession] = useState(false);
   const [newMessage, setNewMessage] = useState(null);
+  const [isAItyping, setIsAItyping] = useState(false);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages]);
+
   useEffect(() => {
     if (newMessage !== null) {
       if (currentSessionId === session.session_id) {
@@ -114,18 +143,19 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
     let authToken;
     let userEmail;
     let messageContent = textareaRef.current.value.trim();
-    let getSession
+    let getSession;
 
     if (!messageContent) {
       console.warn("Message content is empty or contains only spaces.");
+      setIsSubmitting(false);
       return;
     }
     if (session) {
-      getSession =  Promise.resolve(session);
+      getSession = Promise.resolve(session);
     } else {
       handleNewChat();
       setIsSubmitting(false);
-      return
+      return;
     }
 
     getSession
@@ -169,6 +199,7 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
       })
       .then((messageData) => {
         setNewMessage(messageData[0]);
+        setIsAItyping(true);
         textareaRef.current.value = "";
 
         const message = messageData[0].message_content;
@@ -201,7 +232,7 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
         return textGenResponse.json();
       })
       .then((textGenData) => {
-        console.log(textGenData)
+        console.log(textGenData);
         const updateSessionName = `${
           import.meta.env.VITE_API_ENDPOINT
         }student/update_session_name?session_id=${encodeURIComponent(
@@ -234,9 +265,9 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
             headers: {
               Authorization: authToken,
               "Content-Type": "application/json",
-            }
+            },
           }),
-          textGenData, 
+          textGenData,
         ]);
       })
       .then(([response1, response2, textGenData]) => {
@@ -250,10 +281,13 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
         );
       })
       .catch((error) => {
+        setIsSubmitting(false);
+        setIsAItyping(false);
         console.error("Error:", error);
       })
       .finally(() => {
         setIsSubmitting(false);
+        setIsAItyping(false);
       });
   };
 
@@ -274,6 +308,7 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
     let userEmail;
     let authToken;
     setCreatingSession(true);
+    setIsAItyping(true);
     return fetchAuthSession()
       .then((session) => {
         authToken = session.tokens.idToken.toString();
@@ -345,9 +380,12 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
       })
       .catch((error) => {
         console.error("Error creating new chat:", error);
+        setCreatingSession(false);
+        setIsAItyping(false);
       })
       .finally(() => {
         setCreatingSession(false);
+        setIsAItyping(false);
       });
   };
 
@@ -562,6 +600,8 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
               />
             )
           )}
+          {isAItyping && <TypingIndicator />}
+          <div ref={messagesEndRef} />
         </div>
         <div className="font-roboto font-bold text-2xl text-left mt-6 ml-12 mb-6 text-black">
           AI Assistant 🌟

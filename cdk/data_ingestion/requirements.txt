@@ -8,3 +8,5 @@ python-dotenv
 sqlalchemy
 Pillow
 pymupdf
+psycopg[binary,pool]
+psycopg2-binary

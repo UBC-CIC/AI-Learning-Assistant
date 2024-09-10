@@ -1,42 +1,180 @@
 import os
 import json
+import boto3
+import psycopg2
+from datetime import datetime, timezone
 import logging
 
 # Set up basic logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger()
 
-def handler(event, context):
-    logger.info("Data Ingestion Lambda function is called!")
-    
-    # Extracting the key from the S3 event
-    s3_event = event['Records'][0]['s3']
-    bucket_name = s3_event['bucket']['name']
-    object_key = s3_event['object']['key']
+DB_SECRET_NAME = os.environ["SM_DB_CREDENTIALS"]
 
-    # Parse the key to extract components
+def get_secret():
+    # secretsmanager client to get db credentials
+    sm_client = boto3.client("secretsmanager")
+    response = sm_client.get_secret_value(SecretId=DB_SECRET_NAME)["SecretString"]
+    secret = json.loads(response)
+    return secret
+
+def connect_to_db():
     try:
-        course_id, module_name_with_id, _, file_name_with_extension = object_key.split('/')
-        file_name, file_type = file_name_with_extension.rsplit('.', 1)
-    except ValueError:
-        logger.error("Unexpected key format: %s", object_key)
+        db_secret = get_secret()
+        connection_params = {
+            'dbname': db_secret["dbname"],
+            'user': db_secret["username"],
+            'password': db_secret["password"],
+            'host': db_secret["host"],
+            'port': db_secret["port"]
+        }
+        connection_string = " ".join([f"{key}={value}" for key, value in connection_params.items()])
+        connection = psycopg2.connect(connection_string)
+        logger.info("Connected to the database!")
+        return connection
+    except Exception as e:
+        logger.error(f"Failed to connect to database: {e}")
+        if connection:
+            connection.rollback()
+            connection.close()
+        return None
+
+def parse_s3_file_path(file_key):
+    # Assuming the file path is of the format: {course_id}/{module_name}_{module_id}/{documents}/{file_name}.{file_type}
+    try:
+        course_id, module_and_id, file_category, filename_with_ext = file_key.split('/')
+        module_name, module_id = module_and_id.split('_')
+        file_name, file_type = filename_with_ext.split('.')
+        return course_id, module_name, module_id, file_category, file_name, file_type
+    except Exception as e:
+        logger.error(f"Error parsing S3 file path: {e}")
         return {
-            'statusCode': 500,
-            'body': json.dumps('Unexpected key format')
+                    "statusCode": 400,
+                    "body": json.dumps("Error parsing S3 file path.")
+                }
+
+def insert_file_into_db(module_id, file_name, file_type, file_path, bucket_name):    
+    connection = connect_to_db()
+    if connection is None:
+        logger.error("No database connection available.")
+        return {
+            "statusCode": 500,
+            "body": json.dumps("Database connection failed.")
+        }
+    
+    try:
+        cur = connection.cursor()
+
+        # Check if a record already exists
+        select_query = """
+        SELECT * FROM "Module_Files"
+        WHERE module_id = %s
+        AND filename = %s
+        AND filetype = %s;
+        """
+        cur.execute(select_query, (module_id, file_name, file_type))
+
+        existing_file = cur.fetchone()
+
+        if existing_file:
+            # Update the existing record
+            update_query = """
+                UPDATE "Module_Files"
+                SET s3_bucket_reference = %s,
+                filepath = %s,
+                time_uploaded = %s
+                WHERE module_id = %s
+                AND filename = %s
+                AND filetype = %s;
+            """
+            timestamp = datetime.now(timezone.utc)
+            cur.execute(update_query, (
+                bucket_name,  # s3_bucket_reference
+                file_path,  # filepath
+                timestamp,  # time_uploaded
+                module_id,  # module_id
+                file_name,  # filename
+                file_type  # filetype
+            ))
+            logger.info(f"Successfully updated file {file_name}.{file_type} in database for module {module_id}.")
+        else:
+            # Insert a new record
+            insert_query = """
+                INSERT INTO "Module_Files" 
+                (module_id, filetype, s3_bucket_reference, filepath, filename, time_uploaded, metadata)
+                VALUES (%s, %s, %s, %s, %s, %s, %s);
+            """
+            timestamp = datetime.now(timezone.utc)
+            cur.execute(insert_query, (
+                module_id,  # module_id
+                file_type,  # filetype
+                bucket_name,  # s3_bucket_reference
+                file_path,  # filepath
+                file_name,  # filename
+                timestamp,  # time_uploaded
+                ""  # metadata
+        ))
+        logger.info(f"Successfully inserted file {file_name}.{file_type} into database for module {module_id}.")
+
+        connection.commit()
+        cur.close()
+        connection.close()
+    except Exception as e:
+        if cur:
+            cur.close()
+        if connection:
+            connection.rollback()
+            connection.close()
+        logger.error(f"Error inserting file {file_name}.{file_type} into database: {e}")
+        raise
+
+def handler(event, context):
+    records = event.get('Records', [])
+    if not records:
+        return {
+            "statusCode": 400,
+            "body": json.dumps("No valid S3 event found.")
         }
 
-    # Log the extracted components
-    logger.info("Course Name: %s", course_id)
-    logger.info("Module Name: %s", module_name_with_id)
-    logger.info("File Name: %s", file_name)
-    logger.info("File Type: %s", file_type)
+    for record in records:
+        if record['eventName'].startswith('ObjectCreated:'):
+            bucket_name = record['s3']['bucket']['name']
+            file_key = record['s3']['object']['key']
+
+            # Parse the file path
+            course_id, module_name, module_id, file_category, file_name, file_type = parse_s3_file_path(file_key)
+            if not course_id or not module_name or not module_id or not file_name or not file_type:
+                return {
+                    "statusCode": 400,
+                    "body": json.dumps("Error parsing S3 file path.")
+                }
+
+            # Insert the file into the PostgreSQL database
+            try:
+                insert_file_into_db(
+                    module_id=module_id,
+                    file_name=file_name,
+                    file_type=file_type,
+                    file_path=file_key,
+                    bucket_name=bucket_name
+                )
+                logger.info(f"File {file_name}.{file_type} inserted successfully.")
+            except Exception as e:
+                logger.error(f"Error inserting file {file_name}.{file_type} into database: {e}")
+                return {
+                    "statusCode": 500,
+                    "body": json.dumps(f"Error inserting file {file_name}.{file_type}: {e}")
+                }
+
+            return {
+                "statusCode": 200,
+                "body": json.dumps({
+                    "message": "New file inserted into database.",
+                    "location": f"s3://{bucket_name}/{file_key}"
+                })
+            }
 
     return {
-        'statusCode': 200,
-        'body': json.dumps({
-            'course_id': course_id,
-            'module_name': module_name_with_id,
-            'file_name': file_name,
-            'file_type': file_type
-        })
+        "statusCode": 400,
+        "body": json.dumps("No new file upload event found.")
     }

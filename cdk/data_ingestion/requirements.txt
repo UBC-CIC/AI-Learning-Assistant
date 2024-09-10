@@ -6,7 +6,5 @@ langchain-experimental
 langchain-postgres
 python-dotenv
 sqlalchemy
-transformers
 Pillow
-tqdm
 pymupdf

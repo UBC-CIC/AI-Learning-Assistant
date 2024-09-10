@@ -995,26 +995,45 @@ export class ApiGatewayStack extends cdk.Stack {
      * Create Lambda with container image for data ingestion workflow in RAG pipeline
      * This function will be triggered when a file in uploaded to the S3 Bucket
      */
-    // const dataIngestLambdaDockerFunc = new lambda.DockerImageFunction(this, "DataIngestLambdaDockerFunc", {
-    //   code: lambda.DockerImageCode.fromImageAsset("./data_ingestion"),
-    //   memorySize: 512,
-    //   timeout: cdk.Duration.seconds(300),
-    //   vpc: vpcStack.vpc, // Pass the VPC
-    //   functionName: "DataIngestLambdaDockerFunc",
-    //   environment: {
-    //     SM_DB_CREDENTIALS: db.secretPathUser.secretName, // Database User Credentials
-    //     RDS_PROXY_ENDPOINT: db.rdsProxyEndpoint, // RDS Proxy Endpoint
-    //   },
-    // });
+    const dataIngestLambdaDockerFunc = new lambda.DockerImageFunction(this, "DataIngestLambdaDockerFunc", {
+      code: lambda.DockerImageCode.fromImageAsset("./data_ingestion"),
+      memorySize: 512,
+      timeout: cdk.Duration.seconds(300),
+      vpc: vpcStack.vpc, // Pass the VPC
+      functionName: "DataIngestLambdaDockerFunc",
+      environment: {
+        SM_DB_CREDENTIALS: db.secretPathUser.secretName, // Database User Credentials
+        RDS_PROXY_ENDPOINT: db.rdsProxyEndpoint, // RDS Proxy Endpoint
+        BUCKET: dataIngestionBucket.bucketName,
+        REGION: this.region,
+      },
+    });
 
-    // // Override the Logical ID of the Lambda Function to get ARN in OpenAPI
-    // const cfnDataIngestDockerFunc = dataIngestLambdaDockerFunc.node.defaultChild as lambda.CfnFunction;
-    // cfnDataIngestDockerFunc.overrideLogicalId("DataIngestLambdaDockerFunc");
+    // Override the Logical ID of the Lambda Function to get ARN in OpenAPI
+    const cfnDataIngestDockerFunc = dataIngestLambdaDockerFunc.node.defaultChild as lambda.CfnFunction;
+    cfnDataIngestDockerFunc.overrideLogicalId("DataIngestLambdaDockerFunc");
 
-    // // Add the S3 event source trigger to the Lambda function
-    // dataIngestLambdaDockerFunc.addEventSource(new lambdaEventSources.S3EventSource(dataIngestionBucket, {
-    //   events: [s3.EventType.OBJECT_CREATED]
-    // }));
+    // Attach the custom Bedrock policy to Lambda function
+    dataIngestLambdaDockerFunc.addToRolePolicy(bedrockPolicyStatement);
+
+    // Add the S3 event source trigger to the Lambda function
+    dataIngestLambdaDockerFunc.addEventSource(new lambdaEventSources.S3EventSource(dataIngestionBucket, {
+      events: [s3.EventType.OBJECT_CREATED, s3.EventType.OBJECT_REMOVED, s3.EventType.OBJECT_RESTORE_COMPLETED]
+    }));
+
+    // Grant access to Secret Manager
+    dataIngestLambdaDockerFunc.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: [
+          //Secrets Manager
+          "secretsmanager:GetSecretValue",
+        ],
+        resources: [
+          `arn:aws:secretsmanager:${this.region}:${this.account}:secret:*`,
+        ],
+      })
+    );
 
     /**
      *

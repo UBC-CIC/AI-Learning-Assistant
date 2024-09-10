@@ -1,25 +1,88 @@
 import logging
 import boto3
-from typing import Dict
+from typing import Dict, Optional
+import psycopg2
 
-from langchain_experimental.open_clip import OpenCLIPEmbeddings
+from langchain_community.embeddings import BedrockEmbeddings
+from langchain_postgres import PGVector
 from langchain.retrievers.multi_vector import MultiVectorRetriever
 from langchain.indexes import SQLRecordManager
 
-from processing.figures import process_figures
-from processing.documents import process_texts
+from processing.documents import process_documents
 from helpers.store import PostgresByteStore
 s3 = boto3.client('s3')
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+def get_vectorstore(
+    collection_name: str, 
+    embeddings: BedrockEmbeddings, 
+    dbname: str, 
+    user: str, 
+    password: str, 
+    host: str, 
+    port: int
+) -> Optional[PGVector]:
+    """
+    Initialize and return a PGVector instance.
+    
+    Args:
+    collection_name (str): The name of the collection.
+    embeddings (BedrockEmbeddings): The embeddings instance.
+    dbname (str): The name of the database.
+    user (str): The database user.
+    password (str): The database password.
+    host (str): The database host.
+    port (int): The database port.
+    
+    Returns:
+    Optional[PGVector]: The initialized PGVector instance, or None if an error occurred.
+    """
+    connection_params = {
+        'dbname': dbname,
+        'user': user,
+        'password': password,
+        'host': host,
+        'port': port
+    }
+
+    connection_string = " ".join([f"{key}={value}" for key, value in connection_params.items()])
+
+    try:
+        logger.info("Connecting to the database")
+        connection = psycopg2.connect(connection_string)
+        logger.info("Connected to the database")
+    except Exception as e:
+        logger.error(f"Error connecting to the database: {e}")
+        return None
+
+    try:
+        connection_string2 = (
+            f"postgresql+psycopg://{user}:{password}@{host}:{port}/{dbname}"
+        )
+
+        logger.info("Initializing the VectorStore")
+        vectorstore = PGVector(
+            embeddings=embeddings,
+            collection_name=collection_name,
+            connection=connection_string2,
+            use_jsonb=True
+        )
+
+        logger.info("VectorStore initialized")
+        return vectorstore, connection_string2
+
+    except Exception as e:
+        logger.error(f"Error initializing vector store: {e}")
+        return None
     
 def store_course_data(
     bucket: str, 
     course: str, 
     vectorstore_config_dict: Dict[str, str], 
-    embeddings: OpenCLIPEmbeddings
+    embeddings: BedrockEmbeddings
 ) -> None:
     """
     Store course data from an S3 bucket into the vectorstore.
@@ -28,7 +91,7 @@ def store_course_data(
     bucket (str): The name of the S3 bucket.
     course (str): The course name/folder in the S3 bucket.
     vectorstore_config_dict (Dict[str, str]): The configuration dictionary for the vectorstore.
-    embeddings (OpenCLIPEmbeddings): The embeddings instance.
+    embeddings (BedrockEmbeddings): The embeddings instance.
     """
     vectorstore, connection_string = get_vectorstore(
         collection_name=vectorstore_config_dict['collection_name'],
@@ -62,27 +125,11 @@ def store_course_data(
         logger.error("VectorStore could not be initialized")
         return
 
-    paginator = s3.get_paginator('list_objects_v2')
-    page_iterator = paginator.paginate(Bucket=bucket, Prefix=f"{course}/")
-
-    for page in page_iterator:
-        for file in page['Contents']:
-            filename = file['Key']
-            module = filename.split('/')[1]
-            
-            if 'images/' in filename:
-                process_figures(
-                    bucket=bucket,
-                    course=course,
-                    vectorstore=vectorstore,
-                    embeddings=embeddings,
-                    record_manager=record_manager
-                )
-            elif 'documents/' in filename:
-                process_texts(
-                    bucket=bucket,
-                    course=course,
-                    vectorstore=vectorstore,
-                    embeddings=embeddings,
-                    record_manager=record_manager
-                )
+    # Process all files in the "documents" folder
+    process_documents(
+        bucket=bucket,
+        course=course,
+        vectorstore=vectorstore,
+        embeddings=embeddings,
+        record_manager=record_manager
+    )

@@ -1,11 +1,7 @@
-import os
+import os, tempfile, logging, uuid
 from pathlib import Path
-import tempfile
-import logging
-import uuid
 
-import boto3
-import botocore
+import boto3, botocore
 from PIL import Image
 from langchain_postgres import PGVector
 from langchain_experimental.open_clip import OpenCLIPEmbeddings
@@ -109,7 +105,7 @@ def add_image(
 
     logger.info(f"Successfully added image {image_filename} to the vectorstore")
     
-def process_figures(
+def process_images(
     bucket: str, 
     course: str,
     vectorstore: PGVector, 
@@ -128,33 +124,40 @@ def process_figures(
     """
     paginator = s3.get_paginator('list_objects_v2')
     page_iterator = paginator.paginate(Bucket=bucket, Prefix=f"{course}/")
+
+    images_processed = False
     
     for page in page_iterator:
+        if 'Contents' not in page:
+            continue  # Skip pages without any content (e.g., if the bucket is empty)
+        
         for file in page['Contents']:
             filename = file['Key']
+            if filename.split('/')[-2] == "images": # Ensures that only files in the 'images' folder are processed
 
-            with tempfile.NamedTemporaryFile(delete=False) as tmp_file:
-                s3.download_fileobj(bucket, filename, tmp_file)
-                tmp_file_path = tmp_file.name
+                # Create a temporary file to download the image
+                with tempfile.NamedTemporaryFile(delete=False) as tmp_file:
+                    s3.download_fileobj(bucket, filename, tmp_file)
+                    tmp_file_path = tmp_file.name
 
-            if is_valid_image_pillow(tmp_file_path): # This is a valid image file
-                module = filename.split('/')[1]
-                image_description_filename = change_file_extension(filename, 'txt')
-                image_description_file_key = f"{course}/{module}/images/{image_description_filename}"
+                if is_valid_image_pillow(tmp_file_path):  # Validate image file
+                    module = filename.split('/')[1]
+                    image_description_filename = change_file_extension(filename, 'txt')
+                    image_description_file_key = f"{course}/{module}/images/{image_description_filename}"
 
-                image_description = None
-                try:
-                    s3.head_object(Bucket=bucket, Key=image_description_file_key) # Check if the image's description exists in a .txt file
-                    file_exists = True
-                except botocore.exceptions.ClientError as e:
-                    error_code = int(e.response['Error']['Code'])
-                    file_exists = (error_code != 404)
+                    image_description = None
+                    try:
+                        s3.head_object(Bucket=bucket, Key=image_description_file_key)  # Check if the .txt file exists
+                        file_exists = True
+                    except botocore.exceptions.ClientError as e:
+                        error_code = int(e.response['Error']['Code'])
+                        file_exists = (error_code != 404)
 
-                if file_exists:
-                    image_description = extract_txt(
-                        bucket=bucket,
-                        file_key=image_description_file_key
-                    )
+                    if file_exists:
+                        image_description = extract_txt(
+                            bucket=bucket,
+                            file_key=image_description_file_key
+                        )
 
                     add_image(
                         bucket=bucket,
@@ -166,20 +169,10 @@ def process_figures(
                         vectorstore=vectorstore,
                         embeddings=embeddings
                     )
-                else:
-                    logger.warning(f"\
-                                   The file {image_description_file_key} does not exist in the bucket {bucket}.\
-                                   Automatically generating image description...\
-                                   ")
-                    add_image(
-                        bucket=bucket,
-                        course=course,
-                        module=module,
-                        image_filename=os.path.basename(filename),
-                        image_uri=tmp_file_path,
-                        image_description=None,
-                        vectorstore=vectorstore,
-                        embeddings=embeddings
-                    )
+                    images_processed = True  # Track that at least one image was processed
 
-            os.remove(tmp_file_path)
+                # Clean up temporary file
+                os.remove(tmp_file_path)
+
+    if not images_processed:
+        logger.info(f"No images found for course '{course}' in bucket '{bucket}'.")

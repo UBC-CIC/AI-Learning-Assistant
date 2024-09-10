@@ -39,6 +39,7 @@ async function initializeConnection() {
 }
 
 exports.handler = async (event) => {
+    console.log("event",event)
     if (!jwtVerifier) {
         await initializeConnection();
     }

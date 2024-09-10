@@ -80,7 +80,7 @@ def insert_file_into_db(module_id, file_name, file_type, file_path, bucket_name)
                 UPDATE "Module_Files"
                 SET s3_bucket_reference = %s,
                 filepath = %s,
-                time_uploaded = %s,
+                time_uploaded = %s
                 WHERE module_id = %s
                 AND filename = %s
                 AND filetype = %s;

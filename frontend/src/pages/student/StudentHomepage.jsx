@@ -27,7 +27,7 @@ import {
   TextField,
 } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
-import { fetchUserAttributes } from 'aws-amplify/auth';
+import { fetchUserAttributes } from "aws-amplify/auth";
 import { useNavigate } from "react-router-dom";
 // MUI theming
 const { palette } = createTheme();
@@ -58,7 +58,7 @@ export const StudentHomepage = ({ setCourse }) => {
     try {
       const session = await fetchAuthSession();
       const { email } = await fetchUserAttributes();
-      
+
       var token = session.tokens.idToken.toString();
       const response = await fetch(
         `${
@@ -128,7 +128,7 @@ export const StudentHomepage = ({ setCourse }) => {
     try {
       const session = await fetchAuthSession();
       const { email } = await fetchUserAttributes();
-      
+
       var token = session.tokens.idToken.toString();
       const response = await fetch(
         `${
@@ -209,13 +209,14 @@ export const StudentHomepage = ({ setCourse }) => {
               Courses
             </Typography>
             <Button
+              variant="outlined"
               sx={{
                 alignSelf: "flex-end",
-                variant: "outlined",
                 borderColor: "black",
                 color: "black",
                 borderWidth: "1px",
                 marginLeft: "auto",
+                marginBottom: "15px",
                 "&:hover": {
                   bgcolor: "white",
                   borderColor: "black",

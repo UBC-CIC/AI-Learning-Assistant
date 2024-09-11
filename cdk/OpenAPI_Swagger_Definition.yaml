@@ -87,6 +87,12 @@ paths:
       operationId: student_text_generation_POST
       parameters:
         - in: query
+          name: course_id
+          required: true
+          description: ID of the course
+          schema:
+            type: string
+        - in: query
           name: session_id
           required: true
           description: ID of the session since multiple sessions can exist within a table

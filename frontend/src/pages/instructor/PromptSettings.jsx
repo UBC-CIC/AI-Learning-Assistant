@@ -60,10 +60,7 @@ const PromptSettings = ({ courseName, course_id }) => {
         const data = await response.json();
         setPreviousPrompts(data);
       } else {
-        console.error(
-          "Failed to fetch previous prompts:",
-          response.statusText
-        );
+        console.error("Failed to fetch previous prompts:", response.statusText);
       }
     } catch (error) {
       console.error("Error fetching previous prompts:", error);
@@ -107,7 +104,7 @@ const PromptSettings = ({ courseName, course_id }) => {
       const session = await fetchAuthSession();
       const token = session.tokens.idToken.toString();
       const { email } = await fetchUserAttributes();
-      
+
       // Save current prompt and fetch previous prompts
       const requestBody = {
         prompt: `${userPrompt}`,
@@ -191,16 +188,15 @@ const PromptSettings = ({ courseName, course_id }) => {
             Changes to the prompt will be applied to the LLM for this specific
             course.
           </Typography>
-          <Typography variant="h6">Example</Typography>
+          <Typography variant="h6">
+            <br />
+            Example
+          </Typography>
           <TextField
             fullWidth
             multiline
             rows={6}
-            value={`<|begin_of_text|><|start_header_id|>system<|end_header_id|>
-
-You are a helpful AI assistant for course tips and recommendations<|eot_id|><|start_header_id|>user<|end_header_id|>
-
-What can you help me with?<|eot_id|><|start_header_id|>assistant<|end_header_id|>`}
+            value={`Engage with the student by asking questions and conversing with them to identify any gaps in their understanding of the topic. If you identify gaps, address these gaps by providing explanations, answering the student's questions, and referring to the relevant context to help the student gain a comprehensive understanding of the topic.`}
             InputProps={{
               readOnly: true,
             }}
@@ -211,6 +207,12 @@ What can you help me with?<|eot_id|><|start_header_id|>assistant<|end_header_id|
 
         <Box mb={1} sx={{ flexGrow: 1, p: 3, textAlign: "left" }}>
           <Typography variant="h6">Your Prompt</Typography>
+          <Typography variant="h8">
+            Warning:
+            <br />
+            Modifying the prompt in the text area below can significantly impact
+            the quality and accuracy of the responses.
+          </Typography>
           <TextField
             fullWidth
             multiline

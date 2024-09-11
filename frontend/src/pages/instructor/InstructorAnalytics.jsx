@@ -24,6 +24,19 @@ import {
   Legend,
 } from "recharts";
 
+function titleCase(str) {
+  if (typeof str !== "string") {
+    return str;
+  }
+  return str
+    .toLowerCase()
+    .split(" ")
+    .map(function (word) {
+      return word.charAt(0).toUpperCase() + word.slice(1);
+    })
+    .join(" ");
+}
+
 const InstructorAnalytics = ({ courseName, course_id }) => {
   const [value, setValue] = useState(0);
   const [graphData, setGraphData] = useState([]);
@@ -36,7 +49,9 @@ const InstructorAnalytics = ({ courseName, course_id }) => {
         const session = await fetchAuthSession();
         const token = session.tokens.idToken.toString();
         const response = await fetch(
-          `${import.meta.env.VITE_API_ENDPOINT}instructor/analytics?course_id=${encodeURIComponent(course_id)}`,
+          `${
+            import.meta.env.VITE_API_ENDPOINT
+          }instructor/analytics?course_id=${encodeURIComponent(course_id)}`,
           {
             method: "GET",
             headers: {
@@ -114,7 +129,8 @@ const InstructorAnalytics = ({ courseName, course_id }) => {
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis
                 dataKey="module"
-                tick={{ fontSize: 12 }} // Adjust font size here
+                tick={{ fontSize: 12 }}
+                tickFormatter={(tick) => titleCase(tick)}
               />
               <YAxis domain={[0, maxMessages + 3]} />
               <Tooltip />
@@ -149,7 +165,7 @@ const InstructorAnalytics = ({ courseName, course_id }) => {
             {data.map((module, index) => (
               <Accordion key={index}>
                 <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                  <Typography>{module.module_name}</Typography>
+                  <Typography>{titleCase(module.module_name)}</Typography>
                 </AccordionSummary>
                 <AccordionDetails>
                   <Box width="100%">
@@ -161,8 +177,8 @@ const InstructorAnalytics = ({ courseName, course_id }) => {
                     >
                       <Grid item width="80%">
                         <Typography textAlign="right">
-                          Completion Percentage: {module.perfect_score_percentage}
-                          %
+                          Completion Percentage:{" "}
+                          {module.perfect_score_percentage}%
                         </Typography>
                         <LinearProgress
                           variant="determinate"

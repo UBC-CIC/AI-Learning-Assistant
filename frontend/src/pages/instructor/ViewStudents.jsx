@@ -25,6 +25,35 @@ const createData = (name, email) => {
   return { name, email };
 };
 
+function titleCase(str) {
+  if (typeof str !== "string") {
+    return str;
+  }
+  return str
+    .toLowerCase()
+    .split(" ")
+    .map(function (word) {
+      return word.charAt(0).toUpperCase() + word.slice(1);
+    })
+    .join(" ");
+}
+
+function courseTitleCase(str) {
+  if (typeof str !== "string") {
+    return str;
+  }
+  const words = str.split(" ");
+  return words
+    .map((word, index) => {
+      if (index === 0) {
+        return word.toUpperCase();
+      } else {
+        return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+      }
+    })
+    .join(" ");
+}
+
 const initialRows = [createData("loading...", "loading...")];
 
 export const ViewStudents = ({ courseName, course_id }) => {
@@ -92,7 +121,9 @@ export const ViewStudents = ({ courseName, course_id }) => {
           const data = await response.json();
           const formattedData = data.map((student) => {
             return createData(
-              `${student.first_name} ${student.last_name}`,
+              `${titleCase(student.first_name)} ${titleCase(
+                student.last_name
+              )}`,
               student.user_email
             );
           });
@@ -170,7 +201,7 @@ export const ViewStudents = ({ courseName, course_id }) => {
           textAlign="left"
           variant="h6"
         >
-          {courseName} Students
+          {courseTitleCase(courseName)} Students
         </Typography>
         <Paper sx={{ width: "170%", overflow: "hidden", marginTop: 2 }}>
           <TableContainer>
@@ -230,6 +261,7 @@ export const ViewStudents = ({ courseName, course_id }) => {
         <Paper
           sx={{
             marginTop: 5,
+            marginLeft: 25,
             display: "flex-start",
             p: 5,
             width: "100%",

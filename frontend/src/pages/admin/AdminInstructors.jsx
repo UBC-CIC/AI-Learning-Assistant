@@ -25,6 +25,15 @@ import { fetchAuthSession, fetchUserAttributes } from "aws-amplify/auth";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
+function titleCase(str) {
+  if (typeof str !== 'string') {
+    return str;
+  }
+  return str.toLowerCase().split(' ').map(function(word) {
+    return word.charAt(0).toUpperCase() + word.slice(1);
+  }).join(' ');
+}
+
 const fetchInstructors = async () => {
   try {
     const session = await fetchAuthSession();
@@ -64,8 +73,8 @@ const createData = (user, last, email) => {
 function getInstructorInfo(coursesArray) {
   return coursesArray.map((instructor) =>
     createData(
-      instructor.first_name || "Waiting for user to sign in",
-      instructor.last_name || "Waiting for user to sign in",
+      instructor.first_name || "Waiting for user to sign up",
+      instructor.last_name || "Waiting for user to sign up",
       instructor.user_email
     )
   );
@@ -201,8 +210,8 @@ export const AdminInstructors = ({ setSelectedInstructor }) => {
       setInstructors((prevInstructors) => [
         ...prevInstructors,
         {
-          first_name: "Waiting for user to sign in",
-          last_name: "Waiting for user to sign in",
+          first_name: "Waiting for user to sign up",
+          last_name: "Waiting for user to sign up",
           user_email: email,
         },
       ]);
@@ -211,8 +220,8 @@ export const AdminInstructors = ({ setSelectedInstructor }) => {
       setRows((prevRows) => [
         ...prevRows,
         {
-          user: "Waiting for user to sign in",
-          last: "Waiting for user to sign in",
+          user: "Waiting for user to sign up",
+          last: "Waiting for user to sign up",
           email: email,
         },
       ]);
@@ -235,15 +244,31 @@ export const AdminInstructors = ({ setSelectedInstructor }) => {
     <div>
       <Box component="main" sx={{ flexGrow: 1, p: 2, marginTop: 0.5 }}>
         <Toolbar />
-        <Typography
-          color="black"
-          fontStyle="semibold"
-          textAlign="left"
-          variant="body1"
+        <Paper
+          sx={{
+            width: "150%",
+            overflow: "hidden",
+            marginTop: 1,
+            borderRadius: 2,
+          }}
         >
-          Manage Instructors
-        </Typography>
-        <Paper sx={{ width: "150%", overflow: "hidden", marginTop: 1 }}>
+          <Box
+            sx={{
+              padding: 2,
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
+            <Typography
+              color="black"
+              fontStyle="semibold"
+              textAlign="left"
+              variant="h6"
+            >
+              Manage Instructors
+            </Typography>
+          </Box>
           <TableContainer>
             <TextField
               label="Search by User"
@@ -279,10 +304,10 @@ export const AdminInstructors = ({ setSelectedInstructor }) => {
                           style={{ cursor: "pointer" }}
                         >
                           <TableCell sx={{ fontSize: 12 }}>
-                            {row.user}
+                            {titleCase(row.user)}
                           </TableCell>
                           <TableCell sx={{ fontSize: 12 }}>
-                            {row.last}
+                            {titleCase(row.last)}
                           </TableCell>
                           <TableCell sx={{ fontSize: 12 }}>
                             {row.email}

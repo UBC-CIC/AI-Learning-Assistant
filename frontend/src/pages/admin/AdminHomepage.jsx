@@ -41,11 +41,11 @@ export const AdminHomepage = () => {
           <AdminInstructors setSelectedInstructor={setSelectedInstructor} />
         );
       case "AdminCourses":
-        return (
-        <AdminCourses setSelectedCourse={setSelectedCourse} />
-        );
+        return <AdminCourses setSelectedCourse={setSelectedCourse} />;
       case "AdminCreateCourse":
-        return <AdminCreateCourse setSelectedComponent = {setSelectedComponent} />;
+        return (
+          <AdminCreateCourse setSelectedComponent={setSelectedComponent} />
+        );
       default:
         return (
           <AdminInstructors setSelectedInstructor={setSelectedInstructor} />
@@ -63,7 +63,11 @@ export const AdminHomepage = () => {
         >
           <AdminHeader />
         </AppBar>
-        <AdminSidebar setSelectedComponent={setSelectedComponent} />
+        <AdminSidebar
+          setSelectedComponent={setSelectedComponent}
+          setSelectedInstructor={setSelectedInstructor}
+          setSelectedCourse={setSelectedCourse}
+        />
         {renderComponent()}
       </PageContainer>
     </div>

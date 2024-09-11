@@ -264,7 +264,7 @@ def update_session_name(table_name: str, session_id: str, bedrock_llm_id: str) -
     system_prompt = """
         You are given the first message from an AI and the first message from a student in a conversation. 
         Based on these two messages, come up with a name that describes the conversation. 
-        The name should be less than 30 characters.
+        The name should be less than 30 characters. ONLY OUTPUT THE NAME YOU GENERATED. NO OTHER TEXT.
     """
     
     prompt = f"""

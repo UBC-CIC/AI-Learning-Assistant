@@ -12,7 +12,11 @@ import SchoolIcon from "@mui/icons-material/School";
 import LibraryBooksIcon from "@mui/icons-material/LibraryBooks";
 import CreateIcon from "@mui/icons-material/Create";
 
-const AdminSidebar = ({ setSelectedComponent }) => {
+const AdminSidebar = ({
+  setSelectedComponent,
+  setSelectedInstructor,
+  setSelectedCourse,
+}) => {
   return (
     <Drawer
       variant="permanent"
@@ -27,7 +31,11 @@ const AdminSidebar = ({ setSelectedComponent }) => {
         <List>
           <ListItem
             button
-            onClick={() => setSelectedComponent("AdminInstructors")}
+            onClick={() => {
+              setSelectedInstructor(null);
+              setSelectedCourse(null);
+              setSelectedComponent("AdminInstructors");
+            }}
           >
             <ListItemIcon>
               <SchoolIcon />
@@ -35,7 +43,14 @@ const AdminSidebar = ({ setSelectedComponent }) => {
             <ListItemText primary="Instructors" />
           </ListItem>
           <Divider />
-          <ListItem button onClick={() => setSelectedComponent("AdminCourses")}>
+          <ListItem
+            button
+            onClick={() => {
+              setSelectedInstructor(null);
+              setSelectedCourse(null);
+              setSelectedComponent("AdminCourses");
+            }}
+          >
             <ListItemIcon>
               <LibraryBooksIcon />
             </ListItemIcon>
@@ -44,7 +59,11 @@ const AdminSidebar = ({ setSelectedComponent }) => {
           <Divider />
           <ListItem
             button
-            onClick={() => setSelectedComponent("AdminCreateCourse")}
+            onClick={() => {
+              setSelectedInstructor(null);
+              setSelectedCourse(null);
+              setSelectedComponent("AdminCreateCourse");
+            }}
           >
             <ListItemIcon>
               <CreateIcon />

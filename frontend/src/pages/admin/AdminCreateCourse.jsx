@@ -40,7 +40,9 @@ function formatInstructors(instructorsArray) {
 
 export const AdminCreateCourse = ({ setSelectedComponent }) => {
   const [courseName, setCourseName] = useState("");
-  const [coursePrompt, setCoursePrompt] = useState("");
+  const [coursePrompt, setCoursePrompt] = useState(
+    `Engage with the student by asking questions and conversing with them to identify any gaps in their understanding of the topic. If you identify gaps, address these gaps by providing explanations, answering the student's questions, and referring to the relevant context to help the student gain a comprehensive understanding of the topic.`
+  );
   const [courseDepartment, setCourseDepartment] = useState("");
   const [courseCode, setCourseCode] = useState("");
   const [isActive, setIsActive] = useState(true);
@@ -241,8 +243,33 @@ export const AdminCreateCourse = ({ setSelectedComponent }) => {
     setSelectedInstructors(event.target.value);
   };
   return (
-    <>
-      <Box sx={{ maxWidth: 500, mx: "left", mt: 7, p: 4, overflow: "auto" }}>
+    <Box
+      sx={{
+        width: "100%", // take up full width
+        height: "100vh", // take up full height
+        overflowY: "auto", // enable vertical scrollbar
+        display: "flex",
+        justifyContent: "center", // center content horizontally
+        alignItems: "flex-start", // align content to top
+        padding: 2, // add some padding
+      }}
+    >
+      <Box
+        sx={{
+          maxWidth: 600,
+          mx: "auto",
+          mt: 7,
+          p: 4,
+          "&::-webkit-scrollbar": {
+            width: 8,
+            right: 0,
+          },
+          "&::-webkit-scrollbar-thumb": {
+            backgroundColor: "#ccc",
+            borderRadius: 4,
+          },
+        }}
+      >
         <Typography
           color="black"
           fontStyle="semibold"
@@ -319,6 +346,14 @@ export const AdminCreateCourse = ({ setSelectedComponent }) => {
                   ))}
                 </Box>
               )}
+              MenuProps={{
+                PaperProps: {
+                  style: {
+                    maxHeight: 100, // set max height to 200px
+                    overflowY: "auto", // enable vertical scrollbar
+                  },
+                },
+              }}
             >
               {instructors.map((instructor) => (
                 <MenuItem key={instructor.id} value={instructor.email}>
@@ -361,21 +396,20 @@ export const AdminCreateCourse = ({ setSelectedComponent }) => {
             CREATE
           </Button>
         </form>
+        <ToastContainer
+          position="top-center"
+          autoClose={5000}
+          hideProgressBar={false}
+          newestOnTop={false}
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          theme="colored"
+        />
       </Box>
-      <ToastContainer
-        position="top-center"
-        autoClose={5000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme="colored"
-      />
-    </>
+    </Box>
   );
 };
-
 export default AdminCreateCourse;

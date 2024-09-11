@@ -4,14 +4,7 @@ import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { fetchAuthSession } from "aws-amplify/auth";
 import { fetchUserAttributes } from "aws-amplify/auth";
-import {
-  TextField,
-  Button,
-  Paper,
-  Typography,
-  Grid,
-  Box,
-} from "@mui/material";
+import { TextField, Button, Paper, Typography, Grid, Box } from "@mui/material";
 import PageContainer from "../Container";
 const InstructorNewConcept = () => {
   const [conceptName, setConceptName] = useState("");
@@ -28,6 +21,19 @@ const InstructorNewConcept = () => {
   };
 
   const handleSave = async () => {
+    if (!conceptName.trim()) {
+      toast.error("Concept Name is required.", {
+        position: "top-center",
+        autoClose: 1000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "colored",
+      });
+      return;
+    }
     try {
       const session = await fetchAuthSession();
       const token = session.tokens.idToken.toString();
@@ -74,6 +80,9 @@ const InstructorNewConcept = () => {
           progress: undefined,
           theme: "colored",
         });
+        setTimeout(function () {
+          handleBackClick();
+        }, 1000);
       }
     } catch (error) {
       console.error("Error saving changes:", error);

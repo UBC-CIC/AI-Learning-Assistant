@@ -94,7 +94,22 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
     };
 
     fetchModule();
-  }, [course, module]); // Added course and module to dependency array
+  }, [course, module]);
+
+  const getMostRecentStudentMessageIndex = () => {
+    const studentMessages = messages
+      .map((message, index) => ({ ...message, index }))
+      .filter((message) => message.student_sent);
+    return studentMessages.length > 0
+      ? studentMessages[studentMessages.length - 1].index
+      : -1;
+  };
+
+  const hasAiMessageAfter = (messages, recentStudentMessageIndex) => {
+    return messages
+      .slice(recentStudentMessageIndex + 1)
+      .some((message) => !message.student_sent);
+  };
 
   async function retrieveKnowledgeBase(message, sessionId) {
     try {
@@ -447,6 +462,36 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
     }
   };
 
+  const handleDeleteMessage = async (message) => {
+    console.log("will be deleted", message);
+    const authSession = await fetchAuthSession();
+    const { email } = await fetchUserAttributes();
+    const token = authSession.tokens.idToken.toString();
+    try {
+      const response = await fetch(
+        `${
+          import.meta.env.VITE_API_ENDPOINT
+        }student/delete_last_message?session_id=${encodeURIComponent(
+          session.session_id
+        )}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: token,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+      } else {
+        console.error("Failed to delete message:", response.statusText);
+      }
+    } catch (error) {
+      console.error("Error deleting message:", error);
+    }
+  };
   useEffect(() => {
     const handleResize = () => {
       const textarea = textareaRef.current;
@@ -604,11 +649,17 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
           />
         </div>
         <div className="flex-grow overflow-y-auto p-4 h-full">
-          {messages.map((message) =>
+          {messages.map((message, index) =>
             message.student_sent ? (
               <StudentMessage
                 key={message.message_id}
                 message={message.message_content}
+                isMostRecent={getMostRecentStudentMessageIndex() === index}
+                onDelete={() => handleDeleteMessage(message)}
+                hasAiMessageAfter={hasAiMessageAfter(
+                  messages,
+                  getMostRecentStudentMessageIndex()
+                )}
               />
             ) : (
               <AIMessage

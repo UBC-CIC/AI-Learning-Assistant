@@ -1120,5 +1120,47 @@ export class ApiGatewayStack extends cdk.Stack {
       action: "lambda:InvokeFunction",
       sourceArn: `arn:aws:execute-api:${this.region}:${this.account}:${this.api.restApiId}/*/*/instructor*`,
     });
+    
+    /**
+     * 
+     * Create a Lambda function that deletes the last message in a conversation
+    */
+    const deleteLastMessage = new lambda.Function(this, "DeleteLastMessage", {
+      runtime: lambda.Runtime.PYTHON_3_9,
+      code: lambda.Code.fromAsset("lambda"),
+      handler: "deleteLastMessage.lambda_handler",
+      timeout: Duration.seconds(300),
+      memorySize: 128,
+      vpc: vpcStack.vpc,
+      environment: {
+        TABLE_NAME: "API-Gateway-Test-Table-Name",
+        REGION: this.region,
+      },
+      functionName: "DeleteLastMessage",
+      layers: [powertoolsLayer],
+    });
+
+    // Override the Logical ID of the Lambda Function to get ARN in OpenAPI
+    const cfnDeleteLastMessage = deleteLastMessage.node
+      .defaultChild as lambda.CfnFunction;
+      cfnDeleteLastMessage.overrideLogicalId("DeleteLastMessage");
+    
+    // Grant the Lambda function necessary permissions to access DynamoDB
+    deleteLastMessage.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: ["dynamodb:GetItem", "dynamodb:UpdateItem"],
+        resources: [
+          `arn:aws:dynamodb:${this.region}:${this.account}:table/*`,
+        ],
+      })
+    );
+    
+    // Add the permission to the Lambda function's policy to allow API Gateway access
+    deleteLastMessage.addPermission("AllowApiGatewayInvoke", {
+      principal: new iam.ServicePrincipal("apigateway.amazonaws.com"),
+      action: "lambda:InvokeFunction",
+      sourceArn: `arn:aws:execute-api:${this.region}:${this.account}:${this.api.restApiId}/*/*/student*`,
+    });
   }
 }

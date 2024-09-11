@@ -22,6 +22,15 @@ import {
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
+function titleCase(str) {
+  if (typeof str !== 'string') {
+    return str;
+  }
+  return str.toLowerCase().split(' ').map(function(word) {
+    return word.charAt(0).toUpperCase() + word.slice(1);
+  }).join(' ');
+}
+
 const CourseDetails = ({ course, onBack }) => {
   console.log(course.status);
   const [activeInstructors, setActiveInstructors] = useState([]);
@@ -357,7 +366,7 @@ const CourseDetails = ({ course, onBack }) => {
                 {allInstructors.map((instructor) => (
                   <MenuItem key={instructor.user_email} value={instructor}>
                     {instructor.first_name && instructor.last_name
-                      ? `${instructor.first_name} ${instructor.last_name}`
+                      ? `${titleCase(instructor.first_name)} ${titleCase(instructor.last_name)}`
                       : instructor.user_email}
                   </MenuItem>
                 ))}

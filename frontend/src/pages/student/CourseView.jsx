@@ -5,6 +5,7 @@ import { fetchUserAttributes } from "aws-amplify/auth";
 import { BiCheck } from "react-icons/bi";
 import { FaInfoCircle } from "react-icons/fa";
 
+
 import {
   Button,
   Table,
@@ -70,6 +71,16 @@ function getUniqueConceptNames(data) {
     })
   );
 }
+
+function titleCase(str) {
+  if (typeof str !== 'string') {
+    return str;
+  }
+  return str.toLowerCase().split(' ').map(function(word) {
+    return word.charAt(0).toUpperCase() + word.slice(1);
+  }).join(' ');
+}
+
 
 export const CourseView = ({ course, setModule, setCourse }) => {
   const [concepts, setConcepts] = useState([]);
@@ -154,7 +165,7 @@ export const CourseView = ({ course, setModule, setCourse }) => {
             src="./ArrowCircleDownRounded.png"
             alt="back"
           />
-          {course.course_department} {course.course_number}
+          {course.course_department.toUpperCase()} {course.course_number}
         </div>
       </header>
       <div className="flex flex-col">
@@ -179,7 +190,7 @@ export const CourseView = ({ course, setModule, setCourse }) => {
                 )}
               </div>
               <div className="text-black text-start text-sm font-roboto">
-                {concept.concept_name}
+                {titleCase(concept.concept_name)}
               </div>
             </div>
           ))}
@@ -214,13 +225,13 @@ export const CourseView = ({ course, setModule, setCourse }) => {
                       <TableCell>
                         <div className="flex flex-row gap-1 items-center">
                           <FaInfoCircle className="text-xs" />
-                          <span className="text-xs">{entry.module_name}</span>
+                          <span className="text-xs">{titleCase(entry.module_name)}</span>
                         </div>
                       </TableCell>
                       {entry.module_score === 100 ? (
                         <TableCell>
                           <span
-                            className="bg-[#2E7D32] text-white text-light rounded px-2 py-1"
+                            className="bg-[#2E7D32] text-white text-light rounded px-2 py-2"
                             style={{ display: "inline-block" }}
                           >
                             Complete
@@ -234,6 +245,7 @@ export const CourseView = ({ course, setModule, setCourse }) => {
                           variant="contained"
                           color="primary"
                           onClick={() => enterModule(entry)}
+                          sx={{ textTransform: 'none' }}
                         >
                           Review
                         </Button>

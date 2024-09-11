@@ -23,6 +23,17 @@ import {
   MenuItem,
 } from "@mui/material";
 import PageContainer from "../Container";
+
+function titleCase(str) {
+  if (typeof str !== 'string') {
+    return str;
+  }
+  return str.toLowerCase().split(' ').map(function(word) {
+    return word.charAt(0).toUpperCase() + word.slice(1);
+  }).join(' ');
+}
+
+
 const InstructorEditConcept = () => {
   const location = useLocation();
   const { conceptData, course_id } = location.state || {};
@@ -229,7 +240,7 @@ const InstructorEditConcept = () => {
     <PageContainer>
       <Paper style={{ padding: 25, width: "100%", overflow: "auto" }}>
         <Typography variant="h6">
-          Edit Concept {conceptData.concept_name}{" "}
+          Edit Concept {titleCase(conceptData.concept_name)}{" "}
         </Typography>
 
         <TextField

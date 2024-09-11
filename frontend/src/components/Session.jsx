@@ -9,6 +9,7 @@ const Session = ({
   selectedSession,
   setMessages,
   setSessions,
+  sessions
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [newSessionName, setNewSessionName] = useState(text);

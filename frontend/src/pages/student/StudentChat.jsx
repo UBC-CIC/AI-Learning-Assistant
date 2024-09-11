@@ -235,11 +235,23 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
       })
       .then((textGenData) => {
         console.log(textGenData);
+        setSession((prevSession) => ({
+          ...prevSession, // keep other properties unchanged
+          session_name: textGenData.session_name, // update session_name
+        }));
         const updateSessionName = `${
           import.meta.env.VITE_API_ENDPOINT
         }student/update_session_name?session_id=${encodeURIComponent(
           newSession.session_id
         )}`;
+
+        setSessions((prevSessions) => {
+          return prevSessions.map((s) =>
+            s.session_id === newSession.session_id
+              ? { ...s, session_name: textGenData.session_name }
+              : s
+          );
+        });
 
         const updateModuleScore = `${
           import.meta.env.VITE_API_ENDPOINT
@@ -563,7 +575,7 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
             .reverse()
             .map((iSession, index) => (
               <Session
-                key={index}
+                key={iSession.session_id}
                 text={iSession.session_name}
                 session={iSession}
                 setSession={setSession}
@@ -571,6 +583,7 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
                 selectedSession={session}
                 setMessages={setMessages}
                 setSessions={setSessions}
+                sessions={sessions}
               />
             ))}
         </div>
@@ -604,7 +617,10 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
               />
             )
           )}
-          {isAItyping && <TypingIndicator />}
+          {isAItyping &&
+            currentSessionId &&
+            session?.session_id &&
+            currentSessionId === session.session_id && <TypingIndicator />}
           <div ref={messagesEndRef} />
         </div>
         <div className="font-roboto font-bold text-2xl text-left mt-6 ml-12 mb-6 text-black">

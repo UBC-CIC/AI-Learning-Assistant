@@ -12,6 +12,8 @@ import {
   OutlinedInput,
   FormControlLabel,
   Switch,
+  Paper,
+  Toolbar,
 } from "@mui/material";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -244,30 +246,25 @@ export const AdminCreateCourse = ({ setSelectedComponent }) => {
   };
   return (
     <Box
+      component="main"
       sx={{
-        width: "100%", // take up full width
-        height: "100vh", // take up full height
-        overflowY: "auto", // enable vertical scrollbar
-        display: "flex",
-        justifyContent: "center", // center content horizontally
-        alignItems: "flex-start", // align content to top
-        padding: 2, // add some padding
+        width: "100%",
+        overflowY: "auto",
+        flexGrow: 1,
+        p: 2,
+        marginTop: 0.5,
+        marginBottom: 1,
       }}
     >
-      <Box
+      <Toolbar />
+      <Paper
         sx={{
-          maxWidth: 600,
-          mx: "auto",
-          mt: 7,
+          maxWidth: "800px",
+          overflow: "hidden",
+          marginTop: 1,
+          marginBottom: 1,
           p: 4,
-          "&::-webkit-scrollbar": {
-            width: 8,
-            right: 0,
-          },
-          "&::-webkit-scrollbar-thumb": {
-            backgroundColor: "#ccc",
-            borderRadius: 4,
-          },
+          borderRadius: 2,
         }}
       >
         <Typography
@@ -349,8 +346,8 @@ export const AdminCreateCourse = ({ setSelectedComponent }) => {
               MenuProps={{
                 PaperProps: {
                   style: {
-                    maxHeight: 100, // set max height to 200px
-                    overflowY: "auto", // enable vertical scrollbar
+                    maxHeight: 200,
+                    overflowY: "auto",
                   },
                 },
               }}
@@ -408,7 +405,7 @@ export const AdminCreateCourse = ({ setSelectedComponent }) => {
           pauseOnHover
           theme="colored"
         />
-      </Box>
+      </Paper>
     </Box>
   );
 };

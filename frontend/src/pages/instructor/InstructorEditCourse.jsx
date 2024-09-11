@@ -20,6 +20,16 @@ import {
 import PageContainer from "../Container";
 import FileManagement from "../../components/FileManagement";
 
+function titleCase(str) {
+  if (typeof str !== 'string') {
+    return str;
+  }
+  return str.toLowerCase().split(' ').map(function(word) {
+    return word.charAt(0).toUpperCase() + word.slice(1);
+  }).join(' ');
+}
+
+
 const InstructorEditCourse = () => {
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -450,7 +460,7 @@ const InstructorEditCourse = () => {
   return (
     <PageContainer>
       <Paper style={{ padding: 25, width: "100%", overflow: "auto" }}>
-        <Typography variant="h6">Edit Module {module.module_name} </Typography>
+        <Typography variant="h6">Edit Module {titleCase(module.module_name)} </Typography>
 
         <TextField
           label="Module Name"
@@ -474,7 +484,7 @@ const InstructorEditCourse = () => {
           >
             {allConcepts.map((concept) => (
               <MenuItem key={concept.concept_id} value={concept.concept_name}>
-                {concept.concept_name}
+                {titleCase(concept.concept_name)}
               </MenuItem>
             ))}
           </Select>

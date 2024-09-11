@@ -19,6 +19,17 @@ import {
 } from "@mui/material";
 import PageContainer from "../Container";
 import FileManagement from "../../components/FileManagement";
+
+function titleCase(str) {
+  if (typeof str !== 'string') {
+    return str;
+  }
+  return str.toLowerCase().split(' ').map(function(word) {
+    return word.charAt(0).toUpperCase() + word.slice(1);
+  }).join(' ');
+}
+
+
 export const InstructorNewModule = ({ courseId }) => {
   const [files, setFiles] = useState([]);
   const [newFiles, setNewFiles] = useState([]);
@@ -258,7 +269,7 @@ export const InstructorNewModule = ({ courseId }) => {
           >
             {allConcepts.map((concept) => (
               <MenuItem key={concept.concept_id} value={concept.concept_name}>
-                {concept.concept_name}
+                {titleCase(concept.concept_name)}
               </MenuItem>
             ))}
           </Select>

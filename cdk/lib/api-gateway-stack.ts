@@ -1133,17 +1133,33 @@ export class ApiGatewayStack extends cdk.Stack {
       memorySize: 128,
       vpc: vpcStack.vpc,
       environment: {
+        SM_DB_CREDENTIALS: db.secretPathUser.secretName, // Database User Credentials
+        RDS_PROXY_ENDPOINT: db.rdsProxyEndpoint, // RDS Proxy Endpoint
         TABLE_NAME: "API-Gateway-Test-Table-Name",
         REGION: this.region,
       },
       functionName: "DeleteLastMessage",
-      layers: [powertoolsLayer],
+      layers: [psycopgLayer, powertoolsLayer],
     });
 
     // Override the Logical ID of the Lambda Function to get ARN in OpenAPI
     const cfnDeleteLastMessage = deleteLastMessage.node
       .defaultChild as lambda.CfnFunction;
       cfnDeleteLastMessage.overrideLogicalId("DeleteLastMessage");
+    
+    // Grant access to Secret Manager
+    deleteLastMessage.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: [
+          //Secrets Manager
+          "secretsmanager:GetSecretValue",
+        ],
+        resources: [
+          `arn:aws:secretsmanager:${this.region}:${this.account}:secret:*`,
+        ],
+      })
+    );
     
     // Grant the Lambda function necessary permissions to access DynamoDB
     deleteLastMessage.addToRolePolicy(

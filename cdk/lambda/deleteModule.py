@@ -59,7 +59,7 @@ def lambda_handler(event, context):
         else:
             logger.info(f"No objects found in module directory: {module_prefix}")
             return {
-                'statusCode': 404,
+                'statusCode': 200,
                 "headers": {
                     "Content-Type": "application/json",
                     "Access-Control-Allow-Headers": "*",

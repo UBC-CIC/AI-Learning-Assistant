@@ -99,9 +99,23 @@ def handler(event, context):
 
     query_params = event.get("queryStringParameters", {})
 
+    course_id = query_params.get("course_id", "")
     session_id = query_params.get("session_id", "")
     module_id = query_params.get("module_id", "")
     session_name = query_params.get("session_name", "New Chat")
+
+    if not course_id:
+        logger.error("Missing required parameter: course_id")
+        return {
+            'statusCode': 400,
+            "headers": {
+                "Content-Type": "application/json",
+                "Access-Control-Allow-Headers": "*",
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "*",
+            },
+            'body': json.dumps('Missing required parameter: course_id')
+        }
 
     if not session_id:
         logger.error("Missing required parameter: session_id")
@@ -129,8 +143,8 @@ def handler(event, context):
             'body': json.dumps('Missing required parameter: module_id')
         }
     
-    # topic = get_module_name(module_id)
-    topic = "data abstraction"
+    topic = get_module_name(module_id)
+    # topic = "data abstraction"
 
     if topic is None:
         logger.error(f"Invalid module_id: {module_id}")
@@ -169,7 +183,7 @@ def handler(event, context):
         logger.info("Retrieving vectorstore config.")
         db_secret = get_secret()
         vectorstore_config_dict = {
-            'collection_name': 'CPSC_210', # hard coded for now
+            'collection_name': course_id,
             'dbname': db_secret["dbname"],
             'user': db_secret["username"],
             'password': db_secret["password"],

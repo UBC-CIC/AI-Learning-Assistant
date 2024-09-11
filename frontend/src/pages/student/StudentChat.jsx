@@ -206,7 +206,9 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
 
         const textGenUrl = `${
           import.meta.env.VITE_API_ENDPOINT
-        }student/text_generation?session_id=${encodeURIComponent(
+        }student/text_generation?course_id=${encodeURIComponent(
+          course.course_id
+        )}&session_id=${encodeURIComponent(
           newSession.session_id
         )}&module_id=${encodeURIComponent(
           module.module_id
@@ -349,7 +351,9 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
 
         const textGenUrl = `${
           import.meta.env.VITE_API_ENDPOINT
-        }student/text_generation?session_id=${encodeURIComponent(
+        }student/text_generation?course_id=${encodeURIComponent(
+          course.course_id
+        )}&session_id=${encodeURIComponent(
           sessionData.session_id
         )}&module_id=${encodeURIComponent(
           module.module_id

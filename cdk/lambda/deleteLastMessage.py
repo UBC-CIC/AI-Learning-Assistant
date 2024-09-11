@@ -18,6 +18,12 @@ def lambda_handler(event, context):
         logger.error("Missing required parameter: session_id")
         return {
             'statusCode': 400,
+            "headers": {
+                "Content-Type": "application/json",
+                "Access-Control-Allow-Headers": "*",
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "*",
+            },
             'body': json.dumps('Missing required parameter: session_id')
         }
     
@@ -36,6 +42,12 @@ def lambda_handler(event, context):
             logger.error(f"No conversation history found for session_id: {session_id}")
             return {
                 'statusCode': 400,
+                "headers": {
+                    "Content-Type": "application/json",
+                    "Access-Control-Allow-Headers": "*",
+                    "Access-Control-Allow-Origin": "*",
+                    "Access-Control-Allow-Methods": "*",
+                },
                 'body': json.dumps(f"No conversation history found for session_id: {session_id}")
             }
 
@@ -46,6 +58,12 @@ def lambda_handler(event, context):
             logger.info("Not enough messages to delete.")
             return {
                 'statusCode': 400,
+                "headers": {
+                    "Content-Type": "application/json",
+                    "Access-Control-Allow-Headers": "*",
+                    "Access-Control-Allow-Origin": "*",
+                    "Access-Control-Allow-Methods": "*",
+                },
                 'body': json.dumps(f"Not enough messages to delete for session_id: {session_id}")
             }
 
@@ -70,6 +88,12 @@ def lambda_handler(event, context):
         logger.info(f"Successfully deleted the last human and AI messages for session_id: {session_id}")
         return {
             'statusCode': 200,
+            "headers": {
+                "Content-Type": "application/json",
+                "Access-Control-Allow-Headers": "*",
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "*",
+            },
             'body': json.dumps(f"Successfully deleted the last human and AI messages for session_id: {session_id}")
         }
 
@@ -77,5 +101,11 @@ def lambda_handler(event, context):
         logger.error(f"Error deleting last message: {e}")
         return {
             'statusCode': 500,
+            "headers": {
+                "Content-Type": "application/json",
+                "Access-Control-Allow-Headers": "*",
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "*",
+            },
             'body': json.dumps(f"Error deleting last message: {e}")
         }

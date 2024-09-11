@@ -20,12 +20,13 @@ const StudentMessage = ({ message }) => {
   };
 
   return (
-    <div className="ml-16 mb-4 mr-16">
-      <div className="flex flex-row flex-start">
+    <div className="ml-16 mb-6 mr-16">
+      <div className="flex flex-row-reverse items-start">
         <AccountBoxIcon fontSize="large" style={{ color: "#00FFFF" }} />
+        {/* Chat Bubble for Bot Message */}
         <div
-          className="text-start ml-4 text-black"
-          style={{ maxWidth: "61vw", width: "61vw", wordWrap: "break-word" }}
+          className="ml-4 p-4 bg-gray-100 text-black rounded-xl shadow-md text-left"
+          style={{ maxWidth: "60vw", wordWrap: "break-word" }}
         >
           {message.split("```").map((part, index) => {
             if (index % 2 === 1) {

@@ -66,7 +66,7 @@ const FileManagement = ({
       if (allFileNames.includes(cleanedFileName)) {
         setDuplicateFile(file);
         setIsDialogOpen(true);
-        return false; 
+        return false;
       }
       return true;
     });
@@ -75,16 +75,19 @@ const FileManagement = ({
     const fileIsValidSize = fileIsNew.filter((file) => {
       const fileSizeMB = file.size / (1024 * 1024); // Convert size to MB
       if (fileSizeMB > 500) {
-        toast.error(`File ${file.name} is larger than 500MB and was not uploaded.`, {
-          position: "top-center",
-          autoClose: 3000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-          progress: undefined,
-          theme: "colored",
-        });
+        toast.error(
+          `File ${file.name} is larger than 500MB and was not uploaded.`,
+          {
+            position: "top-center",
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            theme: "colored",
+          }
+        );
         return false;
       }
       return true;
@@ -97,13 +100,22 @@ const FileManagement = ({
     const cleanedFileName = cleanFileName(duplicateFile.name);
 
     // Move existing file to deleted files and add the new file to newFiles
-    const updatedFiles = files.filter((file) => file.fileName !== cleanedFileName);
-    const updatedSavedFiles = savedFiles.filter((file) => file.name !== cleanedFileName);
-    const updatedNewFiles = newFiles.filter((file) => file.name !== cleanedFileName);
+    const updatedFiles = files.filter(
+      (file) => file.fileName !== cleanedFileName
+    );
+    const updatedSavedFiles = savedFiles.filter(
+      (file) => file.name !== cleanedFileName
+    );
+    const updatedNewFiles = newFiles.filter(
+      (file) => file.name !== cleanedFileName
+    );
     setFiles(updatedFiles);
     setSavedFiles(updatedSavedFiles);
     setNewFiles([...updatedNewFiles, duplicateFile]);
-    setDeletedFiles((prevDeletedFiles) => [...prevDeletedFiles, cleanedFileName]);
+    setDeletedFiles((prevDeletedFiles) => [
+      ...prevDeletedFiles,
+      cleanedFileName,
+    ]);
     setDuplicateFile(null);
     setIsDialogOpen(false);
   };
@@ -204,9 +216,8 @@ const FileManagement = ({
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell>File Name</TableCell>
-                <TableCell align="center">Meta Data</TableCell>{" "}
-                {/* New Meta Data column */}
+                <TableCell align="center">File Name</TableCell>
+                <TableCell align="center">File Description</TableCell>{" "}
                 <TableCell align="right" sx={{ pr: 5 }}>
                   Download
                 </TableCell>
@@ -241,7 +252,7 @@ const FileManagement = ({
                     const fileName = file.fileName || file.name;
                     return (
                       <TableRow key={index}>
-                        <TableCell>
+                        <TableCell align="center">
                           <Typography
                             variant="body2"
                             sx={{
@@ -257,13 +268,14 @@ const FileManagement = ({
                           <TextField
                             variant="outlined"
                             fullWidth
-                            placeholder="Enter meta data"
+                            placeholder="Enter File Description"
                             multiline
                             maxRows={4}
                             value={metadata[fileName] || ""}
                             onChange={(e) =>
                               handleMetadataChange(fileName, e.target.value)
                             }
+                            inputProps={{ maxLength: 100 }}
                           />
                         </TableCell>
                         <TableCell align="right">

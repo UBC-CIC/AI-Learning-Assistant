@@ -134,6 +134,22 @@ export const InstructorNewModule = ({ courseId }) => {
 
   const handleSave = async () => {
     if (isSaving) return; // Prevent double clicking
+
+    // Validation check
+    if (!moduleName || !concept) {
+      toast.error("Module Name and Concept are required.", {
+        position: "top-center",
+        autoClose: 2000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "colored",
+      });
+      return;
+    }
+
     setIsSaving(true);
 
     const selectedConcept = allConcepts.find((c) => c.concept_name === concept);
@@ -185,12 +201,12 @@ export const InstructorNewModule = ({ courseId }) => {
         const updatedModule = await response.json();
         console.log(`Created module ${updatedModule.module_id} successfully.`);
         await uploadFiles(newFiles, token, updatedModule.module_id);
-        
+
         setFiles((prevFiles) =>
           prevFiles.filter((file) => !deletedFiles.includes(file.fileName))
         );
         setSavedFiles((prevFiles) => [...prevFiles, ...newFiles]);
-       
+
         setDeletedFiles([]);
         setNewFiles([]);
         toast.success("Module Created Successfully", {
@@ -208,16 +224,17 @@ export const InstructorNewModule = ({ courseId }) => {
       console.error("Error saving changes:", error);
     } finally {
       setIsSaving(false);
+      setNextModuleNumber(nextModuleNumber + 1);
       setTimeout(function () {
         handleBackClick();
       }, 1000);
     }
-    setNextModuleNumber(nextModuleNumber + 1);
   };
+
   return (
     <PageContainer>
       <Paper style={{ padding: 25, width: "100%", overflow: "auto" }}>
-        <Typography variant="h6">Create Module </Typography>
+        <Typography variant="h6">New Module </Typography>
 
         <TextField
           label="Module Name"
@@ -274,14 +291,14 @@ export const InstructorNewModule = ({ courseId }) => {
             </Box>
           </Grid>
           <Grid item xs={4}></Grid>
-          <Grid item xs={4}>
+          <Grid item xs={4} style={{ textAlign: "right" }}>
             <Button
               variant="contained"
               color="primary"
               onClick={handleSave}
               style={{ width: "30%" }}
             >
-              Save
+              Save Module
             </Button>
           </Grid>
         </Grid>

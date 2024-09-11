@@ -89,16 +89,18 @@ const CourseDetails = () => {
 };
 
 const InstructorHomepage = () => {
-  const [rows, setRows] = useState([{
-    course: "loading...",
-    date: "loading...",
-    status: "loading...",
-    id: "loading..."
-  }]);
+  const [rows, setRows] = useState([
+    {
+      course: "loading...",
+      date: "loading...",
+      status: "loading...",
+      id: "loading...",
+    },
+  ]);
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
-  const [courseData, setCourseData] = useState([])
+  const [courseData, setCourseData] = useState([]);
   const navigate = useNavigate();
   // connect to api data
   useEffect(() => {
@@ -106,13 +108,11 @@ const InstructorHomepage = () => {
       try {
         const session = await fetchAuthSession();
         var token = session.tokens.idToken.toString();
-        const {email} = await fetchUserAttributes();
+        const { email } = await fetchUserAttributes();
         const response = await fetch(
           `${
             import.meta.env.VITE_API_ENDPOINT
-          }instructor/courses?email=${encodeURIComponent(
-            email
-          )}`,
+          }instructor/courses?email=${encodeURIComponent(email)}`,
           {
             method: "GET",
             headers: {
@@ -164,7 +164,7 @@ const InstructorHomepage = () => {
     const course = courseData.find(
       (course) => course.course_name.trim() === courseName.trim()
     );
-  
+
     if (course) {
       const { course_id, course_department, course_number } = course;
       const path = `/course/${course_department} ${course_number} ${courseName.trim()}`;
@@ -174,7 +174,6 @@ const InstructorHomepage = () => {
       console.error("Course not found!");
     }
   };
-  
 
   return (
     <Routes>
@@ -218,9 +217,12 @@ const InstructorHomepage = () => {
                   <Table aria-label="course table">
                     <TableHead>
                       <TableRow>
-                        <TableCell sx={{ width: "35%" }}>Course</TableCell>
-                        <TableCell>Date</TableCell>
-                        <TableCell>Status</TableCell>
+                        <TableCell sx={{ width: "60%", padding: "16px" }}>
+                          Course
+                        </TableCell>
+                        <TableCell sx={{ width: "20%", padding: "16px" }}>
+                          Status
+                        </TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
@@ -235,9 +237,10 @@ const InstructorHomepage = () => {
                             onClick={() => handleRowClick(row.course, row.id)}
                             style={{ cursor: "pointer" }}
                           >
-                            <TableCell>{row.course}</TableCell>
-                            <TableCell>{row.date}</TableCell>
-                            <TableCell>
+                            <TableCell sx={{ padding: "16px" }}>
+                              {row.course}
+                            </TableCell>
+                            <TableCell sx={{ padding: "16px" }}>
                               <Button
                                 variant="contained"
                                 color={

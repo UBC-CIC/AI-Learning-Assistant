@@ -1,5 +1,6 @@
 import boto3
 from langchain_aws import ChatBedrock
+from langchain_aws import BedrockLLM
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain.chains import create_retrieval_chain
@@ -196,3 +197,34 @@ def get_llm_output(response: str) -> dict:
         llm_output=llm_output,
         llm_verdict=llm_verdict
     )
+
+def update_session_name(bedrock_llm_id: str, response: str) -> str:
+    """
+    Processes the response from the LLM and determines an appropriate Session Name under 30 characters.
+    The Session Name represents the name of the conversation.
+    """
+    
+    llm_output = response
+
+    llm = BedrockLLM(
+                        model_id = bedrock_llm_id
+                    )
+
+    system_prompt = """
+                    You are given text from a teaching assistant. The teaching assistant is asking a question(s) reagarding a topic.
+                    Please come up with a name lesser than 30 characters in length to represent this conversation.
+                    """
+
+    prompt = f"""
+        <|begin_of_text|>
+        <|start_header_id|>system<|end_header_id|>
+        {system_prompt}
+        <|eot_id|>
+        <|start_header_id|>text<|end_header_id|>
+        {llm_output}
+        <|eot_id|>
+        <|start_header_id|>assistant<|end_header_id|>
+        """
+
+    session_name = llm.invoke(prompt)
+    return session_name

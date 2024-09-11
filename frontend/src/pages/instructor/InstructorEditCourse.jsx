@@ -350,14 +350,32 @@ const InstructorEditCourse = () => {
   };
 
   const handleSave = async () => {
-    if (isSaving) return; // Prevent double clicking
+    if (isSaving) return;
     setIsSaving(true);
+
+    if (!moduleName || !concept) {
+      toast.error("Module Name and Concept are required.", {
+        position: "top-center",
+        autoClose: 1000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "colored",
+      });
+      return;
+    }
     try {
       await updateModule();
       const { token } = await getAuthSessionAndEmail();
       await deleteFiles(deletedFiles, token);
       await uploadFiles(newFiles, token);
-      await Promise.all([updateMetaData(files, token), updateMetaData(savedFiles, token),updateMetaData(newFiles, token)]);
+      await Promise.all([
+        updateMetaData(files, token),
+        updateMetaData(savedFiles, token),
+        updateMetaData(newFiles, token),
+      ]);
       setFiles((prevFiles) =>
         prevFiles.filter((file) => !deletedFiles.includes(file.fileName))
       );
@@ -395,10 +413,11 @@ const InstructorEditCourse = () => {
     console.log(files);
     files.forEach((file) => {
       console.log(file);
-      const fileNameWithExtension =
-        file.fileName || file.name;
+      const fileNameWithExtension = file.fileName || file.name;
       const fileMetadata = metadata[fileNameWithExtension] || "";
-      const fileName = cleanFileName(removeFileExtension(fileNameWithExtension));
+      const fileName = cleanFileName(
+        removeFileExtension(fileNameWithExtension)
+      );
       const fileType = getFileType(fileNameWithExtension);
       return fetch(
         `${
@@ -491,19 +510,19 @@ const InstructorEditCourse = () => {
                 onClick={handleDelete}
                 sx={{ width: "30%" }}
               >
-                Delete
+                Delete Module
               </Button>
             </Box>
           </Grid>
           <Grid item xs={4}></Grid>
-          <Grid item xs={4}>
+          <Grid item xs={4} style={{ textAlign: "right" }}>
             <Button
               variant="contained"
               color="primary"
               onClick={handleSave}
               style={{ width: "30%" }}
             >
-              Save
+              Save Module
             </Button>
           </Grid>
         </Grid>

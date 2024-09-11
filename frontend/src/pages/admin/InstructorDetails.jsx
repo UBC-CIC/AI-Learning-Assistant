@@ -29,6 +29,15 @@ const MenuProps = {
   },
 };
 
+function titleCase(str) {
+  if (typeof str !== 'string') {
+    return str;
+  }
+  return str.toLowerCase().split(' ').map(function(word) {
+    return word.charAt(0).toUpperCase() + word.slice(1);
+  }).join(' ');
+}
+
 const InstructorDetails = ({ instructorData, onBack }) => {
   const instructor = instructorData;
   const [activeCourses, setActiveCourses] = useState([]);
@@ -281,7 +290,7 @@ const InstructorDetails = ({ instructorData, onBack }) => {
         <Toolbar />
         <Paper sx={{ p: 2, marginBottom: 4, textAlign: "left" }}>
           <Typography variant="h5" sx={{ marginBottom: 2, p: 1 }}>
-            Instructor: {instructorData.user}
+            Instructor: {titleCase(instructorData.user)}
           </Typography>
           <Divider sx={{ p: 1, marginBottom: 3 }} />
           <Typography variant="h7" sx={{ marginBottom: 1, p: 1 }}>
@@ -305,7 +314,7 @@ const InstructorDetails = ({ instructorData, onBack }) => {
                   {selected.map((value) => (
                     <Chip
                       key={value.course_id}
-                      label={`${value.course_department} ${value.course_number}`}
+                      label={`${value.course_department.toUpperCase()} ${value.course_number}`}
                     />
                   ))}
                 </Box>
@@ -314,7 +323,7 @@ const InstructorDetails = ({ instructorData, onBack }) => {
             >
               {allCourses.map((course) => (
                 <MenuItem key={course.course_id} value={course}>
-                  {course.course_department} {course.course_number}
+                  {course.course_department.toUpperCase()} {course.course_number}
                 </MenuItem>
               ))}
             </Select>

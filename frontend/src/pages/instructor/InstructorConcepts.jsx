@@ -8,6 +8,17 @@ import {
 } from "material-react-table";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+
+function titleCase(str) {
+  if (typeof str !== 'string') {
+    return str;
+  }
+  return str.toLowerCase().split(' ').map(function(word) {
+    return word.charAt(0).toUpperCase() + word.slice(1);
+  }).join(' ');
+}
+
+
 const InstructorConcepts = ({ courseName, course_id }) => {
   const navigate = useNavigate();
   const [data, setData] = useState([]);
@@ -48,6 +59,7 @@ const InstructorConcepts = ({ courseName, course_id }) => {
       {
         accessorKey: "concept_name",
         header: "Concept Name",
+        Cell: ({ cell }) => titleCase(cell.getValue())
       },
       {
         accessorKey: "actions",

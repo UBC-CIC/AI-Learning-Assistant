@@ -8,6 +8,31 @@ import {
 } from "material-react-table";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+
+function courseTitleCase(str) {
+  if (typeof str !== 'string') {
+    return str;
+  }
+  const words = str.split(' ');
+  return words.map((word, index) => {
+    if (index === 0) {
+      return word.toUpperCase();
+    } else {
+      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+    }
+  }).join(' ');
+}
+
+function titleCase(str) {
+  if (typeof str !== 'string') {
+    return str;
+  }
+  return str.toLowerCase().split(' ').map(function(word) {
+    return word.charAt(0).toUpperCase() + word.slice(1);
+  }).join(' ');
+}
+
+
 const InstructorModules = ({ courseName, course_id }) => {
   const navigate = useNavigate();
   const [data, setData] = useState([]);
@@ -16,10 +41,12 @@ const InstructorModules = ({ courseName, course_id }) => {
       {
         accessorKey: "module_name",
         header: "Module Name",
+        Cell: ({ cell }) => titleCase(cell.getValue())
       },
       {
         accessorKey: "concept_name",
         header: "Concept",
+        Cell: ({ cell }) => titleCase(cell.getValue())
       },
       {
         accessorKey: "actions",
@@ -28,6 +55,7 @@ const InstructorModules = ({ courseName, course_id }) => {
           <Button
             variant="contained"
             color="primary"
+            text
             onClick={() => handleEditClick(row.original)}
           >
             Edit
@@ -216,7 +244,7 @@ const InstructorModules = ({ courseName, course_id }) => {
         textAlign="left"
         variant="h6"
       >
-        {courseName}
+        {courseTitleCase(courseName)}
       </Typography>
       <Paper sx={{ width: "100%", overflow: "hidden", marginTop: 2 }}>
         <Box sx={{ maxHeight: "400px", overflowY: "auto" }}>

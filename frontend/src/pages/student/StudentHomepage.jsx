@@ -40,6 +40,16 @@ const theme = createTheme({
   },
 });
 
+function titleCase(str) {
+  if (typeof str !== 'string') {
+    return str;
+  }
+  return str.toLowerCase().split(' ').map(function(word) {
+    return word.charAt(0).toUpperCase() + word.slice(1);
+  }).join(' ');
+}
+
+
 export const StudentHomepage = ({ setCourse }) => {
   const navigate = useNavigate();
 
@@ -277,14 +287,13 @@ export const StudentHomepage = ({ setCourse }) => {
                             fontSize: "1.25rem",
                           }} // Reduced font size
                         >
-                          {course.course_department} {course.course_number}
+                          {course.course_department.toUpperCase()} {course.course_number}
                         </Typography>
                         <Typography
                           variant="body2"
                           sx={{ textAlign: "left", mt: 1, fontSize: "1rem" }} // Reduced font size
                         >
-                          {course.course_name}{" "}
-                          {/* Add course description here */}
+                          {titleCase(course.course_name)}{" "}
                         </Typography>
                       </Grid>
                       <Grid

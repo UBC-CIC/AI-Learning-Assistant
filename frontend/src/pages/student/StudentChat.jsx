@@ -26,6 +26,16 @@ const TypingIndicator = () => (
   </div>
 );
 
+function titleCase(str) {
+  if (typeof str !== 'string') {
+    return str;
+  }
+  return str.toLowerCase().split(' ').map(function(word) {
+    return word.charAt(0).toUpperCase() + word.slice(1);
+  }).join(' ');
+}
+
+
 const StudentChat = ({ course, module, setModule, setCourse }) => {
   const textareaRef = useRef(null);
   const messagesEndRef = useRef(null);
@@ -263,7 +273,7 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
         setSessions((prevSessions) => {
           return prevSessions.map((s) =>
             s.session_id === newSession.session_id
-              ? { ...s, session_name: textGenData.session_name }
+              ? { ...s, session_name: titleCase(textGenData.session_name) }
               : s
           );
         });
@@ -463,6 +473,7 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
   };
 
   const handleDeleteMessage = async (message) => {
+    // remember to set is submitting true/false
     console.log("will be deleted", message);
     const authSession = await fetchAuthSession();
     const { email } = await fetchUserAttributes();
@@ -592,7 +603,7 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
             alt="back"
           />
           <div className="ml-3 pt-0.5 text-black font-roboto font-bold text-lg">
-            {module.module_name}
+            {titleCase(module.module_name)}
           </div>
         </div>
         <button

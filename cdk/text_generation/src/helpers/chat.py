@@ -8,7 +8,6 @@ from langchain_core.runnables.history import RunnableWithMessageHistory
 from langchain_community.chat_message_histories import DynamoDBChatMessageHistory
 from langchain_core.pydantic_v1 import BaseModel, Field
 
-
 class LLM_evaluation(BaseModel):
     response: str = Field(description="Assessment of the student's answer with a follow-up question.")
     verdict: str = Field(description="'True' if the student has mastered the concept, 'False' otherwise.")
@@ -191,40 +190,96 @@ def get_llm_output(response: str) -> dict:
         llm_verdict = True
         llm_output = response.split("COMPETENCY ACHIEVED")[0]
     
-    # Currently just printing this dictionary, but I can also store it (e.g., as a .json) in case that would be easier
-    
     return dict(
         llm_output=llm_output,
         llm_verdict=llm_verdict
     )
 
-def update_session_name(bedrock_llm_id: str, response: str) -> str:
+def update_session_name(table_name: str, session_id: str, bedrock_llm_id: str) -> str:
     """
-    Processes the response from the LLM and determines an appropriate Session Name under 30 characters.
-    The Session Name represents the name of the conversation.
+    Check if both the LLM and the student have exchanged exactly one message each.
+    If so, generate and return a session name using the content of the student's first message
+    and the LLM's first response. Otherwise, return None.
+
+    Args:
+    session_id (str): The unique ID for the session.
+    table_name (str): The DynamoDB table name where the conversation history is stored.
+
+    Returns:
+    str: The updated session name if conditions are met, otherwise None.
     """
     
-    llm_output = response
+    dynamodb_client = boto3.client("dynamodb")
+    
+    # Retrieve the conversation history from the DynamoDB table
+    try:
+        response = dynamodb_client.get_item(
+            TableName=table_name,
+            Key={
+                'SessionId': {
+                    'S': session_id
+                }
+            }
+        )
+    except Exception as e:
+        print(f"Error fetching conversation history from DynamoDB: {e}")
+        return None
 
+    history = response.get('Item', {}).get('History', {}).get('L', [])
+
+
+
+    human_messages = []
+    ai_messages = []
+    
+    # Find the first human and ai messages in the history
+    # Check if length of human messages is 2 since the prompt counts as 1
+    # Check if length of AI messages is 2 since after first response by student, another response is generated
+    for item in history:
+        message_type = item.get('M', {}).get('data', {}).get('M', {}).get('type', {}).get('S')
+        
+        if message_type == 'human':
+            human_messages.append(item)
+            if len(human_messages) > 2:
+                print("More than one student message found; not the first exchange.")
+                return None
+        
+        elif message_type == 'ai':
+            ai_messages.append(item)
+            if len(ai_messages) > 2:
+                print("More than one AI message found; not the first exchange.")
+                return None
+
+    if len(human_messages) != 2 or len(ai_messages) != 2:
+        print("Not a complete first exchange between the LLM and student.")
+        return None
+    
+    student_message = human_messages[0].get('M', {}).get('data', {}).get('M', {}).get('content', {}).get('S', "")
+    llm_message = ai_messages[0].get('M', {}).get('data', {}).get('M', {}).get('content', {}).get('S', "")
+    
     llm = BedrockLLM(
                         model_id = bedrock_llm_id
                     )
-
+    
     system_prompt = """
-                    You are given text from a teaching assistant. The teaching assistant is asking a question(s) reagarding a topic.
-                    Please come up with a name lesser than 30 characters in length to represent this conversation.
-                    """
-
+        You are given the first message from an AI and the first message from a student in a conversation. 
+        Based on these two messages, come up with a name that describes the conversation. 
+        The name should be less than 30 characters. ONLY OUTPUT THE NAME YOU GENERATED. NO OTHER TEXT.
+    """
+    
     prompt = f"""
         <|begin_of_text|>
         <|start_header_id|>system<|end_header_id|>
         {system_prompt}
         <|eot_id|>
-        <|start_header_id|>text<|end_header_id|>
-        {llm_output}
+        <|start_header_id|>AI Message<|end_header_id|>
+        {llm_message}
+        <|eot_id|>
+        <|start_header_id|>Student Message<|end_header_id|>
+        {student_message}
         <|eot_id|>
         <|start_header_id|>assistant<|end_header_id|>
-        """
-
+    """
+    
     session_name = llm.invoke(prompt)
     return session_name

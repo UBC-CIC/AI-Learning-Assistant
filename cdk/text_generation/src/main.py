@@ -247,16 +247,17 @@ def handler(event, context):
             'body': json.dumps('Error getting response')
         }
     
-    if not question:
-        try:
-            logger.info("Updating session name based on first generated output")
-            session_name = update_session_name(BEDROCK_LLM_ID, response.get("llm_output"))
-            # if len(session_name) >= 30:
-            #     logger.error("Session name was longer that 30 characters.")
-            #     session_name = topic + " Conversation"
-        except Exception as e:
-            logger.error(f"Error updating session name: {e}")
-            session_name = "New Chat"
+    try:
+        logger.info("Updating session name if this is the first exchange between the LLM and student")
+        potential_session_name = update_session_name(TABLE_NAME, session_id, BEDROCK_LLM_ID)
+        if potential_session_name:
+            logger.info("This is the first exchange between the LLM and student. Updating session name.")
+            session_name = potential_session_name
+        else:
+            logger.info("Not the first exchange between the LLM and student. Session name remains the same.")
+    except Exception as e:
+        logger.error(f"Error updating session name: {e}")
+        session_name = "New Chat"
     
     logger.info("Returning the generated response.")
     return {

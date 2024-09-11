@@ -7,7 +7,7 @@ import boto3
 from langchain_community.embeddings import BedrockEmbeddings
 
 from helpers.vectorstore import get_vectorstore_retriever
-from helpers.chat import get_bedrock_llm, get_initial_student_query, get_student_query, create_dynamodb_history_table, get_response
+from helpers.chat import get_bedrock_llm, get_initial_student_query, get_student_query, create_dynamodb_history_table, get_response, update_session_name
 
 # Set up basic logging
 logging.basicConfig(level=logging.INFO)
@@ -39,6 +39,7 @@ embeddings = BedrockEmbeddings(
     client=bedrock_runtime,
     region_name=REGION
 )
+
 create_dynamodb_history_table(TABLE_NAME)
 
 def get_module_name(module_id):
@@ -144,7 +145,6 @@ def handler(event, context):
         }
     
     topic = get_module_name(module_id)
-    # topic = "data abstraction"
 
     if topic is None:
         logger.error(f"Invalid module_id: {module_id}")
@@ -167,7 +167,7 @@ def handler(event, context):
         logger.info("Creating Bedrock LLM instance.")
         llm = get_bedrock_llm(BEDROCK_LLM_ID)
     except Exception as e:
-        logger.error(f"Error creating Bedrock LLM: {e}")
+        logger.error(f"Error getting LLM from Bedrock: {e}")
         return {
             'statusCode': 500,
             "headers": {
@@ -176,7 +176,7 @@ def handler(event, context):
                 "Access-Control-Allow-Origin": "*",
                 "Access-Control-Allow-Methods": "*",
             },
-            'body': json.dumps('Error creating Bedrock LLM')
+            'body': json.dumps('Error getting LLM from Bedrock')
         }
     
     try:
@@ -246,6 +246,17 @@ def handler(event, context):
             },
             'body': json.dumps('Error getting response')
         }
+    
+    if not question:
+        try:
+            logger.info("Updating session name based on first generated output")
+            session_name = update_session_name(BEDROCK_LLM_ID, response.get("llm_output"))
+            # if len(session_name) >= 30:
+            #     logger.error("Session name was longer that 30 characters.")
+            #     session_name = topic + " Conversation"
+        except Exception as e:
+            logger.error(f"Error updating session name: {e}")
+            session_name = "New Chat"
     
     logger.info("Returning the generated response.")
     return {

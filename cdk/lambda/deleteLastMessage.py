@@ -10,7 +10,9 @@ dynamodb_client = boto3.client('dynamodb')
 TABLE_NAME = "API-Gateway-Test-Table-Name"
 
 def lambda_handler(event, context):
-    session_id = event.get("session_id", None)
+    query_params = event.get("queryStringParameters", {})
+
+    session_id = query_params.get("session_id", "")
 
     if not session_id:
         logger.error("Missing required parameter: session_id")

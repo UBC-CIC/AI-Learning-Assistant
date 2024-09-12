@@ -73,7 +73,7 @@ const CourseDetails = () => {
         );
       case "InstructorEditConcepts":
         return (
-          <InstructorConcepts courseName={courseName} course_id={course_id} />
+          <InstructorConcepts courseName={courseName} course_id={course_id} setSelectedComponent={setSelectedComponent}/>
         );
       case "PromptSettings":
         return <PromptSettings courseName={courseName} course_id={course_id} />;

@@ -942,7 +942,6 @@ exports.handler = async (event) => {
                     SELECT timestamp, engagement_details AS previous_prompt
                     FROM "User_Engagement_Log"
                     WHERE course_id = ${course_id}
-                      AND user_email = ${instructor_email}
                       AND engagement_type = 'instructor_updated_prompt'
                     ORDER BY timestamp DESC;
                   `;

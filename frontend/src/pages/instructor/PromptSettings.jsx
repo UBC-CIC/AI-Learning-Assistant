@@ -16,6 +16,7 @@ import KeyboardArrowRight from "@mui/icons-material/KeyboardArrowRight";
 import { useTheme } from "@mui/material/styles";
 import "react-toastify/dist/ReactToastify.css";
 
+const CHARACTER_LIMIT = 1000;
 function courseTitleCase(str) {
   if (typeof str !== "string") {
     return str;
@@ -74,6 +75,7 @@ const PromptSettings = ({ courseName, course_id }) => {
       );
       if (response.ok) {
         const data = await response.json();
+        console.log(data);
         setPreviousPrompts(data);
       } else {
         console.error("Failed to fetch previous prompts:", response.statusText);
@@ -144,7 +146,6 @@ const PromptSettings = ({ courseName, course_id }) => {
       if (response.ok) {
         const data = await response.json();
 
-        // Update userPrompt and add the old prompt to previousPrompts
         const newPrompt = {
           timestamp: new Date().toISOString(),
           previous_prompt: userPrompt,
@@ -237,7 +238,8 @@ const PromptSettings = ({ courseName, course_id }) => {
             onChange={(e) => setUserPrompt(e.target.value)}
             variant="outlined"
             margin="normal"
-            inputProps={{ maxLength: 60000 }}
+            inputProps={{ maxLength: 1000 }}
+            helperText={`${userPrompt.length}/${CHARACTER_LIMIT}`}
           />
         </Box>
 

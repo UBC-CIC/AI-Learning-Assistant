@@ -5,15 +5,16 @@ import { signOut } from "aws-amplify/auth";
 
 const InstructorHeader = () => {
   const navigate = useNavigate();
-  const handleSignOut = async (event) => {
+  const handleSignOut = (event) => {
     event.preventDefault();
-    try {
-      await signOut();
-      window.location.href = "/";
-      // navigate("/"); // Redirect to the login page
-    } catch (error) {
-      console.error("Error signing out: ", error);
-    }
+    signOut()
+      .then(() => {
+        window.location.href = "/";
+        // navigate("/"); // Redirect to the login page
+      })
+      .catch((error) => {
+        console.error("Error signing out: ", error);
+      });
   };
 
   return (
@@ -21,14 +22,8 @@ const InstructorHeader = () => {
       <div className="text-black text-3xl font-semibold p-4">Instructor </div>
       <button
         type="button"
-        variant="contained"
-        color="secondary"
+        className="bg-gray-800 text-white hover:bg-gray-700"
         onClick={handleSignOut}
-        sx={{
-          bgcolor: "purple",
-          color: "white",
-          ":hover": { bgcolor: "darkpurple" },
-        }}
       >
         Sign Out
       </button>

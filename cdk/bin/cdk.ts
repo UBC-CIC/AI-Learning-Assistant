@@ -8,19 +8,17 @@ import { DatabaseStack } from '../lib/database-stack';
 import { DBFlowStack } from '../lib/dbFlow-stack';
 import { DynamoStack } from '../lib/llm-stack';
 import { VpcStack } from '../lib/vpc-stack';
-import { DockerLambdaStack } from '../lib/docker-lambda-stack';
 const app = new cdk.App();
-// Define environment settings
+
 const env = { 
   account: process.env.CDK_DEFAULT_ACCOUNT, 
   region: process.env.CDK_DEFAULT_REGION 
 };
 
 const vpcStack = new VpcStack(app, 'VpcStack', { env });
-const dbStack = new DatabaseStack(app, 'DatabaseStack', vpcStack, { env });
+const dbStack = new DatabaseStack(app, 'DatabaseStack2', vpcStack, { env });
 const dynamoStack = new DynamoStack(app, 'DynamoStack',vpcStack,  { env });
 const apiStack = new ApiGatewayStack(app, 'ApiGatewayStack', dbStack, vpcStack,  { env });
 const dbFlowStack = new DBFlowStack(app, 'DBFlowStack', vpcStack, dbStack, apiStack, { env });
 const amplifyStack = new AmplifyStack(app, 'AmplifyStack',apiStack, { env });
 const dataStack = new DataIngestionStack(app, 'DataIngestionStack', { env });
-const dockerLambdaStack = new DockerLambdaStack(app, 'DockerLambdaStack', { env });

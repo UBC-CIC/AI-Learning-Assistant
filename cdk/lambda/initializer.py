@@ -7,6 +7,7 @@ import secrets
 
 DB_SECRET_NAME = os.environ["DB_SECRET_NAME"]
 DB_USER_SECRET_NAME = os.environ["DB_USER_SECRET_NAME"]
+DB_PROXY = os.environ["DB_PROXY"]
 print(psycopg2.__version__)
 
 
@@ -60,21 +61,14 @@ def handler(event, context):
             "last_sign_in" timestamp
             );
 
-            CREATE TABLE IF NOT EXISTS "LLM_Vectors" (
-            "enrolment_id" uuid UNIQUE,
-            "student_strengths_embeddings" float[],
-            "student_weaknesses_embeddings" float[]
-            );
-
             CREATE TABLE IF NOT EXISTS "Courses" (
             "course_id" uuid PRIMARY KEY DEFAULT (uuid_generate_v4()),
             "course_name" varchar,
-            "course_deparment" varchar,
+            "course_department" varchar,
             "course_number" integer,
-            "course_access_code" integer,
+            "course_access_code" varchar,
             "course_student_access" bool,
-            "system_prompt" text,
-            "llm_tone" varchar
+            "system_prompt" text
             );
 
             CREATE TABLE IF NOT EXISTS "Course_Modules" (
@@ -101,7 +95,8 @@ def handler(event, context):
             "s3_bucket_reference" varchar,
             "filepath" varchar,
             "filename" varchar,
-            "time_uploaded" timestamp
+            "time_uploaded" timestamp,
+            "metadata" text
             );
 
             CREATE TABLE IF NOT EXISTS "Student_Modules" (
@@ -116,6 +111,7 @@ def handler(event, context):
             CREATE TABLE IF NOT EXISTS "Sessions" (
             "session_id" uuid PRIMARY KEY DEFAULT (uuid_generate_v4()),
             "student_module_id" uuid,
+            "session_name" varchar,
             "session_context_embeddings" float[],
             "last_accessed" timestamp
             );
@@ -131,7 +127,8 @@ def handler(event, context):
             CREATE TABLE IF NOT EXISTS "Course_Concepts" (
             "concept_id" uuid PRIMARY KEY DEFAULT (uuid_generate_v4()),
             "course_id" uuid,
-            "concept_name" varchar
+            "concept_name" varchar,
+            "concept_number" integer
             );
 
             CREATE TABLE IF NOT EXISTS "User_Engagement_Log" (
@@ -141,16 +138,17 @@ def handler(event, context):
             "module_id" uuid,
             "enrolment_id" uuid,
             "timestamp" timestamp,
-            "engagement_type" varchar
+            "engagement_type" varchar,
+            "engagement_details" text
             );
 
-            ALTER TABLE "User_Engagement_Log" ADD FOREIGN KEY ("enrolment_id") REFERENCES "Enrolments" ("enrolment_id");
+            ALTER TABLE "User_Engagement_Log" ADD FOREIGN KEY ("enrolment_id") REFERENCES "Enrolments" ("enrolment_id") ON DELETE CASCADE ON UPDATE CASCADE;
 
-            ALTER TABLE "User_Engagement_Log" ADD FOREIGN KEY ("user_email") REFERENCES "Users" ("user_email");
+            ALTER TABLE "User_Engagement_Log" ADD FOREIGN KEY ("user_email") REFERENCES "Users" ("user_email") ON DELETE CASCADE ON UPDATE CASCADE;
 
             ALTER TABLE "User_Engagement_Log" ADD FOREIGN KEY ("course_id") REFERENCES "Courses" ("course_id") ON DELETE CASCADE ON UPDATE CASCADE;
 
-            ALTER TABLE "User_Engagement_Log" ADD FOREIGN KEY ("module_id") REFERENCES "Course_Modules" ("module_id");
+            ALTER TABLE "User_Engagement_Log" ADD FOREIGN KEY ("module_id") REFERENCES "Course_Modules" ("module_id") ON DELETE CASCADE ON UPDATE CASCADE;
 
             ALTER TABLE "Course_Concepts" ADD FOREIGN KEY ("course_id") REFERENCES "Courses" ("course_id") ON DELETE CASCADE ON UPDATE CASCADE;
 
@@ -164,13 +162,23 @@ def handler(event, context):
 
             ALTER TABLE "Student_Modules" ADD FOREIGN KEY ("course_module_id") REFERENCES "Course_Modules" ("module_id") ON DELETE CASCADE ON UPDATE CASCADE;
 
-            ALTER TABLE "Enrolments" ADD FOREIGN KEY ("enrolment_id") REFERENCES "LLM_Vectors" ("enrolment_id") ON DELETE CASCADE ON UPDATE CASCADE;
-
             ALTER TABLE "Student_Modules" ADD FOREIGN KEY ("enrolment_id") REFERENCES "Enrolments" ("enrolment_id") ON DELETE CASCADE ON UPDATE CASCADE;
 
             ALTER TABLE "Sessions" ADD FOREIGN KEY ("student_module_id") REFERENCES "Student_Modules" ("student_module_id") ON DELETE CASCADE ON UPDATE CASCADE;
 
-            ALTER TABLE "Messages" ADD FOREIGN KEY ("session_id") REFERENCES "Sessions" ("session_id");
+            ALTER TABLE "Messages" ADD FOREIGN KEY ("session_id") REFERENCES "Sessions" ("session_id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+            DO $$
+            BEGIN
+                IF NOT EXISTS (
+                    SELECT 1
+                    FROM pg_constraint
+                    WHERE conname = 'unique_course_user'
+                    AND conrelid = '"Enrolments"'::regclass
+                ) THEN
+                    ALTER TABLE "Enrolments" ADD CONSTRAINT unique_course_user UNIQUE (course_id, user_email);
+                END IF;
+            END $$;
 
         """
 
@@ -244,7 +252,7 @@ def handler(event, context):
         """
 
 
-        # Execute table creation
+        #Execute table creation
         cursor.execute(
             sqlCreateUser,
             (
@@ -264,6 +272,16 @@ def handler(event, context):
         )
         connection.commit()
 
+        #also for table creator:
+        authInfoTableCreator = {"username": usernameTableCreator, "password": passwordTableCreator}
+
+        # comment out to on redeployment
+        dbSecret.update(authInfoTableCreator)
+        sm_client = boto3.client("secretsmanager")
+        sm_client.put_secret_value(
+            SecretId=DB_PROXY, SecretString=json.dumps(dbSecret)
+        )
+
         #
         ## Load client username and password to SSM
         ##
@@ -271,16 +289,6 @@ def handler(event, context):
 
         # comment out to on redeployment
         dbSecret.update(authInfo)
-        sm_client = boto3.client("secretsmanager")
-        sm_client.put_secret_value(
-            SecretId=DB_USER_SECRET_NAME, SecretString=json.dumps(dbSecret)
-        )
-        
-        #also for table creator:
-        authInfoTableCreator = {"usernameTableCreator": usernameTableCreator, "passwordTableCreator": passwordTableCreator}
-
-        # comment out to on redeployment
-        dbSecret.update(authInfoTableCreator)
         sm_client = boto3.client("secretsmanager")
         sm_client.put_secret_value(
             SecretId=DB_USER_SECRET_NAME, SecretString=json.dumps(dbSecret)

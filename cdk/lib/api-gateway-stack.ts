@@ -1,6 +1,7 @@
 import * as cdk from "aws-cdk-lib";
 import * as apigateway from "aws-cdk-lib/aws-apigateway";
 import * as lambda from "aws-cdk-lib/aws-lambda";
+import * as lambdaEventSources from "aws-cdk-lib/aws-lambda-event-sources";
 import * as iam from "aws-cdk-lib/aws-iam";
 import { Construct } from "constructs";
 import { Duration } from "aws-cdk-lib";
@@ -69,12 +70,22 @@ export class ApiGatewayStack extends cdk.Stack {
       description: "Contains the postgres library for JS",
     });
 
-    //create psycopglayer
+    /**
+     *
+     * Create Lambda layer for Psycopg2
+     */
     const psycopgLayer = new LayerVersion(this, "psycopgLambdaLayer", {
       code: Code.fromAsset("./layers/psycopg2.zip"),
       compatibleRuntimes: [Runtime.PYTHON_3_9],
       description: "Lambda layer containing the psycopg2 Python library",
     });
+
+    // powertoolsLayer does not follow the format of layerList
+    const powertoolsLayer = lambda.LayerVersion.fromLayerVersionArn(
+      this,
+      "PowertoolsLayer",
+      `arn:aws:lambda:${this.region}:017000801446:layer:AWSLambdaPowertoolsPythonV2:78`
+    );
 
     this.layerList["psycopg2"] = psycopgLayer;
     this.layerList["postgres"] = postgres;
@@ -319,7 +330,6 @@ export class ApiGatewayStack extends cdk.Stack {
       })
     );
 
-
     // Create Cognito user pool groups
     const studentGroup = new cognito.CfnUserPoolGroup(this, "StudentGroup", {
       groupName: "student",
@@ -426,35 +436,31 @@ export class ApiGatewayStack extends cdk.Stack {
       },
     });
 
-    const lambdaStudentFunction = new lambda.Function(
-      this,
-      "studentFunction",
-      {
-        runtime: lambda.Runtime.NODEJS_16_X, // Execution environment
-        code: lambda.Code.fromAsset("lambda"), // Code loaded from "lambda" directory
-        handler: "studentFunction.handler", // Code handler
-        timeout: Duration.seconds(300),
-        vpc: vpcStack.vpc,
-        environment: {
-          SM_DB_CREDENTIALS: db.secretPathUser.secretName,
-          RDS_PROXY_ENDPOINT: db.rdsProxyEndpoint,
-        },
-        functionName: "studentFunction",
-        memorySize: 512,
-        layers: [postgres],
-        role: lambdaRole,
-      }
-    );
+    const lambdaStudentFunction = new lambda.Function(this, "studentFunction", {
+      runtime: lambda.Runtime.NODEJS_16_X, // Execution environment
+      code: lambda.Code.fromAsset("lambda"), // Code loaded from "lambda" directory
+      handler: "studentFunction.handler", // Code handler
+      timeout: Duration.seconds(300),
+      vpc: vpcStack.vpc,
+      environment: {
+        SM_DB_CREDENTIALS: db.secretPathUser.secretName,
+        RDS_PROXY_ENDPOINT: db.rdsProxyEndpoint,
+      },
+      functionName: "studentFunction",
+      memorySize: 512,
+      layers: [postgres],
+      role: lambdaRole,
+    });
 
     // Add the permission to the Lambda function's policy to allow API Gateway access
     lambdaStudentFunction.addPermission("AllowApiGatewayInvoke", {
       principal: new iam.ServicePrincipal("apigateway.amazonaws.com"),
       action: "lambda:InvokeFunction",
       sourceArn: `arn:aws:execute-api:${this.region}:${this.account}:${this.api.restApiId}/*/*/student*`,
-
     });
 
-    const cfnLambda_student = lambdaStudentFunction.node.defaultChild as lambda.CfnFunction;
+    const cfnLambda_student = lambdaStudentFunction.node
+      .defaultChild as lambda.CfnFunction;
     cfnLambda_student.overrideLogicalId("studentFunction");
 
     const lambdaInstructorFunction = new lambda.Function(
@@ -484,30 +490,25 @@ export class ApiGatewayStack extends cdk.Stack {
       sourceArn: `arn:aws:execute-api:${this.region}:${this.account}:${this.api.restApiId}/*/*/instructor*`,
     });
 
-
-    const cfnLambda_Instructor = lambdaInstructorFunction.node.defaultChild as lambda.CfnFunction;
+    const cfnLambda_Instructor = lambdaInstructorFunction.node
+      .defaultChild as lambda.CfnFunction;
     cfnLambda_Instructor.overrideLogicalId("instructorFunction");
 
-    
-    const lambdaAdminFunction = new lambda.Function(
-      this,
-      "adminFunction",
-      {
-        runtime: lambda.Runtime.NODEJS_16_X, // Execution environment
-        code: lambda.Code.fromAsset("lambda"), // Code loaded from "lambda" directory
-        handler: "adminFunction.handler", // Code handler
-        timeout: Duration.seconds(300),
-        vpc: vpcStack.vpc,
-        environment: {
-          SM_DB_CREDENTIALS: db.secretPathUser.secretName,
-          RDS_PROXY_ENDPOINT: db.rdsProxyEndpoint,
-        },
-        functionName: "adminFunction",
-        memorySize: 512,
-        layers: [postgres],
-        role: lambdaRole,
-      }
-    );
+    const lambdaAdminFunction = new lambda.Function(this, "adminFunction", {
+      runtime: lambda.Runtime.NODEJS_16_X, // Execution environment
+      code: lambda.Code.fromAsset("lambda"), // Code loaded from "lambda" directory
+      handler: "adminFunction.handler", // Code handler
+      timeout: Duration.seconds(300),
+      vpc: vpcStack.vpc,
+      environment: {
+        SM_DB_CREDENTIALS: db.secretPathTableCreator.secretName,
+        RDS_PROXY_ENDPOINT: db.rdsProxyEndpointTableCreator,
+      },
+      functionName: "adminFunction",
+      memorySize: 512,
+      layers: [postgres],
+      role: lambdaRole,
+    });
 
     // Add the permission to the Lambda function's policy to allow API Gateway access
     lambdaAdminFunction.addPermission("AllowApiGatewayInvoke", {
@@ -516,7 +517,8 @@ export class ApiGatewayStack extends cdk.Stack {
       sourceArn: `arn:aws:execute-api:${this.region}:${this.account}:${this.api.restApiId}/*/*/admin*`,
     });
 
-    const cfnLambda_Admin = lambdaAdminFunction.node.defaultChild as lambda.CfnFunction;
+    const cfnLambda_Admin = lambdaAdminFunction.node
+      .defaultChild as lambda.CfnFunction;
     cfnLambda_Admin.overrideLogicalId("adminFunction");
 
     const lambdaTechAdminFunction = new lambda.Function(
@@ -546,9 +548,9 @@ export class ApiGatewayStack extends cdk.Stack {
       sourceArn: `arn:aws:execute-api:${this.region}:${this.account}:${this.api.restApiId}/*/*/*`,
     });
 
-    const cfnLambda_Tech_Admin = lambdaTechAdminFunction.node.defaultChild as lambda.CfnFunction;
+    const cfnLambda_Tech_Admin = lambdaTechAdminFunction.node
+      .defaultChild as lambda.CfnFunction;
     cfnLambda_Tech_Admin.overrideLogicalId("techadminFunction");
-
 
     const coglambdaRole = new iam.Role(this, "cognitoLambdaRole", {
       roleName: "cognitoLambdaRole",
@@ -599,38 +601,106 @@ export class ApiGatewayStack extends cdk.Stack {
     );
 
     // Grant permission to add users to an IAM group
-    coglambdaRole.addToPolicy(new iam.PolicyStatement({
-      effect: iam.Effect.ALLOW,
-      actions: [
-          "iam:AddUserToGroup",
-      ],
-      resources: [
+    coglambdaRole.addToPolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: ["iam:AddUserToGroup"],
+        resources: [
           `arn:aws:iam::${this.account}:user/*`,
           `arn:aws:iam::${this.account}:group/*`,
-      ],
-  }));
+        ],
+      })
+    );
 
-    //cognito auto assign authenticated users to the student group
-    const addUserGroupOnSignUp = new lambda.Function(
+    // Inline policy to allow AdminAddUserToGroup action
+    const adminAddUserToGroupPolicy = new iam.Policy(
       this,
-      "addUserGroupOnSignUp",
+      "AdminAddUserToGroupPolicy",
       {
-        runtime: lambda.Runtime.NODEJS_16_X, // Execution environment
-        code: lambda.Code.fromAsset("lambda"), // Code loaded from "lambda" directory
-        handler: "addUserGroupOnSignUp.handler", // Code handler
-        timeout: Duration.seconds(300),
-        vpc: vpcStack.vpc,
-        functionName: "addUserGroupOnSignUp",
-        memorySize: 128,
-        role: coglambdaRole,
+        statements: [
+          new iam.PolicyStatement({
+            effect: iam.Effect.ALLOW,
+            actions: [
+              "cognito-idp:AdminAddUserToGroup",
+              "cognito-idp:AdminRemoveUserFromGroup",
+              "cognito-idp:AdminGetUser",
+              "cognito-idp:AdminListGroupsForUser",
+            ],
+            resources: [
+              `arn:aws:cognito-idp:${this.region}:${this.account}:userpool/${this.userPool.userPoolId}`,
+            ],
+          }),
+        ],
       }
     );
+
+    // Attach the inline policy to the role
+    coglambdaRole.attachInlinePolicy(adminAddUserToGroupPolicy);
+
+    coglambdaRole.addToPolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: [
+          // Secrets Manager
+          "secretsmanager:GetSecretValue",
+          "secretsmanager:PutSecretValue",
+        ],
+        resources: [
+          `arn:aws:secretsmanager:${this.region}:${this.account}:secret:AILA/*`,
+        ],
+      })
+    );
+
+    const AutoSignupLambda = new lambda.Function(this, "addStudentOnSignUp", {
+      runtime: lambda.Runtime.NODEJS_16_X, // Execution environment
+      code: lambda.Code.fromAsset("lambda"), // Code loaded from "lambda" directory
+      handler: "addStudentOnSignUp.handler", // Code handler
+      timeout: Duration.seconds(300),
+      environment: {
+        SM_DB_CREDENTIALS: db.secretPathTableCreator.secretName,
+        RDS_PROXY_ENDPOINT: db.rdsProxyEndpointTableCreator,
+      },
+      vpc: vpcStack.vpc,
+      functionName: "addStudentOnSignUp",
+      memorySize: 128,
+      layers: [postgres],
+      role: coglambdaRole,
+    });
+
+    const adjustUserRoles = new lambda.Function(this, "adjustUserRoles", {
+      runtime: lambda.Runtime.NODEJS_16_X, // Execution environment
+      code: lambda.Code.fromAsset("lambda"), // Code loaded from "lambda" directory
+      handler: "adjustUserRoles.handler", // Code handler
+      timeout: Duration.seconds(300),
+      environment: {
+        SM_DB_CREDENTIALS: db.secretPathTableCreator.secretName,
+        RDS_PROXY_ENDPOINT: db.rdsProxyEndpointTableCreator,
+      },
+      vpc: db.dbInstance.vpc,
+      functionName: "adjustUserRoles",
+      memorySize: 512,
+      layers: [postgres],
+      role: coglambdaRole,
+    });
+
+    this.userPool.addTrigger(
+      cognito.UserPoolOperation.POST_AUTHENTICATION,
+      adjustUserRoles
+    );
+
+    //cognito auto assign authenticated users to the student group
+
+    this.userPool.addTrigger(
+      cognito.UserPoolOperation.POST_CONFIRMATION,
+      AutoSignupLambda
+    );
+
     // const authorizer = new apigateway.CognitoUserPoolsAuthorizer(this, 'ailaAuthorizer', {
     //   cognitoUserPools: [this.userPool],
     // });
-    new cdk.CfnOutput(this, 'UserPoolIdOutput', {
+    new cdk.CfnOutput(this, "UserPoolIdOutput", {
       value: this.userPool.userPoolId,
-      description: 'The ID of the Cognito User Pool',
+      description: "The ID of the Cognito User Pool",
     });
 
     // **
@@ -695,8 +765,8 @@ export class ApiGatewayStack extends cdk.Stack {
     );
 
     // Change Logical ID to match the one decleared in YAML file of Open API
-    const apiGW_authorizationFunction_student = authorizationFunction_student.node
-      .defaultChild as lambda.CfnFunction;
+    const apiGW_authorizationFunction_student = authorizationFunction_student
+      .node.defaultChild as lambda.CfnFunction;
     apiGW_authorizationFunction_student.overrideLogicalId(
       "studentLambdaAuthorizer"
     );
@@ -730,10 +800,383 @@ export class ApiGatewayStack extends cdk.Stack {
     );
 
     // Change Logical ID to match the one decleared in YAML file of Open API
-    const apiGW_authorizationFunction_instructor = authorizationFunction_instructor.node
-      .defaultChild as lambda.CfnFunction;
+    const apiGW_authorizationFunction_instructor =
+      authorizationFunction_instructor.node.defaultChild as lambda.CfnFunction;
     apiGW_authorizationFunction_instructor.overrideLogicalId(
       "instructorLambdaAuthorizer"
     );
+
+    /**
+     *
+     * Create Lambda with container image for text generation workflow in RAG pipeline
+     */
+    const textGenLambdaDockerFunc = new lambda.DockerImageFunction(this, "TextGenLambdaDockerFunc", {
+      code: lambda.DockerImageCode.fromImageAsset("./text_generation"),
+      memorySize: 2048,
+      timeout: cdk.Duration.seconds(300),
+      vpc: vpcStack.vpc, // Pass the VPC
+      functionName: "TextGenLambdaDockerFunc",
+      environment: {
+        SM_DB_CREDENTIALS: db.secretPathUser.secretName, // Database User Credentials
+        RDS_PROXY_ENDPOINT: db.rdsProxyEndpoint, // RDS Proxy Endpoint
+        REGION: this.region,
+      },
+    });
+
+    // Override the Logical ID of the Lambda Function to get ARN in OpenAPI
+    const cfnTextGenDockerFunc = textGenLambdaDockerFunc.node.defaultChild as lambda.CfnFunction;
+    cfnTextGenDockerFunc.overrideLogicalId("TextGenLambdaDockerFunc");
+
+    // Add the permission to the Lambda function's policy to allow API Gateway access
+    textGenLambdaDockerFunc.addPermission("AllowApiGatewayInvoke", {
+      principal: new iam.ServicePrincipal("apigateway.amazonaws.com"),
+      action: "lambda:InvokeFunction",
+      sourceArn: `arn:aws:execute-api:${this.region}:${this.account}:${this.api.restApiId}/*/*/student*`,
+    });
+
+    // Custom policy statement for Bedrock access
+    const bedrockPolicyStatement = new iam.PolicyStatement({
+      effect: iam.Effect.ALLOW,
+      actions: [
+        'bedrock:InvokeModel',
+        'bedrock:InvokeEndpoint'
+      ],
+      resources: ["arn:aws:bedrock:" + this.region + "::foundation-model/meta.llama3-70b-instruct-v1:0",
+                  "arn:aws:bedrock:" + this.region + "::foundation-model/amazon.titan-embed-text-v2:0"],
+    });
+
+    // Attach the custom Bedrock policy to Lambda function
+    textGenLambdaDockerFunc.addToRolePolicy(bedrockPolicyStatement);
+
+    // Grant access to Secret Manager
+    textGenLambdaDockerFunc.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: [
+          //Secrets Manager
+          "secretsmanager:GetSecretValue",
+        ],
+        resources: [
+          `arn:aws:secretsmanager:${this.region}:${this.account}:secret:*`,
+        ],
+      })
+    );
+
+    // Grant access to DynamoDB actions
+    textGenLambdaDockerFunc.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: [
+          "dynamodb:ListTables",
+          "dynamodb:CreateTable",
+          "dynamodb:DescribeTable",
+          "dynamodb:PutItem",
+          "dynamodb:GetItem",
+        ],
+        resources: [
+          `arn:aws:dynamodb:${this.region}:${this.account}:table/*`,
+        ],
+      })
+    );
+
+    // Create S3 Bucket to handle documents for each course
+    const dataIngestionBucket = new s3.Bucket(this, "AILADataIngestionBucket", {
+      bucketName: "aila-data-ingestion-bucket",
+      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
+      cors: [
+        {
+          allowedHeaders: ["*"],
+          allowedMethods: [
+            s3.HttpMethods.GET,
+            s3.HttpMethods.PUT,
+            s3.HttpMethods.HEAD,
+            s3.HttpMethods.POST,
+            s3.HttpMethods.DELETE,
+          ],
+          allowedOrigins: ["*"],
+        },
+      ],
+      // When deleting the stack, need to empty the Bucket and delete it manually
+      removalPolicy: cdk.RemovalPolicy.RETAIN,
+    });
+
+    // Create the Lambda function for generating presigned URLs
+    const generatePreSignedURL = new lambda.Function(
+      this,
+      "GeneratePreSignedURLFunc",
+      {
+        runtime: lambda.Runtime.PYTHON_3_9,
+        code: lambda.Code.fromAsset("lambda"),
+        handler: "generatePreSignedURL.lambda_handler",
+        timeout: Duration.seconds(300),
+        memorySize: 128,
+        environment: {
+          BUCKET: dataIngestionBucket.bucketName,
+          REGION: this.region,
+        },
+        functionName: "GeneratePreSignedURLFunc",
+        layers: [powertoolsLayer],
+      }
+    );
+
+    // Override the Logical ID of the Lambda Function to get ARN in OpenAPI
+    const cfnGeneratePreSignedURL = generatePreSignedURL.node
+      .defaultChild as lambda.CfnFunction;
+    cfnGeneratePreSignedURL.overrideLogicalId("GeneratePreSignedURLFunc");
+
+    // Grant the Lambda function the necessary permissions
+    dataIngestionBucket.grantReadWrite(generatePreSignedURL);
+    generatePreSignedURL.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ["s3:PutObject", "s3:GetObject"],
+        resources: [
+          dataIngestionBucket.bucketArn,
+          `${dataIngestionBucket.bucketArn}/*`,
+        ],
+      })
+    );
+
+    // Add the permission to the Lambda function's policy to allow API Gateway access
+    generatePreSignedURL.addPermission("AllowApiGatewayInvoke", {
+      principal: new iam.ServicePrincipal("apigateway.amazonaws.com"),
+      action: "lambda:InvokeFunction",
+      sourceArn: `arn:aws:execute-api:${this.region}:${this.account}:${this.api.restApiId}/*/*/instructor*`,
+    });
+
+    /**
+     *
+     * Create Lambda with container image for data ingestion workflow in RAG pipeline
+     * This function will be triggered when a file in uploaded or deleted fro, the S3 Bucket
+     */
+    const dataIngestLambdaDockerFunc = new lambda.DockerImageFunction(this, "DataIngestLambdaDockerFunc", {
+      code: lambda.DockerImageCode.fromImageAsset("./data_ingestion"),
+      memorySize: 512,
+      timeout: cdk.Duration.seconds(300),
+      vpc: vpcStack.vpc, // Pass the VPC
+      functionName: "DataIngestLambdaDockerFunc",
+      environment: {
+        SM_DB_CREDENTIALS: db.secretPathUser.secretName, // Database User Credentials
+        RDS_PROXY_ENDPOINT: db.rdsProxyEndpoint, // RDS Proxy Endpoint
+        BUCKET: dataIngestionBucket.bucketName,
+        REGION: this.region,
+      },
+    });
+
+    // Override the Logical ID of the Lambda Function to get ARN in OpenAPI
+    const cfnDataIngestLambdaDockerFunc = dataIngestLambdaDockerFunc.node.defaultChild as lambda.CfnFunction;
+    cfnDataIngestLambdaDockerFunc.overrideLogicalId("DataIngestLambdaDockerFunc");
+
+    // Attach the custom Bedrock policy to Lambda function
+    dataIngestLambdaDockerFunc.addToRolePolicy(bedrockPolicyStatement);
+
+    // Add the S3 event source trigger to the Lambda function
+    dataIngestLambdaDockerFunc.addEventSource(new lambdaEventSources.S3EventSource(dataIngestionBucket, {
+      events: [s3.EventType.OBJECT_CREATED, s3.EventType.OBJECT_REMOVED, s3.EventType.OBJECT_RESTORE_COMPLETED]
+    }));
+
+    // Grant access to Secret Manager
+    dataIngestLambdaDockerFunc.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: [
+          //Secrets Manager
+          "secretsmanager:GetSecretValue",
+        ],
+        resources: [
+          `arn:aws:secretsmanager:${this.region}:${this.account}:secret:*`,
+        ],
+      })
+    );
+
+    /**
+     *
+     * Create Lambda function that will return all file names for a specified course, concept, and module
+     */
+    const getFilesFunction = new lambda.Function(this, "GetFilesFunction", {
+      runtime: lambda.Runtime.PYTHON_3_9,
+      code: lambda.Code.fromAsset("lambda"), // Assumes the function is in the lambda directory
+      handler: "getFilesFunction.lambda_handler",
+      timeout: Duration.seconds(300),
+      memorySize: 128,
+      vpc: vpcStack.vpc,
+      environment: {
+        SM_DB_CREDENTIALS: db.secretPathUser.secretName, // Database User Credentials
+        RDS_PROXY_ENDPOINT: db.rdsProxyEndpoint, // RDS Proxy Endpoint
+        BUCKET: dataIngestionBucket.bucketName,
+        REGION: this.region,
+      },
+      functionName: "GetFilesFunction",
+      layers: [psycopgLayer, powertoolsLayer],
+    });
+
+    // Override the Logical ID of the Lambda Function to get ARN in OpenAPI
+    const cfnGetFilesFunction = getFilesFunction.node
+      .defaultChild as lambda.CfnFunction;
+    cfnGetFilesFunction.overrideLogicalId("GetFilesFunction");
+
+    // Grant the Lambda function read-only permissions to the S3 bucket
+    dataIngestionBucket.grantRead(getFilesFunction);
+
+    // Grant access to Secret Manager
+    getFilesFunction.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: [
+          //Secrets Manager
+          "secretsmanager:GetSecretValue",
+        ],
+        resources: [
+          `arn:aws:secretsmanager:${this.region}:${this.account}:secret:*`,
+        ],
+      })
+    );
+
+    // Add the permission to the Lambda function's policy to allow API Gateway access
+    getFilesFunction.addPermission("AllowApiGatewayInvoke", {
+      principal: new iam.ServicePrincipal("apigateway.amazonaws.com"),
+      action: "lambda:InvokeFunction",
+      sourceArn: `arn:aws:execute-api:${this.region}:${this.account}:${this.api.restApiId}/*/*/instructor*`,
+    });
+
+    /**
+     *
+     * Create Lambda function to delete certain file
+     */
+    const deleteFile = new lambda.Function(this, "DeleteFileFunc", {
+      runtime: lambda.Runtime.PYTHON_3_9,
+      code: lambda.Code.fromAsset("lambda"),
+      handler: "deleteFile.lambda_handler",
+      timeout: Duration.seconds(300),
+      memorySize: 128,
+      vpc: vpcStack.vpc,
+      environment: {
+        SM_DB_CREDENTIALS: db.secretPathUser.secretName, // Database User Credentials
+        RDS_PROXY_ENDPOINT: db.rdsProxyEndpoint, // RDS Proxy Endpoint
+        BUCKET: dataIngestionBucket.bucketName,
+        REGION: this.region,
+      },
+      functionName: "DeleteFileFunc",
+      layers: [psycopgLayer, powertoolsLayer],
+    });
+
+    // Override the Logical ID of the Lambda Function to get ARN in OpenAPI
+    const cfndeleteFile = deleteFile.node.defaultChild as lambda.CfnFunction;
+    cfndeleteFile.overrideLogicalId("DeleteFileFunc");
+
+    // Grant the Lambda function the necessary permissions
+    dataIngestionBucket.grantDelete(deleteFile);
+
+    // Grant access to Secret Manager
+    deleteFile.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: [
+          //Secrets Manager
+          "secretsmanager:GetSecretValue",
+        ],
+        resources: [
+          `arn:aws:secretsmanager:${this.region}:${this.account}:secret:*`,
+        ],
+      })
+    );
+
+    // Add the permission to the Lambda function's policy to allow API Gateway access
+    deleteFile.addPermission("AllowApiGatewayInvoke", {
+      principal: new iam.ServicePrincipal("apigateway.amazonaws.com"),
+      action: "lambda:InvokeFunction",
+      sourceArn: `arn:aws:execute-api:${this.region}:${this.account}:${this.api.restApiId}/*/*/instructor*`,
+    });
+
+    /**
+     *
+     * Create Lambda function to delete an entire module directory
+     */
+    const deleteModuleFunction = new lambda.Function(this, "DeleteModuleFunc", {
+      runtime: lambda.Runtime.PYTHON_3_9,
+      code: lambda.Code.fromAsset("lambda"),
+      handler: "deleteModule.lambda_handler",
+      timeout: Duration.seconds(300),
+      memorySize: 128,
+      environment: {
+        BUCKET: dataIngestionBucket.bucketName,
+        REGION: this.region,
+      },
+      functionName: "DeleteModuleFunc",
+      layers: [powertoolsLayer],
+    });
+
+    // Override the Logical ID of the Lambda Function to get ARN in OpenAPI
+    const cfnDeleteModuleFunction = deleteModuleFunction.node
+      .defaultChild as lambda.CfnFunction;
+    cfnDeleteModuleFunction.overrideLogicalId("DeleteModuleFunc");
+
+    // Grant the Lambda function the necessary permissions
+    dataIngestionBucket.grantRead(deleteModuleFunction);
+    dataIngestionBucket.grantDelete(deleteModuleFunction);
+
+    // Add the permission to the Lambda function's policy to allow API Gateway access
+    deleteModuleFunction.addPermission("AllowApiGatewayInvoke", {
+      principal: new iam.ServicePrincipal("apigateway.amazonaws.com"),
+      action: "lambda:InvokeFunction",
+      sourceArn: `arn:aws:execute-api:${this.region}:${this.account}:${this.api.restApiId}/*/*/instructor*`,
+    });
+    
+    /**
+     * 
+     * Create a Lambda function that deletes the last message in a conversation
+    */
+    const deleteLastMessage = new lambda.Function(this, "DeleteLastMessage", {
+      runtime: lambda.Runtime.PYTHON_3_9,
+      code: lambda.Code.fromAsset("lambda"),
+      handler: "deleteLastMessage.lambda_handler",
+      timeout: Duration.seconds(300),
+      memorySize: 128,
+      vpc: vpcStack.vpc,
+      environment: {
+        SM_DB_CREDENTIALS: db.secretPathUser.secretName, // Database User Credentials
+        RDS_PROXY_ENDPOINT: db.rdsProxyEndpoint, // RDS Proxy Endpoint
+        TABLE_NAME: "API-Gateway-Test-Table-Name",
+        REGION: this.region,
+      },
+      functionName: "DeleteLastMessage",
+      layers: [psycopgLayer, powertoolsLayer],
+    });
+
+    // Override the Logical ID of the Lambda Function to get ARN in OpenAPI
+    const cfnDeleteLastMessage = deleteLastMessage.node
+      .defaultChild as lambda.CfnFunction;
+      cfnDeleteLastMessage.overrideLogicalId("DeleteLastMessage");
+    
+    // Grant access to Secret Manager
+    deleteLastMessage.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: [
+          //Secrets Manager
+          "secretsmanager:GetSecretValue",
+        ],
+        resources: [
+          `arn:aws:secretsmanager:${this.region}:${this.account}:secret:*`,
+        ],
+      })
+    );
+    
+    // Grant the Lambda function necessary permissions to access DynamoDB
+    deleteLastMessage.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: ["dynamodb:GetItem", "dynamodb:UpdateItem"],
+        resources: [
+          `arn:aws:dynamodb:${this.region}:${this.account}:table/*`,
+        ],
+      })
+    );
+    
+    // Add the permission to the Lambda function's policy to allow API Gateway access
+    deleteLastMessage.addPermission("AllowApiGatewayInvoke", {
+      principal: new iam.ServicePrincipal("apigateway.amazonaws.com"),
+      action: "lambda:InvokeFunction",
+      sourceArn: `arn:aws:execute-api:${this.region}:${this.account}:${this.api.restApiId}/*/*/student*`,
+    });
   }
 }

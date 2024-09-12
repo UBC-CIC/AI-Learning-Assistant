@@ -1,5 +1,5 @@
 import React from "react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 // MUI
 import {
   Drawer,
@@ -14,10 +14,19 @@ import HomeIcon from "@mui/icons-material/Home";
 import ViewTimelineIcon from "@mui/icons-material/ViewTimeline";
 import EditIcon from "@mui/icons-material/Edit";
 import PsychologyIcon from "@mui/icons-material/Psychology";
-import { useNavigate } from "react-router-dom";
+import GroupIcon from "@mui/icons-material/Group";
 
-// TODO add onclick to route to different pages
 const InstructorSidebar = ({ setSelectedComponent }) => {
+  const navigate = useNavigate();
+
+  const handleNavigation = (component) => {
+    if (component === "InstructorAllCourses") {
+      navigate("/home"); // Navigate to homepage
+    } else {
+      setSelectedComponent(component);
+    }
+  };
+
   return (
     <Drawer
       variant="permanent"
@@ -25,24 +34,24 @@ const InstructorSidebar = ({ setSelectedComponent }) => {
         width: 220,
         flexShrink: 0,
         [`& .MuiDrawer-paper`]: { width: 220, boxSizing: "border-box" },
-        bgcolor: "#F8F9FD",
+        bgcolor: "background",
       }}
     >
       <Box sx={{ overflow: "auto", paddingTop: 10 }}>
         <List>
           <ListItem
             button
-            onClick={() => setSelectedComponent("InstructorOverview")}
+            onClick={() => handleNavigation("InstructorAllCourses")}
           >
             <ListItemIcon>
               <HomeIcon />
             </ListItemIcon>
-            <ListItemText primary="Overview" />
+            <ListItemText primary="All Courses" />
           </ListItem>
           <Divider />
           <ListItem
             button
-            onClick={() => setSelectedComponent("InstructorAnalytics")}
+            onClick={() => handleNavigation("InstructorAnalytics")}
           >
             <ListItemIcon>
               <ViewTimelineIcon />
@@ -52,22 +61,36 @@ const InstructorSidebar = ({ setSelectedComponent }) => {
           <Divider />
           <ListItem
             button
-            onClick={() => setSelectedComponent("InstructorEditCourse")}
+            onClick={() => handleNavigation("InstructorEditConcepts")}
           >
             <ListItemIcon>
               <EditIcon />
             </ListItemIcon>
-            <ListItemText primary="Edit Course" />
+            <ListItemText primary="Edit Concepts" />
           </ListItem>
           <Divider />
           <ListItem
             button
-            onClick={() => setSelectedComponent("PromptSettings")}
+            onClick={() => handleNavigation("InstructorEditCourse")}
           >
+            <ListItemIcon>
+              <EditIcon />
+            </ListItemIcon>
+            <ListItemText primary="Edit Modules" />
+          </ListItem>
+          <Divider />
+          <ListItem button onClick={() => handleNavigation("PromptSettings")}>
             <ListItemIcon>
               <PsychologyIcon />
             </ListItemIcon>
             <ListItemText primary="Prompt Settings" />
+          </ListItem>
+          <Divider />
+          <ListItem button onClick={() => handleNavigation("ViewStudents")}>
+            <ListItemIcon>
+              <GroupIcon />
+            </ListItemIcon>
+            <ListItemText primary="View Students" />
           </ListItem>
         </List>
       </Box>

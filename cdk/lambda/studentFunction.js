@@ -1,5 +1,5 @@
 const { initializeConnection } = require("./lib.js");
-
+var aws = require("aws-sdk");
 // Setting up evironments
 let { SM_DB_CREDENTIALS, RDS_PROXY_ENDPOINT } = process.env;
 
@@ -7,6 +7,9 @@ let { SM_DB_CREDENTIALS, RDS_PROXY_ENDPOINT } = process.env;
 let sqlConnection = global.sqlConnection;
 
 exports.handler = async (event) => {
+  console.log("event",event)
+  const userId = event.requestContext.authorizer.userId;
+  console.log("userId:", userId);
   const response = {
     statusCode: 200,
     headers: {
@@ -44,15 +47,39 @@ exports.handler = async (event) => {
           } = event.queryStringParameters;
 
           try {
-            // Insert the new user into Users table
-            const userData = await sqlConnection`
-              INSERT INTO "Users" (user_email, username, first_name, last_name, preferred_name, time_account_created, roles, last_sign_in)
-              VALUES (${user_email}, ${username}, ${first_name}, ${last_name}, ${preferred_name}, CURRENT_TIMESTAMP, ARRAY['student'], CURRENT_TIMESTAMP)
-              RETURNING *;
+            // Check if the user already exists
+            const existingUser = await sqlConnection`
+                SELECT * FROM "Users"
+                WHERE user_email = ${user_email};
             `;
-            response.body = JSON.stringify(userData[0]);
+
+            if (existingUser.length > 0) {
+              // Update the existing user's information
+              const updatedUser = await sqlConnection`
+                    UPDATE "Users"
+                    SET
+                        username = ${username},
+                        first_name = ${first_name},
+                        last_name = ${last_name},
+                        preferred_name = ${preferred_name},
+                        last_sign_in = CURRENT_TIMESTAMP,
+                        time_account_created = CURRENT_TIMESTAMP
+                    WHERE user_email = ${user_email}
+                    RETURNING *;
+                `;
+              response.body = JSON.stringify(updatedUser[0]);
+            } else {
+              // Insert a new user with 'student' role
+              const newUser = await sqlConnection`
+                    INSERT INTO "Users" (user_email, username, first_name, last_name, preferred_name, time_account_created, roles, last_sign_in)
+                    VALUES (${user_email}, ${username}, ${first_name}, ${last_name}, ${preferred_name}, CURRENT_TIMESTAMP, ARRAY['student'], CURRENT_TIMESTAMP)
+                    RETURNING *;
+                `;
+              response.body = JSON.stringify(newUser[0]);
+            }
           } catch (err) {
             response.statusCode = 500;
+            console.log(err);
             response.body = JSON.stringify({ error: "Internal server error" });
           }
         } else {
@@ -81,6 +108,36 @@ exports.handler = async (event) => {
             }
           } catch (err) {
             response.statusCode = 500;
+            console.log(err);
+            response.body = JSON.stringify({ error: "Internal server error" });
+          }
+        } else {
+          response.statusCode = 400;
+          response.body = JSON.stringify({ error: "User email is required" });
+        }
+        break;
+      case "GET /student/get_name":
+        if (
+          event.queryStringParameters &&
+          event.queryStringParameters.user_email
+        ) {
+          const user_email = event.queryStringParameters.user_email;
+          try {
+            // Retrieve roles for the user with the provided email
+            const userData = await sqlConnection`
+                  SELECT first_name
+                  FROM "Users"
+                  WHERE user_email = ${user_email};
+                `;
+            if (userData.length > 0) {
+              response.body = JSON.stringify({ name: userData[0].first_name });
+            } else {
+              response.statusCode = 404;
+              response.body = JSON.stringify({ error: "User not found" });
+            }
+          } catch (err) {
+            response.statusCode = 500;
+            console.log(err);
             response.body = JSON.stringify({ error: "Internal server error" });
           }
         } else {
@@ -93,10 +150,12 @@ exports.handler = async (event) => {
           event.queryStringParameters != null &&
           event.queryStringParameters.email
         ) {
-          data = await sqlConnection`SELECT Courses.*
+          const email = event.queryStringParameters.email;
+          data = await sqlConnection`SELECT "Courses".*
 					FROM "Enrolments"
 					JOIN "Courses" ON "Enrolments".course_id = "Courses".course_id
-					WHERE "Enrolments".user_email = '${event.queryStringParameters.student_id}'
+					WHERE "Enrolments".user_email = ${email}
+          AND "Courses".course_student_access = TRUE
 					ORDER BY "Courses".course_name, "Courses".course_id;`;
           response.body = JSON.stringify(data);
         } else {
@@ -113,51 +172,56 @@ exports.handler = async (event) => {
           const studentEmail = event.queryStringParameters.email;
           const courseId = event.queryStringParameters.course_id;
 
-          data = await sqlConnection`
-            WITH EnrolmentData AS (
-                SELECT 
+          try {
+            data = await sqlConnection`
+                WITH StudentEnrollment AS (
+                  SELECT 
                     "Enrolments".enrolment_id
-                FROM 
+                  FROM 
                     "Enrolments"
-                JOIN 
-                    "Users" ON "Enrolments".user_email = "Users".user_email
-                JOIN 
-                    "Courses" ON "Enrolments".course_id = "Courses".course_id
-                WHERE 
-                    "Users".user_email = ${studentEmail}
-                    AND "Courses".course_id = ${courseId}
-            )
-            SELECT
-                "Enrolments".enrolment_id,
-                "Course_Modules".module_id,
-                "Course_Modules".module_name,
-                "Course_Modules".module_number,
-                "Course_Concepts".concept_id,
-                "Course_Concepts".concept_name,
-                "Student_Modules".student_module_id,
-                "Student_Modules".module_score,
-                "Student_Modules".last_accessed,
-                "Student_Modules".module_context_embedding
-            FROM
-                "EnrolmentData"
-            JOIN
-                "Course_Modules" ON "Course_Modules".course_id = ${courseId}
-            JOIN
-                "Course_Concepts" ON "Course_Modules".concept_id = "Course_Concepts".concept_id
-            LEFT JOIN
-                "Student_Modules" ON "Course_Modules".module_id = "Student_Modules".course_module_id AND "Student_Modules".enrolment_id = "EnrolmentData".enrolment_id;
-        `;
+                  WHERE 
+                    "Enrolments".user_email = ${studentEmail}
+                    AND "Enrolments".course_id = ${courseId}
+                  LIMIT 1
+                )
+                SELECT
+                  "Course_Concepts".concept_id,
+                  "Course_Concepts".concept_name,
+                  "Course_Modules".module_id,
+                  "Course_Modules".module_name,
+                  "Course_Modules".module_number,
+                  "Student_Modules".student_module_id,
+                  "Student_Modules".module_score,
+                  "Student_Modules".last_accessed,
+                  "Student_Modules".module_context_embedding
+                FROM
+                  "Course_Concepts"
+                JOIN
+                  "Course_Modules" ON "Course_Modules".concept_id = "Course_Concepts".concept_id
+                LEFT JOIN
+                  "Student_Modules" ON "Student_Modules".course_module_id = "Course_Modules".module_id
+                JOIN
+                  StudentEnrollment ON "Student_Modules".enrolment_id = StudentEnrollment.enrolment_id
+                WHERE
+                  "Course_Concepts".course_id = ${courseId}
+                ORDER BY
+                  "Course_Modules".module_number;
+              `;
 
-          const enrolmentId = data[0]?.enrolment_id;
+            const enrolmentId = data[0]?.enrolment_id;
 
-          if (enrolmentId) {
-            await sqlConnection`
-              INSERT INTO "User_Engagement_Log" (log_id, user_email, course_id, module_id, enrolment_id, timestamp, engagement_type)
-              VALUES (uuid_generate_v4(), ${studentEmail}, ${courseId}, null, ${enrolmentId}, CURRENT_TIMESTAMP, 'course access');
-            `;
+            if (enrolmentId) {
+              await sqlConnection`
+                  INSERT INTO "User_Engagement_Log" (log_id, user_email, course_id, module_id, enrolment_id, timestamp, engagement_type)
+                  VALUES (uuid_generate_v4(), ${studentEmail}, ${courseId}, null, ${enrolmentId}, CURRENT_TIMESTAMP, 'course access');
+                `;
+            }
+
+            response.body = JSON.stringify(data);
+          } catch (err) {
+            response.statusCode = 500;
+            response.body = JSON.stringify({ error: "Internal server error" });
           }
-
-          response.body = JSON.stringify(data);
         } else {
           response.statusCode = 400;
           response.body = "Invalid value";
@@ -170,39 +234,80 @@ exports.handler = async (event) => {
           event.queryStringParameters.course_id &&
           event.queryStringParameters.module_id
         ) {
-          const moduleId = event.queryStringParameters.module_id;
-          const studentEmail = event.queryStringParameters.email;
-          const courseId = event.queryStringParameters.course_id;
-          await sqlConnection`
-            UPDATE "Student_Modules"
-            SET last_accessed = CURRENT_TIMESTAMP
-            WHERE course_module_id = '${moduleId}';
-          `;
-          data = await sqlConnection`SELECT Sessions.*
-                           FROM "Sessions"
-                           JOIN "Student_Modules" ON "Sessions".student_module_id = "Student_Modules".student_module_id
-                           JOIN "Course_Modules" ON "Student_Modules".course_module_id = "Course_Modules".module_id
-                           WHERE "Course_Modules".module_id = '${moduleId}'
-                           ORDER BY "Sessions".last_accessed, "Sessions".session_id;`;
+          try {
+            const moduleId = event.queryStringParameters.module_id;
+            const studentEmail = event.queryStringParameters.email;
+            const courseId = event.queryStringParameters.course_id;
 
-          const enrolmentData = await sqlConnection`
-            SELECT Enrolments.enrolment_id
-            FROM Enrolments
-            WHERE user_email = ${studentEmail} AND course_id = ${courseId};
-          `;
+            // Get the student_module_id for the specific student and module
+            const studentModuleData = await sqlConnection`
+                SELECT student_module_id
+                FROM "Student_Modules"
+                WHERE course_module_id = ${moduleId}
+                  AND enrolment_id = (
+                    SELECT enrolment_id
+                    FROM "Enrolments"
+                    WHERE user_email = ${studentEmail} AND course_id = ${courseId}
+                  )
+              `;
 
-          const enrolmentId = enrolmentData[0]?.enrolment_id;
+            const studentModuleId = studentModuleData[0]?.student_module_id;
 
-          if (enrolmentId) {
+            if (!studentModuleId) {
+              response.statusCode = 404;
+              response.body = JSON.stringify({
+                error: "Student module not found",
+              });
+              break;
+            }
+
+            // Update the last accessed timestamp for the Student_Modules entry
             await sqlConnection`
-              INSERT INTO "User_Engagement_Log" (log_id, user_email, course_id, module_id, enrolment_id, timestamp, engagement_type)
-              VALUES (uuid_generate_v4(), ${studentEmail}, ${courseId}, ${moduleId}, ${enrolmentId}, CURRENT_TIMESTAMP, 'module access');
-            `;
+                UPDATE "Student_Modules"
+                SET last_accessed = CURRENT_TIMESTAMP
+                WHERE student_module_id = ${studentModuleId};
+              `;
+
+            // Retrieve session data specific to the student's module
+            const data = await sqlConnection`
+                SELECT "Sessions".*
+                FROM "Sessions"
+                WHERE student_module_id = ${studentModuleId}
+                ORDER BY "Sessions".last_accessed, "Sessions".session_id;
+              `;
+
+            // Get enrolment ID for the log entry
+            const enrolmentData = await sqlConnection`
+                SELECT "Enrolments".enrolment_id
+                FROM "Enrolments"
+                WHERE user_email = ${studentEmail} AND course_id = ${courseId};
+              `;
+
+            const enrolmentId = enrolmentData[0]?.enrolment_id;
+
+            // Insert into User_Engagement_Log
+            await sqlConnection`
+                INSERT INTO "User_Engagement_Log" (log_id, user_email, course_id, module_id, enrolment_id, timestamp, engagement_type)
+                VALUES (
+                  uuid_generate_v4(),
+                  ${studentEmail},
+                  ${courseId},
+                  ${moduleId},
+                  ${enrolmentId},
+                  CURRENT_TIMESTAMP,
+                  'module access'
+                )
+              `;
+
+            response.body = JSON.stringify(data);
+          } catch (err) {
+            console.log(err);
+            response.statusCode = 500;
+            response.body = JSON.stringify({ error: "Internal server error" });
           }
-          response.body = JSON.stringify(data);
         } else {
           response.statusCode = 400;
-          response.body = "Invalid value";
+          response.body = JSON.stringify({ error: "Invalid value" });
         }
         break;
       case "POST /student/create_session":
@@ -210,43 +315,85 @@ exports.handler = async (event) => {
           event.queryStringParameters != null &&
           event.queryStringParameters.module_id &&
           event.queryStringParameters.email &&
-          event.queryStringParameters.course_id
+          event.queryStringParameters.course_id &&
+          event.queryStringParameters.session_name
         ) {
           try {
             const moduleId = event.queryStringParameters.module_id;
             const studentEmail = event.queryStringParameters.email;
             const courseId = event.queryStringParameters.course_id;
-            await sqlConnection`
-            UPDATE "Student_Modules"
-            SET last_accessed = CURRENT_TIMESTAMP
-            WHERE course_module_id = '${moduleId}';
-          `;
-            data = await sqlConnection`
-              INSERT INTO "Sessions" (session_id, student_module_id, session_context_embeddings, last_accessed)
-              SELECT uuid_generate_v4(), student_module_id, ARRAY[]::float[], CURRENT_TIMESTAMP
-              FROM "Student_Modules"
-              WHERE course_module_id = '${moduleId}'
-              RETURNING *;
-            `;
+            const sessionName = event.queryStringParameters.session_name;
 
+            // Get the student_module_id for the specific student and module
+            const studentModuleData = await sqlConnection`
+                SELECT student_module_id
+                FROM "Student_Modules"
+                WHERE course_module_id = ${moduleId}
+                  AND enrolment_id = (
+                    SELECT enrolment_id
+                    FROM "Enrolments"
+                    WHERE user_email = ${studentEmail} AND course_id = ${courseId}
+                  )
+              `;
+
+            const studentModuleId = studentModuleData[0]?.student_module_id;
+
+            if (!studentModuleId) {
+              response.statusCode = 404;
+              response.body = JSON.stringify({
+                error: "Student module not found",
+              });
+              break;
+            }
+
+            // Update last_accessed for the Student_Module entry
+            await sqlConnection`
+                UPDATE "Student_Modules"
+                SET last_accessed = CURRENT_TIMESTAMP
+                WHERE student_module_id = ${studentModuleId}
+              `;
+
+            // Insert a new session with the session_name
+            const sessionData = await sqlConnection`
+                INSERT INTO "Sessions" (session_id, student_module_id, session_name, session_context_embeddings, last_accessed)
+                VALUES (
+                  uuid_generate_v4(),
+                  ${studentModuleId},
+                  ${sessionName},
+                  ARRAY[]::float[],
+                  CURRENT_TIMESTAMP
+                )
+                RETURNING *;
+              `;
+
+            // Insert an entry into the User_Engagement_Log
             const enrolmentData = await sqlConnection`
-              SELECT "Enrolments".enrolment_id
-              FROM "Enrolments"
-              WHERE user_email = ${studentEmail} AND course_id = ${courseId};
-            `;
+                SELECT enrolment_id
+                FROM "Enrolments"
+                WHERE user_email = ${studentEmail} AND course_id = ${courseId}
+              `;
 
             const enrolmentId = enrolmentData[0]?.enrolment_id;
 
             if (enrolmentId) {
               await sqlConnection`
-                INSERT INTO "User_Engagement_Log" (log_id, user_email, course_id, module_id, enrolment_id, timestamp, engagement_type)
-                VALUES (uuid_generate_v4(), ${studentEmail}, ${courseId}, ${moduleId}, ${enrolmentId}, CURRENT_TIMESTAMP, 'session creation');
-              `;
+                  INSERT INTO "User_Engagement_Log" (log_id, user_email, course_id, module_id, enrolment_id, timestamp, engagement_type)
+                  VALUES (
+                    uuid_generate_v4(),
+                    ${studentEmail},
+                    ${courseId},
+                    ${moduleId},
+                    ${enrolmentId},
+                    CURRENT_TIMESTAMP,
+                    'session creation'
+                  )
+                `;
             }
 
-            response.body = JSON.stringify(data);
+            response.body = JSON.stringify(sessionData);
           } catch (err) {
             response.statusCode = 500;
+            console.log(err);
             response.body = JSON.stringify({ error: "Internal server error" });
           }
         } else {
@@ -266,40 +413,96 @@ exports.handler = async (event) => {
           const studentEmail = event.queryStringParameters.email;
           const courseId = event.queryStringParameters.course_id;
           const moduleId = event.queryStringParameters.module_id;
-          await sqlConnection`
-            UPDATE "Student_Modules"
-            SET last_accessed = CURRENT_TIMESTAMP
-            WHERE student_module_id = (
-              SELECT student_module_id
-              FROM "Sessions"
-              WHERE session_id = '${session_id}'
-            );
-          `;
-          data = await sqlConnection`
-              DELETE FROM "Sessions"
-              WHERE session_id = '${session_id}'
-              RETURNING *;
-            `;
-          const enrolmentData = await sqlConnection`
-            SELECT "Enrolments".enrolment_id
-            FROM "Enrolments"
-            WHERE user_email = ${studentEmail} AND course_id = ${courseId};
-          `;
 
-          const enrolmentId = enrolmentData[0]?.enrolment_id;
-
-          if (enrolmentId) {
+          try {
+            // Update last_accessed for the corresponding Student_Module entry
             await sqlConnection`
-              INSERT INTO "User_Engagement_Log" (log_id, user_email, course_id, module_id, enrolment_id, timestamp, engagement_type)
-              VALUES (uuid_generate_v4(), ${studentEmail}, ${courseId}, ${moduleId}, ${enrolmentId}, CURRENT_TIMESTAMP, 'session deletion');
-            `;
+                UPDATE "Student_Modules"
+                SET last_accessed = CURRENT_TIMESTAMP
+                WHERE student_module_id = (
+                  SELECT student_module_id
+                  FROM "Sessions"
+                  WHERE session_id = ${sessionId}
+                );
+              `;
+
+            // Delete the session and get the result
+            const deleteResult = await sqlConnection`
+                DELETE FROM "Sessions"
+                WHERE session_id = ${sessionId}
+                RETURNING *;
+              `;
+
+            // Get the enrolment ID
+            const enrolmentData = await sqlConnection`
+                SELECT "Enrolments".enrolment_id
+                FROM "Enrolments"
+                WHERE user_email = ${studentEmail} AND course_id = ${courseId};
+              `;
+
+            // Check if enrolmentData is defined and has rows
+            if (!enrolmentData || !enrolmentData.length) {
+              response.statusCode = 404;
+              response.body = JSON.stringify({ error: "Enrolment not found" });
+              break;
+            }
+
+            const enrolmentId = enrolmentData[0]?.enrolment_id;
+
+            // Insert an entry into the User_Engagement_Log if enrolment exists
+            if (enrolmentId) {
+              await sqlConnection`
+                  INSERT INTO "User_Engagement_Log" (log_id, user_email, course_id, module_id, enrolment_id, timestamp, engagement_type)
+                  VALUES (uuid_generate_v4(), ${studentEmail}, ${courseId}, ${moduleId}, ${enrolmentId}, CURRENT_TIMESTAMP, 'session deletion');
+                `;
+            }
+
+            response.body = JSON.stringify({ success: "session deleted" });
+          } catch (err) {
+            response.statusCode = 500;
+            console.log(err);
+            response.body = JSON.stringify({ error: "Internal server error" });
           }
-          response.body = JSON.stringify(data.rows[0]);
         } else {
-          response = {
-            statusCode: 400,
-            body: JSON.stringify({ error: "session_id is required" }),
-          };
+          response.statusCode = 400;
+          response.body = JSON.stringify({
+            error: "session_id, email, course_id, and module_id are required",
+          });
+        }
+        break;
+      case "GET /student/get_messages":
+        if (
+          event.queryStringParameters != null &&
+          event.queryStringParameters.session_id
+        ) {
+          try {
+            const sessionId = event.queryStringParameters.session_id;
+
+            // Query to get all messages in the given session, sorted by time_sent in ascending order (oldest to newest)
+            const data = await sqlConnection`
+                      SELECT *
+                      FROM "Messages"
+                      WHERE session_id = ${sessionId}
+                      ORDER BY time_sent ASC;
+                  `;
+
+            if (data.length > 0) {
+              response.body = JSON.stringify(data);
+              response.statusCode = 200;
+            } else {
+              response.body = JSON.stringify({
+                message: "No messages found for this session.",
+              });
+              response.statusCode = 404;
+            }
+          } catch (err) {
+            response.statusCode = 500;
+            console.log(err);
+            response.body = JSON.stringify({ error: "Internal server error" });
+          }
+        } else {
+          response.statusCode = 400;
+          response.body = JSON.stringify({ error: "session_id is required" });
         }
         break;
       case "POST /student/create_message":
@@ -316,39 +519,46 @@ exports.handler = async (event) => {
           const studentEmail = event.queryStringParameters.email;
           const courseId = event.queryStringParameters.course_id;
           const moduleId = event.queryStringParameters.module_id;
+          console.log("message", message_content);
+          console.log("session", sessionId);
+          console.log("email", studentEmail);
+          console.log("course", courseId);
+          console.log("module", moduleId);
 
           try {
-            // Insert the new message into Messages table
+            // Insert the new message into the Messages table with a generated UUID for message_id
             const messageData = await sqlConnection`
-                INSERT INTO "Messages" (session_id, student_sent, message_content, time_sent)
-                VALUES (${sessionId}, true, ${message_content}, CURRENT_TIMESTAMP)
-                RETURNING *;
-              `;
+                      INSERT INTO "Messages" (message_id, session_id, student_sent, message_content, time_sent)
+                      VALUES (uuid_generate_v4(), ${sessionId}, true, ${message_content}, CURRENT_TIMESTAMP)
+                      RETURNING *;
+                    `;
 
-            // Update the last_accessed field in Sessions table
+            // Update the last_accessed field in the Sessions table
             await sqlConnection`
-                UPDATE "Sessions"
-                SET last_accessed = CURRENT_TIMESTAMP
-                WHERE session_id = ${sessionId};
-              `;
+                      UPDATE "Sessions"
+                      SET last_accessed = CURRENT_TIMESTAMP
+                      WHERE session_id = ${sessionId};
+                    `;
+
             const enrolmentData = await sqlConnection`
-              SELECT "Enrolments".enrolment_id
-              FROM "Enrolments"
-              WHERE user_email = ${studentEmail} AND course_id = ${courseId};
-            `;
+                      SELECT "Enrolments".enrolment_id
+                      FROM "Enrolments"
+                      WHERE user_email = ${studentEmail} AND course_id = ${courseId};
+                    `;
 
             const enrolmentId = enrolmentData[0]?.enrolment_id;
 
             if (enrolmentId) {
               await sqlConnection`
-                INSERT INTO "User_Engagement_Log" (log_id, user_email, course_id, module_id, enrolment_id, timestamp, engagement_type)
-                VALUES (uuid_generate_v4(), ${studentEmail}, ${courseId}, ${moduleId}, ${enrolmentId}, CURRENT_TIMESTAMP, 'message creation');
-              `;
+                          INSERT INTO "User_Engagement_Log" (log_id, user_email, course_id, module_id, enrolment_id, timestamp, engagement_type)
+                          VALUES (uuid_generate_v4(), ${studentEmail}, ${courseId}, ${moduleId}, ${enrolmentId}, CURRENT_TIMESTAMP, 'message creation');
+                        `;
             }
 
-            response.body = JSON.stringify(messageData[0]);
+            response.body = JSON.stringify(messageData);
           } catch (err) {
             response.statusCode = 500;
+            console.log(err);
             response.body = JSON.stringify({ error: "Internal server error" });
           }
         } else {
@@ -358,66 +568,298 @@ exports.handler = async (event) => {
           });
         }
         break;
-      // case "PUT /student/edit_message":
-      //   if (
-      //     event.queryStringParameters != null &&
-      //     event.queryStringParameters.message_id &&
-      //     event.body
-      //   ) {
-      //     const { message_id } = event.queryStringParameters;
-      //     const { message_content } = JSON.parse(event.body);
+      case "POST /student/create_ai_message":
+        if (
+          event.queryStringParameters != null &&
+          event.queryStringParameters.session_id &&
+          event.queryStringParameters.email &&
+          event.queryStringParameters.course_id &&
+          event.queryStringParameters.module_id &&
+          event.body
+        ) {
+          const sessionId = event.queryStringParameters.session_id;
+          const { message_content } = JSON.parse(event.body);
+          const studentEmail = event.queryStringParameters.email;
+          const courseId = event.queryStringParameters.course_id;
+          const moduleId = event.queryStringParameters.module_id;
+          console.log("AI message", message_content);
+          console.log("session", sessionId);
+          console.log("email", studentEmail);
+          console.log("course", courseId);
+          console.log("module", moduleId);
 
-      //     // Start a transaction
-      //     await sqlConnection.beginTransaction();
+          try {
+            // Insert the new AI message into the Messages table with a generated UUID for message_id
+            const messageData = await sqlConnection`
+                      INSERT INTO "Messages" (message_id, session_id, student_sent, message_content, time_sent)
+                      VALUES (uuid_generate_v4(), ${sessionId}, false, ${message_content}, CURRENT_TIMESTAMP)
+                      RETURNING *;
+                  `;
 
-      //     try {
-      //       const currentMessageData = await sqlConnection`
-      //         SELECT session_id, message_content
-      //         FROM "Messages"
-      //         WHERE message_id = ${message_id}
-      //         FOR UPDATE;
-      //       `;
+            // Update the last_accessed field in the Sessions table
+            await sqlConnection`
+                      UPDATE "Sessions"
+                      SET last_accessed = CURRENT_TIMESTAMP
+                      WHERE session_id = ${sessionId};
+                  `;
 
-      //       // Update the message content in Messages table
-      //       const updatedMessageData = await sqlConnection`
-      //             UPDATE "Messages"
-      //             SET message_content = ${message_content}
-      //             WHERE message_id = ${message_id}
-      //             RETURNING *;
-      //           `;
+            const enrolmentData = await sqlConnection`
+                      SELECT "Enrolments".enrolment_id
+                      FROM "Enrolments"
+                      WHERE user_email = ${studentEmail} AND course_id = ${courseId};
+                  `;
 
-      //       // Get session_id from the current message data
-      //       const session_id = currentMessageData[0].session_id;
+            const enrolmentId = enrolmentData[0]?.enrolment_id;
 
-      //       // Update the last_accessed field in Sessions table
-      //       await sqlConnection`
-      //         UPDATE "Sessions"
-      //         SET last_accessed = CURRENT_TIMESTAMP
-      //         WHERE session_id = ${session_id};
-      //       `;
+            if (enrolmentId) {
+              await sqlConnection`
+                          INSERT INTO "User_Engagement_Log" (log_id, user_email, course_id, module_id, enrolment_id, timestamp, engagement_type)
+                          VALUES (uuid_generate_v4(), ${studentEmail}, ${courseId}, ${moduleId}, ${enrolmentId}, CURRENT_TIMESTAMP, 'AI message creation');
+                      `;
+            }
 
-      //       response.body = JSON.stringify(updatedMessageData[0]);
-      //     } catch (err) {
-      //       // Rollback the transaction in case of error
-      //       await sqlConnection.rollback();
-      //       response.statusCode = 500;
-      //       response.body = JSON.stringify({ error: "Internal server error" });
-      //     }
-      //   } else {
-      //     response.statusCode = 400;
-      //     response.body = JSON.stringify({
-      //       error: "message_id and message_content are required",
-      //     });
-      //   }
-      //   break;
+            response.body = JSON.stringify(messageData);
+          } catch (err) {
+            response.statusCode = 500;
+            console.log(err);
+            response.body = JSON.stringify({ error: "Internal server error" });
+          }
+        } else {
+          response.statusCode = 400;
+          response.body = JSON.stringify({
+            error: "session_id and message_content are required",
+          });
+        }
+        break;
+      case "POST /student/enroll_student":
+        if (
+          event.queryStringParameters != null &&
+          event.queryStringParameters.student_email &&
+          event.queryStringParameters.course_access_code
+        ) {
+          try {
+            const { student_email, course_access_code } =
+              event.queryStringParameters;
 
+            // Retrieve the course_id using the access code
+            const courseResult = await sqlConnection`
+                      SELECT course_id
+                      FROM "Courses"
+                      WHERE course_access_code = ${course_access_code}
+                      AND course_student_access = TRUE
+                      LIMIT 1;
+                  `;
+
+            if (courseResult.length === 0) {
+              response.statusCode = 404;
+              response.body = JSON.stringify({
+                error: "Invalid course access code or course not available.",
+              });
+              break;
+            }
+
+            const course_id = courseResult[0].course_id;
+
+            // Insert enrollment into Enrolments table
+            const enrollmentResult = await sqlConnection`
+                      INSERT INTO "Enrolments" (enrolment_id, user_email, course_id, enrolment_type, time_enroled)
+                      VALUES (uuid_generate_v4(), ${student_email}, ${course_id}, 'student', CURRENT_TIMESTAMP)
+                      ON CONFLICT (course_id, user_email) DO NOTHING
+                      RETURNING enrolment_id;
+                  `;
+
+            const enrolment_id = enrollmentResult[0]?.enrolment_id;
+            console.log(enrolment_id);
+
+            if (enrolment_id) {
+              // Retrieve all module IDs for the course
+              const modulesResult = await sqlConnection`
+                          SELECT module_id
+                          FROM "Course_Modules"
+                          WHERE concept_id IN (
+                              SELECT concept_id
+                              FROM "Course_Concepts"
+                              WHERE course_id = ${course_id}
+                          );
+                      `;
+              console.log(modulesResult);
+
+              // Insert a record into Student_Modules for each module
+              const studentModuleInsertions = modulesResult.map((module) => {
+                return sqlConnection`
+                              INSERT INTO "Student_Modules" (student_module_id, course_module_id, enrolment_id, module_score, last_accessed, module_context_embedding)
+                              VALUES (uuid_generate_v4(), ${module.module_id}, ${enrolment_id}, 0, CURRENT_TIMESTAMP, NULL);
+                          `;
+              });
+
+              // Execute all insertions
+              await Promise.all(studentModuleInsertions);
+              console.log(studentModuleInsertions);
+            }
+
+            response.body = JSON.stringify({
+              message: "Student enrolled and modules created successfully.",
+            });
+          } catch (err) {
+            response.statusCode = 500;
+            console.log(err);
+            response.body = JSON.stringify({ error: "Internal server error" });
+          }
+        } else {
+          response.statusCode = 400;
+          response.body = JSON.stringify({
+            error:
+              "student_email and course_access_code query parameters are required",
+          });
+        }
+        break;
+      case "GET /session/messages":
+        if (
+          event.queryStringParameters != null &&
+          event.queryStringParameters.session_id
+        ) {
+          try {
+            const sessionId = event.queryStringParameters.session_id;
+
+            // Fetch all messages in the specified session
+            const messages = await sqlConnection`
+                      SELECT *
+                      FROM "Messages"
+                      WHERE "session_id" = ${sessionId}
+                      ORDER BY "time_sent" ASC;
+                  `;
+
+            response.body = JSON.stringify(messages);
+          } catch (err) {
+            console.log(err);
+            response.statusCode = 500;
+            response.body = JSON.stringify({ error: "Internal server error" });
+          }
+        } else {
+          response.statusCode = 400;
+          response.body = JSON.stringify({
+            error: "session_id query parameter is required",
+          });
+        }
+        break;
+      case "PUT /student/update_session_name":
+        if (
+          event.queryStringParameters != null &&
+          event.queryStringParameters.session_id &&
+          event.body
+        ) {
+          try {
+            const { session_id } = event.queryStringParameters;
+            const { session_name } = JSON.parse(event.body);
+
+            // Update the session name
+            const updateResult = await sqlConnection`
+                UPDATE "Sessions"
+                SET session_name = ${session_name}
+                WHERE session_id = ${session_id}
+                RETURNING *;
+              `;
+
+            if (updateResult.length === 0) {
+              response.statusCode = 404;
+              response.body = JSON.stringify({ error: "Session not found" });
+              break;
+            }
+
+            response.statusCode = 200;
+            response.body = JSON.stringify(updateResult[0]);
+          } catch (err) {
+            console.error(err);
+            response.statusCode = 500;
+            response.body = JSON.stringify({ error: "Internal server error" });
+          }
+        } else {
+          response.statusCode = 400;
+          response.body = JSON.stringify({ error: "Invalid value" });
+        }
+        break;
+      case "POST /student/update_module_score":
+        if (
+          event.queryStringParameters != null &&
+          event.queryStringParameters.module_id &&
+          event.queryStringParameters.student_email &&
+          event.queryStringParameters.course_id &&
+          event.queryStringParameters.llm_verdict
+        ) {
+          try {
+            const moduleId = event.queryStringParameters.module_id;
+            const studentEmail = event.queryStringParameters.student_email;
+            const courseId = event.queryStringParameters.course_id;
+            const llmVerdict =
+              event.queryStringParameters.llm_verdict === "true"; // Convert to boolean
+
+            // Get the student_module_id for the specific student and module
+            const studentModuleData = await sqlConnection`
+                SELECT student_module_id, module_score
+                FROM "Student_Modules"
+                WHERE course_module_id = ${moduleId}
+                  AND enrolment_id = (
+                    SELECT enrolment_id
+                    FROM "Enrolments"
+                    WHERE user_email = ${studentEmail} AND course_id = ${courseId}
+                  )
+              `;
+
+            const studentModuleId = studentModuleData[0]?.student_module_id;
+            const currentScore = studentModuleData[0]?.module_score;
+
+            if (!studentModuleId) {
+              response.statusCode = 404;
+              response.body = JSON.stringify({
+                error: "Student module not found",
+              });
+              break;
+            }
+
+            // If llm_verdict is false and the current score is 100, just pass without updating
+            if (!llmVerdict && currentScore === 100) {
+              response.statusCode = 200;
+              response.body = JSON.stringify({
+                message: "No changes made. Module score is already 100.",
+              });
+              break;
+            }
+
+            // Determine the new score based on llm_verdict
+            const newScore = llmVerdict ? 100 : 0;
+
+            // Update the module score for the student
+            await sqlConnection`
+                UPDATE "Student_Modules"
+                SET module_score = ${newScore}
+                WHERE student_module_id = ${studentModuleId}
+              `;
+
+            response.statusCode = 200;
+            response.body = JSON.stringify({
+              message: "Module score updated successfully.",
+            });
+          } catch (err) {
+            console.log(err);
+            response.statusCode = 500;
+            response.body = JSON.stringify({ error: "Internal server error" });
+          }
+        } else {
+          response.statusCode = 400;
+          response.body = JSON.stringify({
+            error: "Invalid query parameters.",
+          });
+        }
+        break;
       default:
         throw new Error(`Unsupported route: "${pathData}"`);
     }
   } catch (error) {
     response.statusCode = 400;
+    console.log(error);
     response.body = JSON.stringify(error.message);
   }
+  console.log(response);
 
   return response;
 };

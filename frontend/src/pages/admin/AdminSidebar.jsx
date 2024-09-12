@@ -1,4 +1,4 @@
-import React from "react";
+// MUI
 import {
   Drawer,
   List,
@@ -11,12 +11,12 @@ import {
 import SchoolIcon from "@mui/icons-material/School";
 import LibraryBooksIcon from "@mui/icons-material/LibraryBooks";
 import CreateIcon from "@mui/icons-material/Create";
-import { useNavigate } from "react-router-dom";
 
-// TODO add onclick to route to different pages
-const AdminSidebar = () => {
-  const navigate = useNavigate();
-
+const AdminSidebar = ({
+  setSelectedComponent,
+  setSelectedInstructor,
+  setSelectedCourse,
+}) => {
   return (
     <Drawer
       variant="permanent"
@@ -29,21 +29,42 @@ const AdminSidebar = () => {
     >
       <Box sx={{ overflow: "auto", paddingTop: 10 }}>
         <List>
-          <ListItem button>
+          <ListItem
+            button
+            onClick={() => {
+              setSelectedInstructor(null);
+              setSelectedCourse(null);
+              setSelectedComponent("AdminInstructors");
+            }}
+          >
             <ListItemIcon>
               <SchoolIcon />
             </ListItemIcon>
             <ListItemText primary="Instructors" />
           </ListItem>
           <Divider />
-          <ListItem button>
+          <ListItem
+            button
+            onClick={() => {
+              setSelectedInstructor(null);
+              setSelectedCourse(null);
+              setSelectedComponent("AdminCourses");
+            }}
+          >
             <ListItemIcon>
               <LibraryBooksIcon />
             </ListItemIcon>
             <ListItemText primary="Courses" />
           </ListItem>
           <Divider />
-          <ListItem button>
+          <ListItem
+            button
+            onClick={() => {
+              setSelectedInstructor(null);
+              setSelectedCourse(null);
+              setSelectedComponent("AdminCreateCourse");
+            }}
+          >
             <ListItemIcon>
               <CreateIcon />
             </ListItemIcon>

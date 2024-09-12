@@ -1,7 +1,7 @@
 import "./App.css";
 // amplify
 import { Amplify } from "aws-amplify";
-import { getCurrentUser, fetchAuthSession } from "aws-amplify/auth";
+import { getCurrentUser, fetchAuthSession, decodeJWT } from "aws-amplify/auth";
 import "@aws-amplify/ui-react/styles.css";
 // react-router
 import {
@@ -17,10 +17,7 @@ import StudentHomepage from "./pages/student/StudentHomepage";
 import StudentChat from "./pages/student/StudentChat";
 import AdminHomepage from "./pages/admin/AdminHomepage";
 import InstructorHomepage from "./pages/instructor/InstructorHomepage";
-// functions
-import { useAuthentication } from "./functions/useAuth";
-
-export const AuthContext = createContext("user");
+import CourseView from "./pages/student/CourseView";
 
 Amplify.configure({
   API: {
@@ -44,55 +41,27 @@ function App() {
   const [user, setUser] = useState(null);
   const [userGroup, setUserGroup] = useState(null);
   const [userInfo, setUserInfo] = useState({});
-
-  const { authuser, credentials } = useAuthentication();
-  console.log("test useAuth credentials", credentials);
-  console.log("test useAuth user", authuser);
-  //get user info and render page based on role
-
-  // useEffect(() => {
-  //   async function getUserInfo(email) {
-  //     try {
-  //       const userInformation = await getUser(email);
-  //       setUserInfo(userInformation);
-  //       console.log("user info", userInformation);
-  //     } catch (error) {
-  //       console.log("Error getting user:", error);
-  //     }
-  //   }
-
-  //   async function getCognitoUser() {
-  //     try {
-  //       const currentUser = await getCurrentUser();
-  //       setUser(currentUser);
-  //       console.log(currentUser.signInDetails.loginId, "is signed in");
-  //       getUserInfo(currentUser.signInDetails.loginId);
-  //       <Navigate to="/home" />;
-  //     } catch (error) {
-  //       setUser(null);
-  //       console.log("Error getting user:", error);
-  //       <Navigate to="/" />;
-  //     }
-  //   }
-
-  //   getCognitoUser();
-  // }, []);
+  const [course, setCourse] = useState(null);
+  const [module, setModule] = useState(null);
 
   useEffect(() => {
-    const fetchAuthData = async () => {
-      try {
-        const { tokens } = await fetchAuthSession();
-        if (tokens && tokens.accessToken) {
-          const group = tokens.accessToken.payload["cognito:groups"];
-          setUser(tokens.accessToken.payload);
-          setUserGroup(group || []);
-          console.log("User belongs to following groups: " + group);
-          // console.log("user", user);
-          console.log(userGroup);
-        }
-      } catch (error) {
-        console.log(error);
-      }
+    const fetchAuthData = () => {
+      fetchAuthSession()
+        .then(({ tokens }) => {
+          if (tokens && tokens.accessToken) {
+            const group = tokens.accessToken.payload["cognito:groups"];
+            setUser(tokens.accessToken.payload);
+            setUserGroup(group || []);
+            console.log(
+              "auth token payload",
+              tokens.accessToken.payload["cognito:groups"]
+            );
+            console.log(userGroup);
+          }
+        })
+        .catch((error) => {
+          console.log(error);
+        });
     };
 
     fetchAuthData();
@@ -107,7 +76,7 @@ function App() {
     } else if (userGroup && userGroup.includes("instructor")) {
       return <InstructorHomepage />;
     } else if (userGroup && userGroup.includes("student")) {
-      return <StudentHomepage />;
+      return <StudentHomepage setCourse={setCourse} />;
     } else {
       return <Login />;
     }
@@ -115,16 +84,32 @@ function App() {
 
   return (
     <Router>
-      <AuthContext.Provider value={{ authuser, credentials }}>
-        <Routes>
-          <Route
-            path="/"
-            element={user ? <Navigate to="/home" /> : <Login />}
-          />
-          <Route path="/chat" element={<StudentChat />} />
-          <Route path="/home" element={getHomePage()} />
-        </Routes>
-      </AuthContext.Provider>
+      <Routes>
+        <Route path="/" element={user ? <Navigate to="/home" /> : <Login />} />
+        <Route
+          path="/student_chat/*"
+          element={
+            <StudentChat
+              course={course}
+              module={module}
+              setModule={setModule}
+              setCourse={setCourse}
+            />
+          }
+        />
+        <Route
+          path="/student_course/*"
+          element={
+            <CourseView
+              course={course}
+              setModule={setModule}
+              setCourse={setCourse}
+            />
+          }
+        />
+        <Route path="/home" element={getHomePage()} />
+        <Route path="/course/*" element={<InstructorHomepage />} />
+      </Routes>
     </Router>
   );
 }

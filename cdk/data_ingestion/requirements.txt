@@ -1,0 +1,12 @@
+boto3
+botocore
+langchain
+langchain-core
+langchain-experimental
+langchain-postgres
+python-dotenv
+sqlalchemy
+Pillow
+pymupdf
+psycopg[binary,pool]
+psycopg2-binary

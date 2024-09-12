@@ -1,0 +1,135 @@
+import logging
+import boto3
+from typing import Dict, Optional
+import psycopg2
+
+from langchain_community.embeddings import BedrockEmbeddings
+from langchain_postgres import PGVector
+from langchain.retrievers.multi_vector import MultiVectorRetriever
+from langchain.indexes import SQLRecordManager
+
+from processing.documents import process_documents
+from helpers.store import PostgresByteStore
+s3 = boto3.client('s3')
+
+# Setup logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+def get_vectorstore(
+    collection_name: str, 
+    embeddings: BedrockEmbeddings, 
+    dbname: str, 
+    user: str, 
+    password: str, 
+    host: str, 
+    port: int
+) -> Optional[PGVector]:
+    """
+    Initialize and return a PGVector instance.
+    
+    Args:
+    collection_name (str): The name of the collection.
+    embeddings (BedrockEmbeddings): The embeddings instance.
+    dbname (str): The name of the database.
+    user (str): The database user.
+    password (str): The database password.
+    host (str): The database host.
+    port (int): The database port.
+    
+    Returns:
+    Optional[PGVector]: The initialized PGVector instance, or None if an error occurred.
+    """
+    connection_params = {
+        'dbname': dbname,
+        'user': user,
+        'password': password,
+        'host': host,
+        'port': port
+    }
+
+    connection_string = " ".join([f"{key}={value}" for key, value in connection_params.items()])
+
+    try:
+        logger.info("Connecting to the database")
+        connection = psycopg2.connect(connection_string)
+        logger.info("Connected to the database")
+    except Exception as e:
+        logger.error(f"Error connecting to the database: {e}")
+        return None
+
+    try:
+        connection_string2 = (
+            f"postgresql+psycopg://{user}:{password}@{host}:{port}/{dbname}"
+        )
+
+        logger.info("Initializing the VectorStore")
+        vectorstore = PGVector(
+            embeddings=embeddings,
+            collection_name=collection_name,
+            connection=connection_string2,
+            use_jsonb=True
+        )
+
+        logger.info("VectorStore initialized")
+        return vectorstore, connection_string2
+
+    except Exception as e:
+        logger.error(f"Error initializing vector store: {e}")
+        return None
+    
+def store_course_data(
+    bucket: str, 
+    course: str, 
+    vectorstore_config_dict: Dict[str, str], 
+    embeddings: BedrockEmbeddings
+) -> None:
+    """
+    Store course data from an S3 bucket into the vectorstore.
+    
+    Args:
+    bucket (str): The name of the S3 bucket.
+    course (str): The course name/folder in the S3 bucket.
+    vectorstore_config_dict (Dict[str, str]): The configuration dictionary for the vectorstore.
+    embeddings (BedrockEmbeddings): The embeddings instance.
+    """
+    vectorstore, connection_string = get_vectorstore(
+        collection_name=vectorstore_config_dict['collection_name'],
+        embeddings=embeddings,
+        dbname=vectorstore_config_dict['dbname'],
+        user=vectorstore_config_dict['user'],
+        password=vectorstore_config_dict['password'],
+        host=vectorstore_config_dict['host'],
+        port=int(vectorstore_config_dict['port'])
+    )
+    
+    
+    
+    if vectorstore:
+        store = PostgresByteStore(connection_string, vectorstore_config_dict['collection_name'])
+        
+        retriever = MultiVectorRetriever(
+            vectorstore=vectorstore, 
+            docstore=store, 
+            id_key="doc_id",
+        )
+        
+        # define record manager
+        namespace = f"pgvector/{vectorstore_config_dict['collection_name']}"
+        record_manager = SQLRecordManager(
+            namespace, db_url=connection_string
+        )
+        record_manager.create_schema()
+
+    if not vectorstore:
+        logger.error("VectorStore could not be initialized")
+        return
+
+    # Process all files in the "documents" folder
+    process_documents(
+        bucket=bucket,
+        course=course,
+        vectorstore=vectorstore,
+        embeddings=embeddings,
+        record_manager=record_manager
+    )

@@ -27,14 +27,17 @@ const TypingIndicator = () => (
 );
 
 function titleCase(str) {
-  if (typeof str !== 'string') {
+  if (typeof str !== "string") {
     return str;
   }
-  return str.toLowerCase().split(' ').map(function(word) {
-    return word.charAt(0).toUpperCase() + word.slice(1);
-  }).join(' ');
+  return str
+    .toLowerCase()
+    .split(" ")
+    .map(function (word) {
+      return word.charAt(0).toUpperCase() + word.slice(1);
+    })
+    .join(" ");
 }
-
 
 const StudentChat = ({ course, module, setModule, setCourse }) => {
   const textareaRef = useRef(null);
@@ -496,6 +499,13 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
 
       if (response.ok) {
         const data = await response.json();
+        setMessages((prevMessages) => {
+          if (prevMessages.length >= 2) {
+            return prevMessages.slice(0, -2); 
+          } else {
+            return [];
+          }
+        });
       } else {
         console.error("Failed to delete message:", response.statusText);
       }

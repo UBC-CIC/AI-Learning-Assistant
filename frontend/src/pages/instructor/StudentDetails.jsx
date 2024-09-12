@@ -1,7 +1,8 @@
 import { useEffect, useState, useRef } from "react";
-import { useParams, useLocation, useNavigate } from "react-router-dom";
+import { useParams, useLocation } from "react-router-dom";
 import { fetchAuthSession, fetchUserAttributes } from "aws-amplify/auth";
 import { toast, ToastContainer } from "react-toastify";
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import "react-toastify/dist/ReactToastify.css";
 import PageContainer from "../Container";
 import {
@@ -12,7 +13,12 @@ import {
   TextField,
   Button,
   Paper,
+  IconButton
 } from "@mui/material";
+
+const handleBackClick = () => {
+  window.history.back();
+};
 
 const formatMessages = (messages) => {
   // Helper function to format date as YY/MM/DD
@@ -61,11 +67,8 @@ const StudentDetails = () => {
   const location = useLocation();
   const { course_id, student } = location.state;
   const [unenroll, setUnenroll] = useState(false);
-  const [chatHistory, setChatHistory] = useState(`
-  loading...
-  `);
+  const [chatHistory, setChatHistory] = useState(`loading...`);
   const textFieldRef = useRef(null);
-  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchHistory = async () => {
@@ -182,6 +185,12 @@ const StudentDetails = () => {
   return (
     <>
       <PageContainer>
+        <IconButton
+          onClick={handleBackClick}
+          sx={{ position: "absolute", top: 44, left: 30 }}
+        >
+          <ArrowBackIcon />
+        </IconButton>
         <Paper
           sx={{
             width: "100%",
@@ -191,7 +200,7 @@ const StudentDetails = () => {
             overflowY: "scroll",
           }}
         >
-          <Box mb={2} sx={{ flexGrow: 1, p: 3, textAlign: "left" }}>
+          <Box mb={2} sx={{ flexGrow: 1, p: 3, textAlign: "left", mt: 6 }}>
             <Typography variant="h5">Student Name: {studentId}</Typography>
             <Divider sx={{ my: 2 }} />
             <Typography variant="body1">Email: {student.email}</Typography>

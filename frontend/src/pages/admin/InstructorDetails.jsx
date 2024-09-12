@@ -15,6 +15,11 @@ import {
   Chip,
   Grid,
   Divider,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  DialogContentText
 } from "@mui/material";
 
 import { toast, ToastContainer } from "react-toastify";
@@ -30,12 +35,16 @@ const MenuProps = {
 };
 
 function titleCase(str) {
-  if (typeof str !== 'string') {
+  if (typeof str !== "string") {
     return str;
   }
-  return str.toLowerCase().split(' ').map(function(word) {
-    return word.charAt(0).toUpperCase() + word.slice(1);
-  }).join(' ');
+  return str
+    .toLowerCase()
+    .split(" ")
+    .map(function (word) {
+      return word.charAt(0).toUpperCase() + word.slice(1);
+    })
+    .join(" ");
 }
 
 const InstructorDetails = ({ instructorData, onBack }) => {
@@ -44,6 +53,7 @@ const InstructorDetails = ({ instructorData, onBack }) => {
   const [allCourses, setAllCourses] = useState([]);
   const [courseLoading, setCourseLoading] = useState(true);
   const [activeCourseLoading, setActiveCourseLoading] = useState(true);
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   useEffect(() => {
     const fetchCourses = async () => {
       try {
@@ -108,6 +118,18 @@ const InstructorDetails = ({ instructorData, onBack }) => {
   if (!instructor) {
     return <Typography>No data found for this instructor.</Typography>;
   }
+  const handleConfirmDeleteOpen = () => {
+    setConfirmDeleteOpen(true);
+  };
+
+  const handleConfirmDeleteClose = () => {
+    setConfirmDeleteOpen(false);
+  };
+
+  const handleConfirmDelete = async () => {
+    handleConfirmDeleteClose();
+    handleDelete();
+  };
 
   const handleCoursesChange = (event) => {
     const newCourses = event.target.value;
@@ -314,7 +336,9 @@ const InstructorDetails = ({ instructorData, onBack }) => {
                   {selected.map((value) => (
                     <Chip
                       key={value.course_id}
-                      label={`${value.course_department.toUpperCase()} ${value.course_number}`}
+                      label={`${value.course_department.toUpperCase()} ${
+                        value.course_number
+                      }`}
                     />
                   ))}
                 </Box>
@@ -323,7 +347,8 @@ const InstructorDetails = ({ instructorData, onBack }) => {
             >
               {allCourses.map((course) => (
                 <MenuItem key={course.course_id} value={course}>
-                  {course.course_department.toUpperCase()} {course.course_number}
+                  {course.course_department.toUpperCase()}{" "}
+                  {course.course_number}
                 </MenuItem>
               ))}
             </Select>
@@ -343,7 +368,7 @@ const InstructorDetails = ({ instructorData, onBack }) => {
             <Button
               variant="contained"
               color="error"
-              onClick={handleDelete}
+              onClick={handleConfirmDeleteOpen}
               sx={{ width: "30%", mx: "right", mr: 2 }}
             >
               Delete
@@ -358,6 +383,28 @@ const InstructorDetails = ({ instructorData, onBack }) => {
             </Button>
           </Grid>
         </Grid>
+        <Dialog
+          open={confirmDeleteOpen}
+          onClose={handleConfirmDeleteClose}
+          aria-labelledby="alert-dialog-title"
+          aria-describedby="alert-dialog-description"
+        >
+          <DialogTitle id="alert-dialog-title">{"Confirm Delete"}</DialogTitle>
+          <DialogContent>
+            <DialogContentText id="alert-dialog-description">
+              Are you sure you want to delete this instructor? This action
+              cannot be undone.
+            </DialogContentText>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleConfirmDeleteClose} color="primary">
+              Cancel
+            </Button>
+            <Button onClick={handleConfirmDelete} color="error">
+              Confirm
+            </Button>
+          </DialogActions>
+        </Dialog>
       </Box>
       <ToastContainer
         position="top-center"

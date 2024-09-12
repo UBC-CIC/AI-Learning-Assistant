@@ -41,14 +41,17 @@ const theme = createTheme({
 });
 
 function titleCase(str) {
-  if (typeof str !== 'string') {
+  if (typeof str !== "string") {
     return str;
   }
-  return str.toLowerCase().split(' ').map(function(word) {
-    return word.charAt(0).toUpperCase() + word.slice(1);
-  }).join(' ');
+  return str
+    .toLowerCase()
+    .split(" ")
+    .map(function (word) {
+      return word.charAt(0).toUpperCase() + word.slice(1);
+    })
+    .join(" ");
 }
-
 
 export const StudentHomepage = ({ setCourse }) => {
   const navigate = useNavigate();
@@ -199,7 +202,7 @@ export const StudentHomepage = ({ setCourse }) => {
               justifyContent: "space-between",
               alignItems: "center",
               width: "calc(100% - 210px)",
-              paddingLeft: 5,
+              paddingLeft: 4,
               paddingRight: 5,
             }}
           >
@@ -226,6 +229,7 @@ export const StudentHomepage = ({ setCourse }) => {
                 color: "black",
                 borderWidth: "1px",
                 marginLeft: "auto",
+                marginRight: 1,
                 marginBottom: "15px",
                 "&:hover": {
                   bgcolor: "white",
@@ -255,85 +259,101 @@ export const StudentHomepage = ({ setCourse }) => {
               sx={{
                 display: "flex",
                 flexDirection: "column",
-                alignItems: "flex-start",
+                alignItems: courses.length === 0 ? "center" : "flex-start", 
+                justifyContent: courses.length === 0 ? "center" : "flex-start", 
                 width: "100%",
-                height: "calc(90vh - 100px)", // Adjust height to accommodate header and other elements
-                overflowY: "auto", // Enable vertical scrolling
-                overflowX: "hidden", // Hide horizontal overflow
+                height: "calc(90vh - 100px)", 
+                overflowY: "auto", 
+                overflowX: "hidden", 
               }}
             >
-              {courses.map((course, index) => (
-                <Card
-                  key={index}
+              {courses.length === 0 ? (
+                <Typography
+                  variant="body1"
                   sx={{
-                    mb: 1, // Margin between cards (removed bottom margin)
-                    width: "calc(100% - 255px)", // Slightly less than full width (considering margins)
-                    maxWidth: "calc(100% - 255px)", // Ensure it doesn't exceed container width
-                    minWidth: "calc(100% - 255px)", // Ensure it occupies slightly less than full width
-                    minHeight: "120px", // Reduced height
-                    bgcolor: "transparent",
-                    background: `linear-gradient(10deg, rgb(83.137% 92.157% 99.608%) 0%, rgb(83.213% 92.029% 99.612%) 6.25%, rgb(83.436% 91.649% 99.623%) 12.5%, rgb(83.798% 91.033% 99.641%) 18.75%, rgb(84.286% 90.204% 99.665%) 25%, rgb(84.88% 89.194% 99.695%) 31.25%, rgb(85.558% 88.041% 99.729%) 37.5%, rgb(86.294% 86.791% 99.766%) 43.75%, rgb(87.059% 85.49% 99.804%) 50%, rgb(87.824% 84.19% 99.842%) 56.25%, rgb(88.56% 82.939% 99.879%) 62.5%, rgb(89.238% 81.786% 99.913%) 68.75%, rgb(89.832% 80.776% 99.943%) 75%, rgb(90.319% 79.947% 99.967%) 81.25%, rgb(90.682% 79.331% 99.985%) 87.5%, rgb(90.905% 78.952% 99.996%) 93.75%, rgb(90.98% 78.824% 100%) 100% )`,
+                    color: "black",
+                    textAlign: "center",
+                    mt: 2,
+                    fontSize: "1.5rem",
                   }}
                 >
-                  <CardContent sx={{ height: "50%" }}>
-                    <Grid container alignItems="center">
-                      <Grid item xs={8}>
-                        <Typography
-                          variant="h6"
-                          component="div"
-                          sx={{
-                            textAlign: "left",
-                            fontWeight: "600",
-                            fontSize: "1.25rem",
-                          }} // Reduced font size
-                        >
-                          {course.course_department.toUpperCase()} {course.course_number}
-                        </Typography>
-                        <Typography
-                          variant="body2"
-                          sx={{ textAlign: "left", mt: 1, fontSize: "1rem" }} // Reduced font size
-                        >
-                          {titleCase(course.course_name)}{" "}
-                        </Typography>
-                      </Grid>
-                      <Grid
-                        item
-                        xs={4}
-                        sx={{
-                          display: "flex",
-                          alignItems: "flex-end",
-                          justifyContent: "flex-end",
-                        }}
-                      >
-                        {/* Empty grid item to push the button to the bottom right */}
-                      </Grid>
-                    </Grid>
-                  </CardContent>
-                  <CardActions
+                  No courses added yet, click the + to add a course
+                </Typography>
+              ) : (
+                courses.map((course, index) => (
+                  <Card
+                    key={index}
                     sx={{
-                      display: "flex",
-                      justifyContent: "flex-end",
-                      p: 1,
-                      pr: 2, // Reduced padding
-                      height: "50%", // Padding for the right
+                      mb: 1,
+                      width: "calc(100% - 255px)",
+                      maxWidth: "calc(100% - 255px)",
+                      minWidth: "calc(100% - 255px)",
+                      minHeight: "120px",
+                      bgcolor: "transparent",
+                      background: `linear-gradient(10deg, rgb(83.137% 92.157% 99.608%) 0%, rgb(83.213% 92.029% 99.612%) 6.25%, rgb(83.436% 91.649% 99.623%) 12.5%, rgb(83.798% 91.033% 99.641%) 18.75%, rgb(84.286% 90.204% 99.665%) 25%, rgb(84.88% 89.194% 99.695%) 31.25%, rgb(85.558% 88.041% 99.729%) 37.5%, rgb(86.294% 86.791% 99.766%) 43.75%, rgb(87.059% 85.49% 99.804%) 50%, rgb(87.824% 84.19% 99.842%) 56.25%, rgb(88.56% 82.939% 99.879%) 62.5%, rgb(89.238% 81.786% 99.913%) 68.75%, rgb(89.832% 80.776% 99.943%) 75%, rgb(90.319% 79.947% 99.967%) 81.25%, rgb(90.682% 79.331% 99.985%) 87.5%, rgb(90.905% 78.952% 99.996%) 93.75%, rgb(90.98% 78.824% 100%) 100%)`,
                     }}
                   >
-                    <Button
-                      size="small"
+                    <CardContent sx={{ height: "50%" }}>
+                      <Grid container alignItems="center">
+                        <Grid item xs={8}>
+                          <Typography
+                            variant="h6"
+                            component="div"
+                            sx={{
+                              textAlign: "left",
+                              fontWeight: "600",
+                              fontSize: "1.25rem",
+                            }}
+                          >
+                            {course.course_department.toUpperCase()}{" "}
+                            {course.course_number}
+                          </Typography>
+                          <Typography
+                            variant="body2"
+                            sx={{ textAlign: "left", mt: 1, fontSize: "1rem" }}
+                          >
+                            {titleCase(course.course_name)}
+                          </Typography>
+                        </Grid>
+                        <Grid
+                          item
+                          xs={4}
+                          sx={{
+                            display: "flex",
+                            alignItems: "flex-end",
+                            justifyContent: "flex-end",
+                          }}
+                        >
+                          {/* Empty grid item to push the button to the bottom right */}
+                        </Grid>
+                      </Grid>
+                    </CardContent>
+                    <CardActions
                       sx={{
-                        bgcolor: "#5536DA",
+                        display: "flex",
+                        justifyContent: "flex-end",
                         p: 1,
-                        color: "white",
-                        fontWeight: "light",
-                        ":hover": { bgcolor: "purple" },
+                        pr: 2,
+                        height: "50%",
                       }}
-                      onClick={() => enterCourse(course)}
                     >
-                      Continue
-                    </Button>
-                  </CardActions>
-                </Card>
-              ))}
+                      <Button
+                        size="small"
+                        sx={{
+                          bgcolor: "#5536DA",
+                          p: 1,
+                          color: "white",
+                          fontWeight: "light",
+                          ":hover": { bgcolor: "purple" },
+                        }}
+                        onClick={() => enterCourse(course)}
+                      >
+                        Continue
+                      </Button>
+                    </CardActions>
+                  </Card>
+                ))
+              )}
             </Box>
           )}
         </Stack>

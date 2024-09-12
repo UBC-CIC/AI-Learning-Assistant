@@ -17,18 +17,27 @@ import {
   FormControlLabel,
   Toolbar,
   Divider,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  DialogContentText,
 } from "@mui/material";
 
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 function titleCase(str) {
-  if (typeof str !== 'string') {
+  if (typeof str !== "string") {
     return str;
   }
-  return str.toLowerCase().split(' ').map(function(word) {
-    return word.charAt(0).toUpperCase() + word.slice(1);
-  }).join(' ');
+  return str
+    .toLowerCase()
+    .split(" ")
+    .map(function (word) {
+      return word.charAt(0).toUpperCase() + word.slice(1);
+    })
+    .join(" ");
 }
 
 const CourseDetails = ({ course, onBack }) => {
@@ -37,6 +46,7 @@ const CourseDetails = ({ course, onBack }) => {
   const [isActive, setIsActive] = useState(false);
   const [loading, setLoading] = useState(true);
   const [allInstructors, setAllInstructors] = useState([]);
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
 
   useEffect(() => {
     const fetchActiveInstructors = async () => {
@@ -97,6 +107,19 @@ const CourseDetails = ({ course, onBack }) => {
     fetchInstructors();
     setLoading(false);
   }, []);
+
+  const handleConfirmDeleteOpen = () => {
+    setConfirmDeleteOpen(true);
+  };
+
+  const handleConfirmDeleteClose = () => {
+    setConfirmDeleteOpen(false);
+  };
+
+  const handleConfirmDelete = async () => {
+    handleConfirmDeleteClose();
+    handleDelete();
+  };
 
   const handleInstructorsChange = (event) => {
     const newInstructors = event.target.value;
@@ -366,7 +389,9 @@ const CourseDetails = ({ course, onBack }) => {
                 {allInstructors.map((instructor) => (
                   <MenuItem key={instructor.user_email} value={instructor}>
                     {instructor.first_name && instructor.last_name
-                      ? `${titleCase(instructor.first_name)} ${titleCase(instructor.last_name)}`
+                      ? `${titleCase(instructor.first_name)} ${titleCase(
+                          instructor.last_name
+                        )}`
                       : instructor.user_email}
                   </MenuItem>
                 ))}
@@ -393,7 +418,7 @@ const CourseDetails = ({ course, onBack }) => {
               <Button
                 variant="contained"
                 color="red"
-                onClick={handleDelete}
+                onClick={handleConfirmDeleteOpen}
                 sx={{ width: "30%", marginRight: "15px" }}
               >
                 Delete
@@ -408,6 +433,30 @@ const CourseDetails = ({ course, onBack }) => {
               </Button>
             </Grid>
           </Grid>
+          <Dialog
+            open={confirmDeleteOpen}
+            onClose={handleConfirmDeleteClose}
+            aria-labelledby="alert-dialog-title"
+            aria-describedby="alert-dialog-description"
+          >
+            <DialogTitle id="alert-dialog-title">
+              {"Confirm Delete"}
+            </DialogTitle>
+            <DialogContent>
+              <DialogContentText id="alert-dialog-description">
+                Are you sure you want to delete this course? This action cannot
+                be undone.
+              </DialogContentText>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={handleConfirmDeleteClose} color="primary">
+                Cancel
+              </Button>
+              <Button onClick={handleConfirmDelete} color="error">
+                Confirm
+              </Button>
+            </DialogActions>
+          </Dialog>
         </Box>
       )}
       <ToastContainer />

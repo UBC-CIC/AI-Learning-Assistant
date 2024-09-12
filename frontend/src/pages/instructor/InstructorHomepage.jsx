@@ -38,6 +38,19 @@ import InstructorNewConcept from "./InstructorNewConcept";
 import InstructorConcepts from "./InstructorConcepts";
 import InstructorEditConcept from "./InstructorEditConcept";
 
+function titleCase(str) {
+  if (typeof str !== "string") {
+    return str;
+  }
+  return str
+    .toLowerCase()
+    .split(" ")
+    .map(function (word) {
+      return word.charAt(0).toUpperCase() + word.slice(1);
+    })
+    .join(" ");
+}
+
 // course details page
 const CourseDetails = () => {
   const location = useLocation();
@@ -238,7 +251,7 @@ const InstructorHomepage = () => {
                             style={{ cursor: "pointer" }}
                           >
                             <TableCell sx={{ padding: "16px" }}>
-                              {row.course}
+                              {titleCase(row.course)}
                             </TableCell>
                             <TableCell sx={{ padding: "16px" }}>
                               <Button

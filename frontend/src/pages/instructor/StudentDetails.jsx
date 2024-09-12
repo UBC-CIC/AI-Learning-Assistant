@@ -164,6 +164,9 @@ const StudentDetails = () => {
           progress: undefined,
           theme: "colored",
         });
+        setTimeout(function () {
+          handleBackClick();
+        }, 1000);
       } else {
         console.error("Failed to fetch students:", response.statusText);
         toast.error("Failed to unenroll student", {

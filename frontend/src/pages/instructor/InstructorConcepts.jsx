@@ -9,6 +9,20 @@ import {
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
+function courseTitleCase(str) {
+  if (typeof str !== 'string') {
+    return str;
+  }
+  const words = str.split(' ');
+  return words.map((word, index) => {
+    if (index === 0) {
+      return word.toUpperCase();
+    } else {
+      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+    }
+  }).join(' ');
+}
+
 function titleCase(str) {
   if (typeof str !== 'string') {
     return str;
@@ -224,7 +238,7 @@ const InstructorConcepts = ({ courseName, course_id }) => {
         textAlign="left"
         variant="h6"
       >
-        {courseName}
+        {courseTitleCase(courseName)}
       </Typography>
       <Paper sx={{ width: "100%", overflow: "hidden", marginTop: 2 }}>
         <Box sx={{ maxHeight: "400px", overflowY: "auto" }}>

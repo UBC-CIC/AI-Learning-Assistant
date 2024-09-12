@@ -19,6 +19,8 @@ import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { fetchAuthSession } from "aws-amplify/auth";
 
+const CHARACTER_LIMIT = 1000;
+
 function generateAccessCode() {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
   let code = "";
@@ -294,7 +296,8 @@ export const AdminCreateCourse = ({ setSelectedComponent }) => {
             margin="normal"
             multiline
             rows={4}
-            inputProps={{ maxLength: 60000 }}
+            inputProps={{ maxLength: 1000}}
+            helperText={`${coursePrompt.length}/${CHARACTER_LIMIT}`}
           />
           <TextField
             fullWidth

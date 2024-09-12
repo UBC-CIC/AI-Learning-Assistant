@@ -370,9 +370,8 @@ export const Login = () => {
     try {
       const output = await resetPassword({ username });
       handleResetPasswordNextSteps(output);
-      console.log("username", username);
     } catch (error) {
-      toast.error(`Error: ${error}`, {
+      toast.error(`Error Reseting Password`, {
         position: "top-center",
         autoClose: 3000,
         hideProgressBar: false,
@@ -382,8 +381,6 @@ export const Login = () => {
         progress: undefined,
         theme: "colored",
       });
-      console.log(error);
-      setError(error.message);
       setMessage("");
     }
   }
@@ -793,12 +790,13 @@ export const Login = () => {
                   paddingRight: 15,
                 }}
               >
-                <Typography variant="h5">Reset Password</Typography>
+                <Typography fullWidthvariant="h5">Reset Password</Typography>
                 {step === "requestReset" && (
                   <>
-                    <Grid item xs={12}>
+                    <Grid item xs={12} md={12}>
                       <TextField
                         label="Email"
+                        type="email"
                         value={username}
                         onChange={(e) => setUsername(e.target.value)}
                         fullWidth

@@ -118,7 +118,7 @@ const InstructorNewConcept = () => {
             </Box>
           </Grid>
           <Grid item xs={4}></Grid>
-          <Grid item xs={4}>
+          <Grid item xs={4} style={{ textAlign: "right" }}>
             <Button
               variant="contained"
               color="primary"

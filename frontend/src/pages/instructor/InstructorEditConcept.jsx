@@ -11,34 +11,35 @@ import {
   Button,
   Paper,
   Typography,
-  IconButton,
   Grid,
-  Card,
-  CardContent,
   Box,
-  Toolbar,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
+  Dialog,
+  DialogTitle,
+  DialogActions,
+  DialogContent,
+  DialogContentText
 } from "@mui/material";
 import PageContainer from "../Container";
 
 function titleCase(str) {
-  if (typeof str !== 'string') {
+  if (typeof str !== "string") {
     return str;
   }
-  return str.toLowerCase().split(' ').map(function(word) {
-    return word.charAt(0).toUpperCase() + word.slice(1);
-  }).join(' ');
+  return str
+    .toLowerCase()
+    .split(" ")
+    .map(function (word) {
+      return word.charAt(0).toUpperCase() + word.slice(1);
+    })
+    .join(" ");
 }
-
 
 const InstructorEditConcept = () => {
   const location = useLocation();
   const { conceptData, course_id } = location.state || {};
   const [conceptName, setConceptName] = useState(conceptData.concept_name);
   const [data, setData] = useState([]);
+  const [dialogOpen, setDialogOpen] = useState(false);
   console.log(conceptData);
   useEffect(() => {
     const fetchModules = async () => {
@@ -77,6 +78,20 @@ const InstructorEditConcept = () => {
   const handleBackClick = () => {
     window.history.back();
   };
+
+  const handleDeleteConfirmation = () => {
+    setDialogOpen(true);
+  };
+
+  const handleDialogClose = () => {
+    setDialogOpen(false);
+  };
+
+  const handleConfirmDelete = async () => {
+    setDialogOpen(false);
+    handleDelete();
+  };
+
   const handleDelete = async () => {
     const session = await fetchAuthSession();
     const authtoken = session.tokens.idToken.toString();
@@ -267,7 +282,7 @@ const InstructorEditConcept = () => {
               <Button
                 variant="contained"
                 color="error"
-                onClick={handleDelete}
+                onClick={handleDeleteConfirmation}
                 sx={{ width: "30%" }}
               >
                 Delete
@@ -275,7 +290,7 @@ const InstructorEditConcept = () => {
             </Box>
           </Grid>
           <Grid item xs={4}></Grid>
-          <Grid item xs={4}>
+          <Grid item xs={4} style={{ textAlign: "right" }}>
             <Button
               variant="contained"
               color="primary"
@@ -299,6 +314,23 @@ const InstructorEditConcept = () => {
         pauseOnHover
         theme="colored"
       />
+      <Dialog open={dialogOpen} onClose={handleDialogClose}>
+        <DialogTitle>{"Delete Concept"}</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to delete this concept and all its associated
+            modules? This action cannot be undone.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleDialogClose} color="primary">
+            Cancel
+          </Button>
+          <Button onClick={handleConfirmDelete} color="error">
+            Confirm
+          </Button>
+        </DialogActions>
+      </Dialog>
     </PageContainer>
   );
 };

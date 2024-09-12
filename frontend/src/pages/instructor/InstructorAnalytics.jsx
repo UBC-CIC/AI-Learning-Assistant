@@ -178,7 +178,7 @@ const InstructorAnalytics = ({ courseName, course_id }) => {
                       <Grid item width="80%">
                         <Typography textAlign="right">
                           Completion Percentage:{" "}
-                          {module.perfect_score_percentage}%
+                          {module.perfect_score_percentage.toFixed(2)}%
                         </Typography>
                         <LinearProgress
                           variant="determinate"

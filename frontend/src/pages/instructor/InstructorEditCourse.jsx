@@ -16,19 +16,27 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle
 } from "@mui/material";
 import PageContainer from "../Container";
 import FileManagement from "../../components/FileManagement";
 
 function titleCase(str) {
-  if (typeof str !== 'string') {
+  if (typeof str !== "string") {
     return str;
   }
-  return str.toLowerCase().split(' ').map(function(word) {
-    return word.charAt(0).toUpperCase() + word.slice(1);
-  }).join(' ');
+  return str
+    .toLowerCase()
+    .split(" ")
+    .map(function (word) {
+      return word.charAt(0).toUpperCase() + word.slice(1);
+    })
+    .join(" ");
 }
-
 
 const InstructorEditCourse = () => {
   const [loading, setLoading] = useState(true);
@@ -46,12 +54,26 @@ const InstructorEditCourse = () => {
   const [moduleName, setModuleName] = useState("");
   const [concept, setConcept] = useState("");
   const [allConcepts, setAllConcept] = useState([]);
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   useEffect(() => {
     console.log(metadata);
   }, [metadata]);
   const handleBackClick = () => {
     window.history.back();
+  };
+
+  const handleDeleteConfirmation = () => {
+    setDialogOpen(true);
+  };
+
+  const handleDialogClose = () => {
+    setDialogOpen(false);
+  };
+
+  const handleConfirmDelete = async () => {
+    setDialogOpen(false);
+    handleDelete();
   };
 
   function convertDocumentFilesToArray(files) {
@@ -460,7 +482,9 @@ const InstructorEditCourse = () => {
   return (
     <PageContainer>
       <Paper style={{ padding: 25, width: "100%", overflow: "auto" }}>
-        <Typography variant="h6">Edit Module {titleCase(module.module_name)} </Typography>
+        <Typography variant="h6">
+          Edit Module {titleCase(module.module_name)}{" "}
+        </Typography>
 
         <TextField
           label="Module Name"
@@ -517,7 +541,7 @@ const InstructorEditCourse = () => {
               <Button
                 variant="contained"
                 color="error"
-                onClick={handleDelete}
+                onClick={handleDeleteConfirmation}
                 sx={{ width: "30%" }}
               >
                 Delete Module
@@ -549,6 +573,23 @@ const InstructorEditCourse = () => {
         pauseOnHover
         theme="colored"
       />
+      <Dialog open={dialogOpen} onClose={handleDialogClose}>
+        <DialogTitle>{"Delete Module"}</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to delete this module? This action cannot be
+            undone.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleDialogClose} color="primary">
+            Cancel
+          </Button>
+          <Button onClick={handleConfirmDelete} color="error">
+            Confirm
+          </Button>
+        </DialogActions>
+      </Dialog>
     </PageContainer>
   );
 };

@@ -62,7 +62,8 @@ def delete_last_two_db_messages(session_id):
             logger.info(f"Not enough messages to delete for session_id: {session_id}")
             return False
         
-        message_ids = tuple([msg['message_id'] for msg in messages])
+        message_ids = tuple([msg[0] for msg in messages])
+        
         cur.execute("""
             DELETE FROM "Messages"
             WHERE message_id IN %s;

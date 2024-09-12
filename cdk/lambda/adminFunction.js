@@ -135,6 +135,9 @@ exports.handler = async (event) => {
             CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
             `;
 
+            const accessBool = course_student_access.toLowerCase() === "true";
+
+            console.log(accessBool)
             // Insert new course into Courses table
             const newCourse = await sqlConnectionTableCreator`         
                 INSERT INTO "Courses" (
@@ -152,7 +155,7 @@ exports.handler = async (event) => {
                     ${course_department},
                     ${course_number},
                     ${course_access_code},
-                    ${course_student_access},
+                    ${accessBool},
                     ${system_prompt}
                 )
                 RETURNING *;

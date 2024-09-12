@@ -16,6 +16,22 @@ import KeyboardArrowRight from "@mui/icons-material/KeyboardArrowRight";
 import { useTheme } from "@mui/material/styles";
 import "react-toastify/dist/ReactToastify.css";
 
+function courseTitleCase(str) {
+  if (typeof str !== "string") {
+    return str;
+  }
+  const words = str.split(" ");
+  return words
+    .map((word, index) => {
+      if (index === 0) {
+        return word.toUpperCase();
+      } else {
+        return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+      }
+    })
+    .join(" ");
+}
+
 const PromptSettings = ({ courseName, course_id }) => {
   const theme = useTheme();
   const [userPrompt, setUserPrompt] = useState("");
@@ -182,7 +198,7 @@ const PromptSettings = ({ courseName, course_id }) => {
             variant="h6"
             gutterBottom
           >
-            {courseName} Prompt Settings
+            {courseTitleCase(courseName)} Prompt Settings
           </Typography>
           <Typography variant="h8">
             Changes to the prompt will be applied to the LLM for this specific
@@ -253,12 +269,20 @@ const PromptSettings = ({ courseName, course_id }) => {
             }
           />
           <Box sx={{ p: 2 }}>
-            <Typography variant="body1">
-              {previousPrompts[activeStep]?.previous_prompt}
-            </Typography>
-            <Typography variant="body2">
-              {convertToLocalTime(previousPrompts[activeStep]?.timestamp)}
-            </Typography>
+            {previousPrompts.length === 0 ? (
+              <Typography variant="body1">No previous prompts</Typography>
+            ) : (
+              <>
+                <Typography variant="body1">
+                  {previousPrompts[activeStep]?.previous_prompt}
+                </Typography>
+                {convertToLocalTime(previousPrompts[activeStep]?.timestamp) && (
+                  <Typography variant="body2">
+                    {convertToLocalTime(previousPrompts[activeStep]?.timestamp)}
+                  </Typography>
+                )}
+              </>
+            )}
           </Box>
         </Box>
 

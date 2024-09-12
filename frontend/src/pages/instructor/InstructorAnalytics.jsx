@@ -102,7 +102,7 @@ const InstructorAnalytics = ({ courseName, course_id }) => {
         variant="h6"
         gutterBottom
       >
-        {courseName}
+        {titleCase(courseName)}
       </Typography>
       <Paper>
         <Box mb={4}>

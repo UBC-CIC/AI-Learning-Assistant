@@ -222,21 +222,29 @@ export const ViewStudents = ({ courseName, course_id }) => {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {filteredRows
-                      .slice(
-                        page * rowsPerPage,
-                        page * rowsPerPage + rowsPerPage
-                      )
-                      .map((row, index) => (
-                        <TableRow
-                          key={index}
-                          onClick={() => handleRowClick(row)}
-                          style={{ cursor: "pointer" }}
-                        >
-                          <TableCell>{row.name}</TableCell>
-                          <TableCell>{row.email}</TableCell>
-                        </TableRow>
-                      ))}
+                    {filteredRows && filteredRows.length > 0 ? (
+                      filteredRows
+                        .slice(
+                          page * rowsPerPage,
+                          page * rowsPerPage + rowsPerPage
+                        )
+                        .map((row, index) => (
+                          <TableRow
+                            key={index}
+                            onClick={() => handleRowClick(row)}
+                            style={{ cursor: "pointer" }}
+                          >
+                            <TableCell>{row.name}</TableCell>
+                            <TableCell>{row.email}</TableCell>
+                          </TableRow>
+                        ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={2} align="center">
+                          No students enrolled in course
+                        </TableCell>
+                      </TableRow>
+                    )}
                   </TableBody>
                 </>
               ) : (

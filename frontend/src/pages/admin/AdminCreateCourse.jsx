@@ -112,6 +112,7 @@ export const AdminCreateCourse = ({ setSelectedComponent }) => {
         });
         return; // Stop further execution if access code is invalid
       }
+      console.log(isActive)
 
       const response = await fetch(
         `${

@@ -377,6 +377,7 @@ export const AdminInstructors = ({ setSelectedInstructor }) => {
             type="email"
             fullWidth
             variant="standard"
+            inputProps={{ maxLength: 40 }}
           />
         </DialogContent>
         <DialogActions>

@@ -23,7 +23,7 @@ export class DataIngestionStack extends cdk.Stack {
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
       accessControl: s3.BucketAccessControl.PRIVATE,
       versioned: true,
-      removalPolicy: cdk.RemovalPolicy.DESTROY, //change to retain
+      removalPolicy: cdk.RemovalPolicy.DESTROY, 
       cors: [s3CorsRule]
     });
 

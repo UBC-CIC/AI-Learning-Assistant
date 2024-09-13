@@ -1,10 +1,9 @@
 const { initializeConnection } = require("./libadmin.js");
 
-// Setting up evironments
 let { SM_DB_CREDENTIALS, RDS_PROXY_ENDPOINT } = process.env;
 
 // SQL conneciton from global variable at libadmin.js
-let sqlConnectionTableCreator = global.sqlConnectionTableCreator; //TableCreator ;
+let sqlConnectionTableCreator = global.sqlConnectionTableCreator; 
 
 exports.handler = async (event) => {
   const response = {
@@ -21,7 +20,7 @@ exports.handler = async (event) => {
   // Initialize the database connection if not already initialized
   if (!sqlConnectionTableCreator) {
     await initializeConnection(SM_DB_CREDENTIALS, RDS_PROXY_ENDPOINT);
-    sqlConnectionTableCreator = global.sqlConnectionTableCreator; //TableCreator;
+    sqlConnectionTableCreator = global.sqlConnectionTableCreator; 
   }
 
   // Function to format student full names (lowercase and spaces replaced with "_")
@@ -469,7 +468,6 @@ exports.handler = async (event) => {
                 WHERE user_email = ${userEmail};
               `;
 
-            // Success response
             response.statusCode = 200;
             response.body = JSON.stringify({
               message: `User role updated to student for ${userEmail}`,

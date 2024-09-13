@@ -1,9 +1,7 @@
 const { initializeConnection } = require("./lib.js");
 
-// Setting up evironments
 let { SM_DB_CREDENTIALS, RDS_PROXY_ENDPOINT } = process.env;
 
-// SQL conneciton from global variable at lib.js
 let sqlConnection = global.sqlConnection;
 
 exports.handler = async (event) => {

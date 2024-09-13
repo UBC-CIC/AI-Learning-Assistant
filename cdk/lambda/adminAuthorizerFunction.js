@@ -1,10 +1,8 @@
 const AWS = require("aws-sdk");
 const { CognitoJwtVerifier } = require("aws-jwt-verify");
 
-// Gather AWS services
 const secretsManager = new AWS.SecretsManager();
 
-// Setting up evironments
 let { SM_COGNITO_CREDENTIALS } = process.env;
 
 // Return response
@@ -46,9 +44,7 @@ exports.handler = async (event) => {
     let payload;
 
     try {
-        // If the token is not valid, an error is thrown:
         payload = await jwtVerifier.verify(accessToken);
-
         // Modify the response output
         const parts = event.methodArn.split('/');
         const resource = parts.slice(0, 2).join('/') + '*';

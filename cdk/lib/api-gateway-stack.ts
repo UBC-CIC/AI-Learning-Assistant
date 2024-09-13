@@ -105,7 +105,7 @@ export class ApiGatewayStack extends cdk.Stack {
       signInAliases: {
         email: true,
       },
-      selfSignUpEnabled: true, // Enabled to allow mobile user sign up
+      selfSignUpEnabled: true, 
       autoVerify: {
         email: true,
       },
@@ -140,7 +140,7 @@ export class ApiGatewayStack extends cdk.Stack {
       this,
       "aila-identity-pool",
       {
-        allowUnauthenticatedIdentities: true, // don't allow unauthenticated users
+        allowUnauthenticatedIdentities: true,
         identityPoolName: "ailaIdentityPool",
         cognitoIdentityProviders: [
           {
@@ -437,9 +437,9 @@ export class ApiGatewayStack extends cdk.Stack {
     });
 
     const lambdaStudentFunction = new lambda.Function(this, "studentFunction", {
-      runtime: lambda.Runtime.NODEJS_16_X, // Execution environment
-      code: lambda.Code.fromAsset("lambda"), // Code loaded from "lambda" directory
-      handler: "studentFunction.handler", // Code handler
+      runtime: lambda.Runtime.NODEJS_16_X, 
+      code: lambda.Code.fromAsset("lambda"), 
+      handler: "studentFunction.handler", 
       timeout: Duration.seconds(300),
       vpc: vpcStack.vpc,
       environment: {
@@ -467,9 +467,9 @@ export class ApiGatewayStack extends cdk.Stack {
       this,
       "instructorFunction",
       {
-        runtime: lambda.Runtime.NODEJS_16_X, // Execution environment
-        code: lambda.Code.fromAsset("lambda"), // Code loaded from "lambda" directory
-        handler: "instructorFunction.handler", // Code handler
+        runtime: lambda.Runtime.NODEJS_16_X, 
+        code: lambda.Code.fromAsset("lambda"), 
+        handler: "instructorFunction.handler", 
         timeout: Duration.seconds(300),
         vpc: vpcStack.vpc,
         environment: {
@@ -495,9 +495,9 @@ export class ApiGatewayStack extends cdk.Stack {
     cfnLambda_Instructor.overrideLogicalId("instructorFunction");
 
     const lambdaAdminFunction = new lambda.Function(this, "adminFunction", {
-      runtime: lambda.Runtime.NODEJS_16_X, // Execution environment
-      code: lambda.Code.fromAsset("lambda"), // Code loaded from "lambda" directory
-      handler: "adminFunction.handler", // Code handler
+      runtime: lambda.Runtime.NODEJS_16_X, 
+      code: lambda.Code.fromAsset("lambda"), 
+      handler: "adminFunction.handler", 
       timeout: Duration.seconds(300),
       vpc: vpcStack.vpc,
       environment: {
@@ -525,9 +525,9 @@ export class ApiGatewayStack extends cdk.Stack {
       this,
       "techadminFunction",
       {
-        runtime: lambda.Runtime.NODEJS_16_X, // Execution environment
-        code: lambda.Code.fromAsset("lambda"), // Code loaded from "lambda" directory
-        handler: "techadminFunction.handler", // Code handler
+        runtime: lambda.Runtime.NODEJS_16_X, 
+        code: lambda.Code.fromAsset("lambda"), 
+        handler: "techadminFunction.handler", 
         timeout: Duration.seconds(300),
         vpc: vpcStack.vpc,
         environment: {
@@ -652,9 +652,9 @@ export class ApiGatewayStack extends cdk.Stack {
     );
 
     const AutoSignupLambda = new lambda.Function(this, "addStudentOnSignUp", {
-      runtime: lambda.Runtime.NODEJS_16_X, // Execution environment
-      code: lambda.Code.fromAsset("lambda"), // Code loaded from "lambda" directory
-      handler: "addStudentOnSignUp.handler", // Code handler
+      runtime: lambda.Runtime.NODEJS_16_X,
+      code: lambda.Code.fromAsset("lambda"), 
+      handler: "addStudentOnSignUp.handler",
       timeout: Duration.seconds(300),
       environment: {
         SM_DB_CREDENTIALS: db.secretPathTableCreator.secretName,
@@ -668,9 +668,9 @@ export class ApiGatewayStack extends cdk.Stack {
     });
 
     const adjustUserRoles = new lambda.Function(this, "adjustUserRoles", {
-      runtime: lambda.Runtime.NODEJS_16_X, // Execution environment
-      code: lambda.Code.fromAsset("lambda"), // Code loaded from "lambda" directory
-      handler: "adjustUserRoles.handler", // Code handler
+      runtime: lambda.Runtime.NODEJS_16_X,
+      code: lambda.Code.fromAsset("lambda"), 
+      handler: "adjustUserRoles.handler",
       timeout: Duration.seconds(300),
       environment: {
         SM_DB_CREDENTIALS: db.secretPathTableCreator.secretName,
@@ -711,9 +711,9 @@ export class ApiGatewayStack extends cdk.Stack {
       this,
       "admin-authorization-api-gateway",
       {
-        runtime: lambda.Runtime.NODEJS_16_X, // Execution environment
-        code: lambda.Code.fromAsset("lambda"), // Code loaded from "lambda" directory
-        handler: "adminAuthorizerFunction.handler", // Code handler
+        runtime: lambda.Runtime.NODEJS_16_X, 
+        code: lambda.Code.fromAsset("lambda"),
+        handler: "adminAuthorizerFunction.handler",
         timeout: Duration.seconds(300),
         vpc: vpcStack.vpc,
         environment: {
@@ -744,9 +744,9 @@ export class ApiGatewayStack extends cdk.Stack {
       this,
       "student-authorization-api-gateway",
       {
-        runtime: lambda.Runtime.NODEJS_16_X, // Execution environment
-        code: lambda.Code.fromAsset("lambda"), // Code loaded from "lambda" directory
-        handler: "studentAuthorizerFunction.handler", // Code handler
+        runtime: lambda.Runtime.NODEJS_16_X,
+        code: lambda.Code.fromAsset("lambda"), 
+        handler: "studentAuthorizerFunction.handler", 
         timeout: Duration.seconds(300),
         vpc: vpcStack.vpc,
         environment: {
@@ -779,9 +779,9 @@ export class ApiGatewayStack extends cdk.Stack {
       this,
       "instructor-authorization-api-gateway",
       {
-        runtime: lambda.Runtime.NODEJS_16_X, // Execution environment
-        code: lambda.Code.fromAsset("lambda"), // Code loaded from "lambda" directory
-        handler: "instructorAuthorizerFunction.handler", // Code handler
+        runtime: lambda.Runtime.NODEJS_16_X, 
+        code: lambda.Code.fromAsset("lambda"),
+        handler: "instructorAuthorizerFunction.handler", 
         timeout: Duration.seconds(300),
         vpc: vpcStack.vpc,
         environment: {
@@ -817,8 +817,8 @@ export class ApiGatewayStack extends cdk.Stack {
       vpc: vpcStack.vpc, // Pass the VPC
       functionName: "TextGenLambdaDockerFunc",
       environment: {
-        SM_DB_CREDENTIALS: db.secretPathUser.secretName, // Database User Credentials
-        RDS_PROXY_ENDPOINT: db.rdsProxyEndpoint, // RDS Proxy Endpoint
+        SM_DB_CREDENTIALS: db.secretPathUser.secretName, 
+        RDS_PROXY_ENDPOINT: db.rdsProxyEndpoint, 
         REGION: this.region,
       },
     });
@@ -955,8 +955,8 @@ export class ApiGatewayStack extends cdk.Stack {
       vpc: vpcStack.vpc, // Pass the VPC
       functionName: "DataIngestLambdaDockerFunc",
       environment: {
-        SM_DB_CREDENTIALS: db.secretPathUser.secretName, // Database User Credentials
-        RDS_PROXY_ENDPOINT: db.rdsProxyEndpoint, // RDS Proxy Endpoint
+        SM_DB_CREDENTIALS: db.secretPathUser.secretName, 
+        RDS_PROXY_ENDPOINT: db.rdsProxyEndpoint, 
         BUCKET: dataIngestionBucket.bucketName,
         REGION: this.region,
       },
@@ -994,14 +994,14 @@ export class ApiGatewayStack extends cdk.Stack {
      */
     const getFilesFunction = new lambda.Function(this, "GetFilesFunction", {
       runtime: lambda.Runtime.PYTHON_3_9,
-      code: lambda.Code.fromAsset("lambda"), // Assumes the function is in the lambda directory
+      code: lambda.Code.fromAsset("lambda"), 
       handler: "getFilesFunction.lambda_handler",
       timeout: Duration.seconds(300),
       memorySize: 128,
       vpc: vpcStack.vpc,
       environment: {
-        SM_DB_CREDENTIALS: db.secretPathUser.secretName, // Database User Credentials
-        RDS_PROXY_ENDPOINT: db.rdsProxyEndpoint, // RDS Proxy Endpoint
+        SM_DB_CREDENTIALS: db.secretPathUser.secretName, 
+        RDS_PROXY_ENDPOINT: db.rdsProxyEndpoint, 
         BUCKET: dataIngestionBucket.bucketName,
         REGION: this.region,
       },
@@ -1133,8 +1133,8 @@ export class ApiGatewayStack extends cdk.Stack {
       memorySize: 128,
       vpc: vpcStack.vpc,
       environment: {
-        SM_DB_CREDENTIALS: db.secretPathUser.secretName, // Database User Credentials
-        RDS_PROXY_ENDPOINT: db.rdsProxyEndpoint, // RDS Proxy Endpoint
+        SM_DB_CREDENTIALS: db.secretPathUser.secretName, 
+        RDS_PROXY_ENDPOINT: db.rdsProxyEndpoint, 
         TABLE_NAME: "API-Gateway-Test-Table-Name",
         REGION: this.region,
       },

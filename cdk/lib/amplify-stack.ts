@@ -18,7 +18,6 @@ export class AmplifyStack extends cdk.Stack {
   ) {
     super(scope, id, props);
 
-    // Amplify
     const amplifyYaml = yaml.parse(`
     version: 1
     applications:

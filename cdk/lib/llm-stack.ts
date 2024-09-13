@@ -20,8 +20,8 @@ export class DynamoStack extends cdk.Stack {
     const table = new dynamodb.Table(this, "ConversationHistory", {
       partitionKey: { name: "sessionId", type: dynamodb.AttributeType.STRING },
       sortKey: { name: "timestamp", type: dynamodb.AttributeType.NUMBER },
-      encryption: dynamodb.TableEncryption.AWS_MANAGED, // Enable encryption at rest
-      removalPolicy: cdk.RemovalPolicy.DESTROY, //change to retain
+      encryption: dynamodb.TableEncryption.AWS_MANAGED, 
+      removalPolicy: cdk.RemovalPolicy.DESTROY, 
     });
 
     // Create an IAM role with permissions to access DynamoDB and Secrets Manager
@@ -53,7 +53,7 @@ export class DynamoStack extends cdk.Stack {
       this,
       "ConversationHistoryFunction",
       {
-        code: lambda.Code.fromAsset("lambda"), // Path to your Lambda function code
+        code: lambda.Code.fromAsset("lambda"), 
         handler: "dynamo.handler",
         runtime: lambda.Runtime.PYTHON_3_12,
         role: lambdaRole,

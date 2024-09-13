@@ -2,7 +2,6 @@ import { Stack, StackProps, RemovalPolicy, SecretValue } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import { Duration } from 'aws-cdk-lib';
 
-// Service files import
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as rds from 'aws-cdk-lib/aws-rds';
 import * as ec2 from "aws-cdk-lib/aws-ec2";
@@ -10,7 +9,6 @@ import * as secretmanager from 'aws-cdk-lib/aws-secretsmanager';
 import * as logs from "aws-cdk-lib/aws-logs";
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 
-// Stack import
 import { VpcStack } from './vpc-stack';
 
 export class DatabaseStack extends Stack {
@@ -157,7 +155,6 @@ export class DatabaseStack extends Stack {
         this.dbInstance.grantConnect(rdsProxyRole);      
         this.rdsProxyEndpoint = rdsProxy.endpoint;
         this.rdsProxyEndpointTableCreator = rdsProxyTableCreator.endpoint;
-        // this.rdsProxyEndpoint = "";
 
     }
 }

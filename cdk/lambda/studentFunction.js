@@ -1,6 +1,5 @@
 const { initializeConnection } = require("./lib.js");
 var aws = require("aws-sdk");
-// Setting up evironments
 let { SM_DB_CREDENTIALS, RDS_PROXY_ENDPOINT } = process.env;
 
 // SQL conneciton from global variable at lib.js

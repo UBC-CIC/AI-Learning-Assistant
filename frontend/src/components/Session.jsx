@@ -9,7 +9,7 @@ const Session = ({
   selectedSession,
   setMessages,
   setSessions,
-  sessions
+  sessions,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [newSessionName, setNewSessionName] = useState(text);
@@ -28,7 +28,7 @@ const Session = ({
     const handleKeyDown = (event) => {
       if (event.key === "Enter") {
         event.preventDefault();
-        handleInputBlur(); 
+        handleInputBlur();
       }
     };
 
@@ -46,9 +46,9 @@ const Session = ({
 
   const handleSessionClick = () => {
     if (selectedSession && selectedSession.session_id !== session.session_id) {
-      setMessages([]); 
+      setMessages([]);
     }
-    setSession(session); 
+    setSession(session);
   };
 
   const handleDeleteClick = (event) => {
@@ -125,7 +125,7 @@ const Session = ({
       onClick={handleSessionClick}
       style={{
         background: isSelected
-          ? "linear-gradient(90deg, rgb(96.471% 43.137% 100%) 0%, rgb(88.825% 40.478% 98.243%) 6.25%, rgb(81.673% 37.99% 96.599%) 12.5%, rgb(75.014% 35.674% 95.069%) 18.75%, rgb(68.848% 33.529% 93.652%) 25%, rgb(63.176% 31.556% 92.348%) 31.25%, rgb(57.996% 29.755% 91.158%) 37.5%, rgb(53.31% 28.125% 90.081%) 43.75%, rgb(49.118% 26.667% 89.118%) 50%, rgb(45.418% 25.38% 88.267%) 56.25%, rgb(42.212% 24.265% 87.531%) 62.5%, rgb(39.499% 23.321% 86.907%) 68.75%, rgb(37.279% 22.549% 86.397%) 75%, rgb(35.553% 21.949% 86%) 81.25%, rgb(34.32% 21.52% 85.717%) 87.5%, rgb(33.58% 21.262% 85.547%) 93.75%, rgb(33.333% 21.176% 85.49%) 100%)"
+          ? "linear-gradient(90deg, rgb(0% 45.098% 90.196%) 0%, rgb(2.083% 43.603% 89.902%) 6.25%, rgb(4.167% 42.108% 89.608%) 12.5%, rgb(6.25% 40.613% 89.314%) 18.75%, rgb(8.333% 39.118% 89.02%) 25%, rgb(10.417% 37.623% 88.725%) 31.25%, rgb(12.5% 36.127% 88.431%) 37.5%, rgb(14.583% 34.632% 88.137%) 43.75%, rgb(16.667% 33.137% 87.843%) 50%, rgb(18.75% 31.642% 87.549%) 56.25%, rgb(20.833% 30.147% 87.255%) 62.5%, rgb(22.917% 28.652% 86.961%) 68.75%, rgb(25% 27.157% 86.667%) 75%, rgb(27.083% 25.662% 86.373%) 81.25%, rgb(29.167% 24.167% 86.078%) 87.5%, rgb(31.25% 22.672% 85.784%) 93.75%, rgb(33.333% 21.176% 85.49%) 100% )"
           : "#5536DA",
       }}
       className="cursor-pointer rounded flex flex-row justify-between items-center my-2 mx-8 py-2 px-4"
@@ -153,7 +153,7 @@ const Session = ({
       <div
         onClick={handleDeleteClick}
         className="cursor-pointer w-3 h-3 flex items-center justify-center ml-2"
-        style={{ marginLeft: "8px" }} 
+        style={{ marginLeft: "8px" }}
       >
         <img src="/delete.png" alt="delete" className="w-3 h-3" />
       </div>

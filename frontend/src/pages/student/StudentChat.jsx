@@ -53,6 +53,12 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    if (sessions.length === 0) {
+      handleNewChat();
+    }
+  }, [sessions]);
+
+  useEffect(() => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
@@ -97,9 +103,6 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
           const data = await response.json();
           setSessions(data);
           setSession(data[data.length - 1]);
-          if (data.length === 0) {
-            handleNewChat();
-          }
         } else {
           console.error("Failed to fetch module:", response.statusText);
         }

@@ -5,7 +5,6 @@ import { fetchUserAttributes } from "aws-amplify/auth";
 import { BiCheck } from "react-icons/bi";
 import { FaInfoCircle } from "react-icons/fa";
 
-
 import {
   Button,
   Table,
@@ -73,14 +72,17 @@ function getUniqueConceptNames(data) {
 }
 
 function titleCase(str) {
-  if (typeof str !== 'string') {
+  if (typeof str !== "string") {
     return str;
   }
-  return str.toLowerCase().split(' ').map(function(word) {
-    return word.charAt(0).toUpperCase() + word.slice(1);
-  }).join(' ');
+  return str
+    .toLowerCase()
+    .split(" ")
+    .map(function (word) {
+      return word.charAt(0).toUpperCase() + word.slice(1);
+    })
+    .join(" ");
 }
-
 
 export const CourseView = ({ course, setModule, setCourse }) => {
   const [concepts, setConcepts] = useState([]);
@@ -104,7 +106,7 @@ export const CourseView = ({ course, setModule, setCourse }) => {
       try {
         const session = await fetchAuthSession();
         const { email } = await fetchUserAttributes();
-      
+
         const token = session.tokens.idToken.toString();
         const response = await fetch(
           `${
@@ -152,7 +154,7 @@ export const CourseView = ({ course, setModule, setCourse }) => {
   }
 
   if (!course) {
-    return <div>Loading...</div>; 
+    return <div>Loading...</div>;
   }
 
   return (
@@ -200,13 +202,15 @@ export const CourseView = ({ course, setModule, setCourse }) => {
         </div>
         <div className="flex justify-center items-center">
           {data.length === 0 ? (
-            <div className="p-4 text-center text-gray-500">No concepts/modules to display</div>
+            <div className="p-4 text-center text-gray-500">
+              No concepts/modules to display
+            </div>
           ) : (
             <TableContainer
               component={Paper}
               sx={{
-                width: "80%", 
-                maxHeight: "60vh", 
+                width: "80%",
+                maxHeight: "60vh",
                 overflowY: "auto",
                 marginX: 2,
               }}
@@ -214,22 +218,26 @@ export const CourseView = ({ course, setModule, setCourse }) => {
               <Table>
                 <TableHead>
                   <TableRow>
-                    <TableCell>Module</TableCell>
-                    <TableCell>Completion</TableCell>
-                    <TableCell>Review</TableCell>
+                    <TableCell sx={{ fontSize: "1.1rem" }}>Module</TableCell>
+                    <TableCell sx={{ fontSize: "1.1rem" }}>
+                      Completion
+                    </TableCell>
+                    <TableCell sx={{ fontSize: "1.1rem" }}>Review</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {data.map((entry, index) => (
                     <TableRow key={entry.module_id + index}>
-                      <TableCell>
+                      <TableCell sx={{ fontSize: "1rem" }}>
                         <div className="flex flex-row gap-1 items-center">
                           <FaInfoCircle className="text-xs" />
-                          <span className="text-xs">{titleCase(entry.module_name)}</span>
+                          <span className="text-sm">
+                            {titleCase(entry.module_name)}
+                          </span>
                         </div>
                       </TableCell>
                       {entry.module_score === 100 ? (
-                        <TableCell>
+                        <TableCell sx={{ fontSize: "1rem" }}>
                           <span
                             className="bg-[#2E7D32] text-white text-light rounded px-2 py-2"
                             style={{ display: "inline-block" }}
@@ -238,14 +246,16 @@ export const CourseView = ({ course, setModule, setCourse }) => {
                           </span>
                         </TableCell>
                       ) : (
-                        <TableCell>Incomplete</TableCell>
+                        <TableCell sx={{ fontSize: "1rem" }}>
+                          Incomplete
+                        </TableCell>
                       )}
-                      <TableCell>
+                      <TableCell sx={{ fontSize: "1rem" }}>
                         <Button
                           variant="contained"
                           color="primary"
                           onClick={() => enterModule(entry)}
-                          sx={{ textTransform: 'none' }}
+                          sx={{ textTransform: "none", fontSize: "0.9rem" }}
                         >
                           Review
                         </Button>

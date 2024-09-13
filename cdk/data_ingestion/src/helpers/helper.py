@@ -40,26 +40,8 @@ def get_vectorstore(
     Returns:
     Optional[PGVector]: The initialized PGVector instance, or None if an error occurred.
     """
-    connection_params = {
-        'dbname': dbname,
-        'user': user,
-        'password': password,
-        'host': host,
-        'port': port
-    }
-
-    connection_string = " ".join([f"{key}={value}" for key, value in connection_params.items()])
-
     try:
-        logger.info("Connecting to the database")
-        connection = psycopg2.connect(connection_string)
-        logger.info("Connected to the database")
-    except Exception as e:
-        logger.error(f"Error connecting to the database: {e}")
-        return None
-
-    try:
-        connection_string2 = (
+        connection_string = (
             f"postgresql+psycopg://{user}:{password}@{host}:{port}/{dbname}"
         )
 
@@ -67,12 +49,12 @@ def get_vectorstore(
         vectorstore = PGVector(
             embeddings=embeddings,
             collection_name=collection_name,
-            connection=connection_string2,
+            connection=connection_string,
             use_jsonb=True
         )
 
         logger.info("VectorStore initialized")
-        return vectorstore, connection_string2
+        return vectorstore, connection_string
 
     except Exception as e:
         logger.error(f"Error initializing vector store: {e}")

@@ -54,7 +54,6 @@ function titleCase(str) {
 // course details page
 const CourseDetails = () => {
   const location = useLocation();
-  console.log("Location object:", location); // Debugging line
   const { courseName } = useParams();
   const [selectedComponent, setSelectedComponent] = useState(
     "InstructorAnalytics"
@@ -144,7 +143,6 @@ const InstructorHomepage = () => {
             id: course.course_id,
           }));
           setRows(formattedData);
-          console.log("Instructors course data:", data);
         } else {
           console.error("Failed to fetch courses:", response.statusText);
         }
@@ -181,7 +179,6 @@ const InstructorHomepage = () => {
     if (course) {
       const { course_id, course_department, course_number } = course;
       const path = `/course/${course_department} ${course_number} ${courseName.trim()}`;
-      console.log(course); // Log the course object
       navigate(path, { state: { course_id } });
     } else {
       console.error("Course not found!");

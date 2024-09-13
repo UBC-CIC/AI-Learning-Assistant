@@ -65,16 +65,17 @@ def store_doc_texts(
     with tempfile.NamedTemporaryFile(delete=False) as tmp_file:
         s3.download_file(bucket, f"{course}/{module}/documents/{filename}", tmp_file.name)
         doc = pymupdf.open(tmp_file.name)
-        output_buffer = BytesIO()
-
-        for page_num, page in enumerate(doc, start=1):
-            text = page.get_text().encode("utf8")
-            output_buffer.write(text)
-            output_buffer.write(bytes((12,)))
-
-            page_output_key = f'{course}/{module}/documents/{filename}_page_{page_num}.txt'
-            page_output_buffer = BytesIO(text)
-            s3.upload_fileobj(page_output_buffer, output_bucket, page_output_key)
+        
+        with BytesIO() as output_buffer:
+            for page_num, page in enumerate(doc, start=1):
+                text = page.get_text().encode("utf8")
+                output_buffer.write(text)
+                output_buffer.write(bytes((12,)))
+                
+                page_output_key = f'{course}/{module}/documents/{filename}_page_{page_num}.txt'
+                
+                with BytesIO(text) as page_output_buffer:
+                    s3.upload_fileobj(page_output_buffer, output_bucket, page_output_key)
 
         os.remove(tmp_file.name)
 

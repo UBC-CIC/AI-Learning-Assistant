@@ -56,9 +56,6 @@ const InstructorEditCourse = () => {
   const [allConcepts, setAllConcept] = useState([]);
   const [dialogOpen, setDialogOpen] = useState(false);
 
-  useEffect(() => {
-    console.log(metadata);
-  }, [metadata]);
   const handleBackClick = () => {
     window.history.back();
   };
@@ -91,7 +88,6 @@ const InstructorEditCourse = () => {
     }, {});
 
     setMetadata(metadata);
-    console.log("res", resultArray, metadata);
     return resultArray;
   }
 
@@ -119,7 +115,6 @@ const InstructorEditCourse = () => {
       );
       if (response.ok) {
         const fileData = await response.json();
-        console.log("filedata", fileData);
         setFiles(convertDocumentFilesToArray(fileData));
       } else {
         console.error("Failed to fetch files:", response.statusText);
@@ -442,9 +437,7 @@ const InstructorEditCourse = () => {
   };
 
   const updateMetaData = (files, token) => {
-    console.log(files);
     files.forEach((file) => {
-      console.log(file);
       const fileNameWithExtension = file.fileName || file.name;
       const fileMetadata = metadata[fileNameWithExtension] || "";
       const fileName = cleanFileName(

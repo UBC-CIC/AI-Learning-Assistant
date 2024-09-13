@@ -21,7 +21,7 @@ const InstructorSidebar = ({ setSelectedComponent }) => {
 
   const handleNavigation = (component) => {
     if (component === "InstructorAllCourses") {
-      navigate("/home"); // Navigate to homepage
+      navigate("/home"); 
     } else {
       setSelectedComponent(component);
     }

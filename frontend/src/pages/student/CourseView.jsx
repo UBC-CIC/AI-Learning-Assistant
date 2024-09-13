@@ -148,11 +148,11 @@ export const CourseView = ({ course, setModule, setCourse }) => {
       <div className="bg-[#F8F9FD] w-screen flex justify-center items-center h-screen">
         <l-helix size="50" speed="2.5" color="#d21adb"></l-helix>
       </div>
-    ); // Display custom loading animation
+    );
   }
 
   if (!course) {
-    return <div>Loading...</div>; // Or any placeholder UI
+    return <div>Loading...</div>; 
   }
 
   return (

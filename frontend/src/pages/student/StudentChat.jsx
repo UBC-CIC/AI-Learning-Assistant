@@ -70,7 +70,6 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
   useEffect(() => {
     const fetchModule = async () => {
       if (!course || !module) {
-        console.log("Course or module not defined");
         return;
       }
 
@@ -98,6 +97,9 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
           const data = await response.json();
           setSessions(data);
           setSession(data[data.length - 1]);
+          if (data.length === 0) {
+            handleNewChat();
+          }
         } else {
           console.error("Failed to fetch module:", response.statusText);
         }
@@ -262,10 +264,9 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
         return textGenResponse.json();
       })
       .then((textGenData) => {
-        console.log(textGenData);
         setSession((prevSession) => ({
-          ...prevSession, // keep other properties unchanged
-          session_name: textGenData.session_name, // update session_name
+          ...prevSession, 
+          session_name: textGenData.session_name, 
         }));
         const updateSessionName = `${
           import.meta.env.VITE_API_ENDPOINT
@@ -336,7 +337,7 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
   const handleKeyDown = (event) => {
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
-      handleSubmit(); // Call the handleSubmit function when Enter is pressed
+      handleSubmit(); 
     }
   };
 
@@ -477,7 +478,6 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
 
   const handleDeleteMessage = async (message) => {
     // remember to set is submitting true/false
-    console.log("will be deleted", message);
     const authSession = await fetchAuthSession();
     const { email } = await fetchUserAttributes();
     const token = authSession.tokens.idToken.toString();
@@ -517,8 +517,8 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
     const handleResize = () => {
       const textarea = textareaRef.current;
       if (textarea) {
-        textarea.style.height = "auto"; // Reset height to recalculate
-        textarea.style.height = `${textarea.scrollHeight}px`; // Set height based on content
+        textarea.style.height = "auto"; 
+        textarea.style.height = `${textarea.scrollHeight}px`; 
 
         // Enforce max-height and add scroll when needed
         if (textarea.scrollHeight > parseInt(textarea.style.maxHeight)) {
@@ -529,7 +529,7 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
       }
     };
 
-    handleResize(); // Initial call
+    handleResize();
     const textarea = textareaRef.current;
 
     if (textarea) {
@@ -589,7 +589,6 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
     } catch (error) {
       console.error("Error fetching session:", error);
       setMessages([]);
-      console.log("messages", messages);
     }
   };
   useEffect(() => {
@@ -599,7 +598,7 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
   }, [session]);
 
   if (!module) {
-    return <div>Loading...</div>; // Or any placeholder UI
+    return <div>Loading...</div>; 
   }
 
   return (
@@ -659,7 +658,7 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
           <textarea
             ref={textareaRef}
             className="text-sm w-full outline-none bg-[#f2f0f0] text-black resize-none max-h-32 ml-2 mr-2"
-            style={{ maxHeight: "8rem" }} // Adjust max height as needed
+            style={{ maxHeight: "8rem" }} 
             maxLength={2096}
           />
           <img

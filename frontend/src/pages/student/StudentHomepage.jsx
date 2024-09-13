@@ -60,6 +60,12 @@ export const StudentHomepage = ({ setCourse }) => {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  useEffect(() => {
+    if (!loading && courses.length === 0) {
+      handleClickOpen();
+    }
+  }, [loading, courses]);
+
   const enterCourse = (course) => {
     setCourse(course);
     sessionStorage.clear();
@@ -157,7 +163,6 @@ export const StudentHomepage = ({ setCourse }) => {
       );
       if (response.ok) {
         const data = await response.json();
-        console.log("dta", data);
         setCourses(data);
         setLoading(false);
       } else {
@@ -238,7 +243,7 @@ export const StudentHomepage = ({ setCourse }) => {
               }}
               onClick={handleClickOpen}
             >
-              +
+              Join Course
             </Button>
           </Box>
           {loading ? (
@@ -247,8 +252,8 @@ export const StudentHomepage = ({ setCourse }) => {
                 display: "flex",
                 justifyContent: "center",
                 alignItems: "center",
-                height: "80vh", // Full viewport height
-                width: "100%", // Full width
+                height: "80vh", 
+                width: "100%", 
               }}
             >
               <l-helix size="50" speed="2.5" color="#d21adb"></l-helix>
@@ -277,7 +282,7 @@ export const StudentHomepage = ({ setCourse }) => {
                     fontSize: "1.5rem",
                   }}
                 >
-                  No courses added yet, click the + to add a course
+                  No courses added yet, click "JOIN COURSE" to add a course
                 </Typography>
               ) : (
                 courses.map((course, index) => (

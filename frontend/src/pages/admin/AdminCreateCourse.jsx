@@ -112,9 +112,8 @@ export const AdminCreateCourse = ({ setSelectedComponent }) => {
           progress: undefined,
           theme: "colored",
         });
-        return; // Stop further execution if access code is invalid
+        return;
       }
-      console.log(isActive)
 
       const response = await fetch(
         `${
@@ -161,7 +160,6 @@ export const AdminCreateCourse = ({ setSelectedComponent }) => {
           ).then((enrollResponse) => {
             if (enrollResponse.ok) {
               return enrollResponse.json().then((enrollData) => {
-                console.log("Instructor enrollment data:", enrollData);
                 return { success: true };
               });
             } else {

@@ -108,7 +108,6 @@ const InstructorModules = ({ courseName, course_id }) => {
         if (response.ok) {
           const moduleData = await response.json();
           setData(moduleData);
-          console.log("data", moduleData);
         } else {
           console.error("Failed to fetch modules:", response.statusText);
         }
@@ -178,9 +177,6 @@ const InstructorModules = ({ courseName, course_id }) => {
             return { success: false };
           } else {
             return response.json().then((updatedModule) => {
-              console.log(
-                `Updated module ${updatedModule.module_id} successfully.`
-              );
               return { success: true };
             });
           }

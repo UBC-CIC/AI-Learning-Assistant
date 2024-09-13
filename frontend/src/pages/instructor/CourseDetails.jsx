@@ -42,7 +42,6 @@ const CourseDetails = () => {
           const course_id = data.find((course) => course.course_id);
           const course_name = data.find((course) => course.course_name);
           setRows(formattedData);
-          console.log("Instructors course data:", data);
         } else {
           console.error("Failed to fetch courses:", response.statusText);
         }
@@ -54,7 +53,6 @@ const CourseDetails = () => {
     fetchCourses();
   }, [course_id, course_name]);
 
-  console.log(course_id);
 
   const renderComponent = () => {
     switch (selectedComponent) {

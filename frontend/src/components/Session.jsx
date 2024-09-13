@@ -27,8 +27,8 @@ const Session = ({
 
     const handleKeyDown = (event) => {
       if (event.key === "Enter") {
-        event.preventDefault(); // Prevent default Enter key behavior
-        handleInputBlur(); // Save changes when Enter is pressed
+        event.preventDefault();
+        handleInputBlur(); 
       }
     };
 
@@ -45,15 +45,14 @@ const Session = ({
     selectedSession && selectedSession.session_id === session.session_id;
 
   const handleSessionClick = () => {
-    // Check if the current session is different from the selected session
     if (selectedSession && selectedSession.session_id !== session.session_id) {
-      setMessages([]); // Clear messages if sessions are different
+      setMessages([]); 
     }
-    setSession(session); // Update the selected session
+    setSession(session); 
   };
 
   const handleDeleteClick = (event) => {
-    event.stopPropagation(); // Prevents the event from bubbling up
+    event.stopPropagation();
     deleteSession(session);
   };
 
@@ -154,7 +153,7 @@ const Session = ({
       <div
         onClick={handleDeleteClick}
         className="cursor-pointer w-3 h-3 flex items-center justify-center ml-2"
-        style={{ marginLeft: "8px" }} // Adds margin around the delete button
+        style={{ marginLeft: "8px" }} 
       >
         <img src="/delete.png" alt="delete" className="w-3 h-3" />
       </div>

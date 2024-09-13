@@ -75,7 +75,6 @@ const PromptSettings = ({ courseName, course_id }) => {
       );
       if (response.ok) {
         const data = await response.json();
-        console.log(data);
         setPreviousPrompts(data);
       } else {
         console.error("Failed to fetch previous prompts:", response.statusText);

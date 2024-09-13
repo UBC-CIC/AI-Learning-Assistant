@@ -41,7 +41,6 @@ function titleCase(str) {
 }
 
 const CourseDetails = ({ course, onBack }) => {
-  console.log(course.status);
   const [activeInstructors, setActiveInstructors] = useState([]);
   const [isActive, setIsActive] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -67,7 +66,6 @@ const CourseDetails = ({ course, onBack }) => {
         );
         if (response.ok) {
           const data = await response.json();
-          console.log(data);
           setActiveInstructors(data);
         } else {
           console.error("Failed to fetch courses:", response.statusText);
@@ -94,7 +92,6 @@ const CourseDetails = ({ course, onBack }) => {
         );
         if (response.ok) {
           const data = await response.json();
-          console.log(data);
           setAllInstructors(data);
         } else {
           console.error("Failed to fetch courses:", response.statusText);
@@ -133,7 +130,6 @@ const CourseDetails = ({ course, onBack }) => {
   };
 
   const handleStatusChange = (event) => {
-    console.log(event.target.checked);
     setIsActive(event.target.checked);
   };
 
@@ -155,7 +151,6 @@ const CourseDetails = ({ course, onBack }) => {
 
     if (deleteResponse.ok) {
       const enrollData = await deleteResponse.json();
-      console.log("delete data:", enrollData);
       toast.success("Course Successfully Deleted", {
         position: "top-center",
         autoClose: 1000,
@@ -219,8 +214,6 @@ const CourseDetails = ({ course, onBack }) => {
         });
         return;
       }
-      console.log("Delete data:", await deleteResponse.json());
-
       // Enroll new instructors in parallel
       const enrollPromises = activeInstructors.map((instructor) =>
         fetch(
@@ -239,7 +232,6 @@ const CourseDetails = ({ course, onBack }) => {
         ).then((enrollResponse) => {
           if (enrollResponse.ok) {
             return enrollResponse.json().then((enrollData) => {
-              console.log("Instructor enrollment data:", enrollData);
               return { success: true };
             });
           } else {

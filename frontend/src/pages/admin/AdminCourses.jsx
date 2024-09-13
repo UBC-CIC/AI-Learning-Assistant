@@ -23,7 +23,6 @@ import { useState } from "react";
 
 // populate with dummy data
 const createData = (course, instructor, status, id) => {
-  console.log(status);
   return { course, instructor, status, id };
 };
 
@@ -61,7 +60,6 @@ export const AdminCourses = ({ setSelectedCourse }) => {
         );
         if (response.ok) {
           const data = await response.json();
-          console.log(data);
           setRows(getCourseInfo(data));
           setLoading(false);
         } else {

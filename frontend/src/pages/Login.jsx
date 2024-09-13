@@ -74,7 +74,7 @@ export const Login = () => {
 
       // Check if 'groups' property is present
       if (payload["cognito:groups"]) {
-        console.log("Groups:", payload["cognito:groups"]);
+        console.log("Groups:");
       } else {
         console.log("No groups found in the token.");
       }

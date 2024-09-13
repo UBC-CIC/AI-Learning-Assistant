@@ -55,7 +55,6 @@ const InstructorConcepts = ({ courseName, course_id }) => {
         );
         if (response.ok) {
           const data = await response.json();
-          console.log(data);
           setData(data);
         } else {
           console.error("Failed to fetch concepts:", response.statusText);
@@ -130,7 +129,6 @@ const InstructorConcepts = ({ courseName, course_id }) => {
     try {
       const session = await fetchAuthSession();
       const token = session.tokens.idToken.toString();
-      console.log(data);
 
       // Create an array of promises for updating concepts
       const updatePromises = data.map((concept, index) => {
@@ -172,9 +170,6 @@ const InstructorConcepts = ({ courseName, course_id }) => {
             return { success: false };
           } else {
             return response.json().then((updatedConcept) => {
-              console.log(
-                `Updated concept ${updatedConcept.concept_id} successfully.`
-              );
               return { success: true };
             });
           }

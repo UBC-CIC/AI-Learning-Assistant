@@ -35,16 +35,35 @@ def lambda_handler(event, context):
     try:
         module_prefix = f"{course_id}/{module_name}_{module_id}/"
 
-        response = s3.list_objects_v2(Bucket=BUCKET, Prefix=module_prefix)
+        objects_to_delete = []
+        continuation_token = None
+        
+        # Fetch all objects in the module directory, handling pagination
+        while True:
+            if continuation_token:
+                response = s3.list_objects_v2(
+                    Bucket=BUCKET, 
+                    Prefix=module_prefix, 
+                    ContinuationToken=continuation_token
+                )
+            else:
+                response = s3.list_objects_v2(Bucket=BUCKET, Prefix=module_prefix)
 
-        if 'Contents' in response:
+            if 'Contents' in response:
+                objects_to_delete.extend([{'Key': obj['Key']} for obj in response['Contents']])
+            
+            # Check if there's more data to fetch
+            if response.get('IsTruncated'):
+                continuation_token = response.get('NextContinuationToken')
+            else:
+                break
+
+        if objects_to_delete:
             # Delete all objects in the module directory
-            objects_to_delete = [{'Key': obj['Key']} for obj in response['Contents']]
             delete_response = s3.delete_objects(
                 Bucket=BUCKET,
                 Delete={'Objects': objects_to_delete}
             )
-
             logger.info(f"Deleted objects: {delete_response}")
             return {
                 'statusCode': 200,

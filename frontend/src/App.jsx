@@ -52,11 +52,6 @@ function App() {
             const group = tokens.accessToken.payload["cognito:groups"];
             setUser(tokens.accessToken.payload);
             setUserGroup(group || []);
-            console.log(
-              "auth token payload",
-              tokens.accessToken.payload["cognito:groups"]
-            );
-            console.log(userGroup);
           }
         })
         .catch((error) => {

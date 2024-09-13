@@ -69,7 +69,6 @@ const InstructorNewConcept = () => {
         });
       } else {
         const updatedModule = await response.json();
-        console.log(`Updated Concept ${updatedModule.module_id} successfully.`);
         toast.success("Concept Created Successfully", {
           position: "top-center",
           autoClose: 1000,

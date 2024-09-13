@@ -66,7 +66,6 @@ export const ViewStudents = ({ courseName, course_id }) => {
 
   const navigate = useNavigate();
 
-  console.log(course_id);
   useEffect(() => {
     const fetchCode = async () => {
       try {
@@ -128,7 +127,6 @@ export const ViewStudents = ({ courseName, course_id }) => {
             );
           });
           setRows(formattedData);
-          console.log("Students in course:", formattedData);
         } else {
           console.error("Failed to fetch students:", response.statusText);
         }
@@ -160,7 +158,6 @@ export const ViewStudents = ({ courseName, course_id }) => {
       );
       if (response.ok) {
         const codeData = await response.json();
-        console.log(codeData);
         setAccessCode(codeData.access_code);
       } else {
         console.error("Failed to fetch courses:", response.statusText);

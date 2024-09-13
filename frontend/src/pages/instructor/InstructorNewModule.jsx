@@ -101,7 +101,6 @@ export const InstructorNewModule = ({ courseId }) => {
   };
 
   const handleConceptInputChange = (e) => {
-    console.log(e);
     setConcept(e.target.value);
   };
   const uploadFiles = async (newFiles, token, moduleid) => {
@@ -144,7 +143,7 @@ export const InstructorNewModule = ({ courseId }) => {
   };
 
   const handleSave = async () => {
-    if (isSaving) return; // Prevent double clicking
+    if (isSaving) return;
 
     // Validation check
     if (!moduleName || !concept) {
@@ -168,14 +167,6 @@ export const InstructorNewModule = ({ courseId }) => {
       const session = await fetchAuthSession();
       const token = session.tokens.idToken.toString();
       const { email } = await fetchUserAttributes();
-      console.log(
-        "sign in details",
-        course_id,
-        selectedConcept.concept_id,
-        nextModuleNumber,
-        moduleName,
-        email
-      );
       const response = await fetch(
         `${
           import.meta.env.VITE_API_ENDPOINT
@@ -210,7 +201,6 @@ export const InstructorNewModule = ({ courseId }) => {
         });
       } else {
         const updatedModule = await response.json();
-        console.log(`Created module ${updatedModule.module_id} successfully.`);
         await uploadFiles(newFiles, token, updatedModule.module_id);
 
         setFiles((prevFiles) =>

@@ -40,7 +40,6 @@ const InstructorEditConcept = () => {
   const [conceptName, setConceptName] = useState(conceptData.concept_name);
   const [data, setData] = useState([]);
   const [dialogOpen, setDialogOpen] = useState(false);
-  console.log(conceptData);
   useEffect(() => {
     const fetchModules = async () => {
       try {
@@ -60,12 +59,10 @@ const InstructorEditConcept = () => {
         );
         if (response.ok) {
           const moduleData = await response.json();
-          console.log("module data", moduleData);
           const filteredData = moduleData.filter(
             (module) => module.concept_name === conceptData.concept_name
           );
           setData(filteredData);
-          console.log("filtered data", filteredData);
         } else {
           console.error("Failed to fetch modules:", response.statusText);
         }

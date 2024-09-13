@@ -40,7 +40,6 @@ const fetchInstructors = async () => {
     const userAtrributes = await fetchUserAttributes();
     const token = session.tokens.idToken.toString();
     const adminEmail = userAtrributes.email;
-    console.log("admin email", adminEmail);
 
     const response = await fetch(
       `${
@@ -58,7 +57,6 @@ const fetchInstructors = async () => {
       throw new Error(`HTTP error! Status: ${response.status}`);
     }
     const data = await response.json();
-    console.log("Response from backend:", data);
     return data;
   } catch (error) {
     console.error("Error fetching instructors:", error);
@@ -131,10 +129,8 @@ export const AdminInstructors = ({ setSelectedInstructor }) => {
         );
         if (response.ok) {
           const data = await response.json();
-          console.log(data);
           setRows(getInstructorInfo(data));
           setLoading(false);
-          console.log("Instructors data:", data);
         } else {
           console.error("Failed to fetch instructors:", response.statusText);
         }
@@ -176,7 +172,6 @@ export const AdminInstructors = ({ setSelectedInstructor }) => {
       const userAtrributes = await fetchUserAttributes();
       const token = session.tokens.idToken.toString();
       const adminEmail = userAtrributes.email;
-      console.log("admin email", email);
       const existingInstructor = rows.find((row) => row.email === email);
       if (existingInstructor) {
         toast.error(`Instructor with email ${email} already exists.`, {

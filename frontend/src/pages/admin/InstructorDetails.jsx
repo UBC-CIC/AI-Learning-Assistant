@@ -102,7 +102,6 @@ const InstructorDetails = ({ instructorData, onBack }) => {
         if (response.ok) {
           const data = await response.json();
           setActiveCourses(data);
-          console.log(data);
           setActiveCourseLoading(false);
         } else {
           console.error("Failed to fetch courses:", response.statusText);
@@ -216,8 +215,6 @@ const InstructorDetails = ({ instructorData, onBack }) => {
         });
         return;
       }
-      console.log("Delete data:", await deleteResponse.json());
-
       // Enroll instructor in multiple courses in parallel
       const enrollPromises = activeCourses.map((course) =>
         fetch(
@@ -236,7 +233,6 @@ const InstructorDetails = ({ instructorData, onBack }) => {
         ).then((enrollResponse) => {
           if (enrollResponse.ok) {
             return enrollResponse.json().then((enrollData) => {
-              console.log("Instructor enrollment data:", enrollData);
               return { success: true };
             });
           } else {

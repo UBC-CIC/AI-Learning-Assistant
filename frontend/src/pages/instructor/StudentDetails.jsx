@@ -51,7 +51,7 @@ const formatMessages = (messages) => {
       const messagesForDate = groupedMessages[date]
         .map((message) => {
           const speaker = message.student_sent ? "Student" : "LLM";
-          return `${speaker}: ${message.message_content.trim()}`; // Remove extra newlines and spaces
+          return `${speaker}: ${message.message_content.trim()}`;
         })
         .join("\n");
 
@@ -102,13 +102,13 @@ const StudentDetails = () => {
     };
 
     fetchHistory();
-  }, [course_id, student.email]); // Add dependencies for course_id and student.email
+  }, [course_id, student.email]); 
 
   useEffect(() => {
     if (textFieldRef.current) {
       textFieldRef.current.scrollTop = textFieldRef.current.scrollHeight;
     }
-  }, [chatHistory]); // Auto-scroll when chatHistory changes
+  }, [chatHistory]); 
 
   const handleToggle = () => {
     setUnenroll(!unenroll);
@@ -118,7 +118,6 @@ const StudentDetails = () => {
     if (unenroll) {
       deleteStudent();
     } else {
-      console.log("unenrolling");
       toast.success("Saved Successfully", {
         position: "top-center",
         autoClose: 1000,
@@ -222,7 +221,7 @@ const StudentDetails = () => {
                 readOnly: true,
               }}
               sx={{ my: 2 }}
-              inputRef={textFieldRef} // Attach the ref
+              inputRef={textFieldRef} 
             />
             <Button
               onClick={() => {

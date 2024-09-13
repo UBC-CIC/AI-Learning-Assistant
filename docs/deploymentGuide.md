@@ -4,7 +4,7 @@
 - [Requirements](#requirements)
 - [Pre-Deployment](#pre-deployment)
 - [Deployment](#deployment)
-    - [Step 1: Clone The Repository](#step-1-clone-the-repository)
+    - [Step 1: Clone The Repository](#step-1-fork--clone-the-repository)
     - [Step 2: Upload Secrets](#step-2-upload-secrets)
     - [Step 3: CDK Deployment](#step-3-cdk-deployment)
 - [Post-Deployment](#post-deployment)
@@ -30,7 +30,7 @@ To deploy this solution, you will need to generate a GitHub personal access toke
 
 ## Deployment
 ### Step 1: Fork & Clone The Repository
-First, you need to fork the repository. To create a fork, navigate to the [main branch](https://github.com/UBC-CIC/document-chat) of this repository. Then, in the top-right corner, click `Fork`.
+First, you need to fork the repository. To create a fork, navigate to the [main branch](https://github.com/UBC-CIC/AI-Learning-Assistant) of this repository. Then, in the top-right corner, click `Fork`.
 
 ![](./images/fork.jpeg)
 
@@ -41,11 +41,11 @@ Now let's clone the GitHub repository onto your machine. To do this:
 2. For an Apple computer, open Terminal. If on a Windows machine, open Command Prompt or Windows Terminal. Enter into the folder you made using the command `cd path/to/folder`. To find the path to a folder on a Mac, right click on the folder and press `Get Info`, then select the whole text found under `Where:` and copy with ⌘C. On Windows (not WSL), enter into the folder on File Explorer and click on the path box (located to the left of the search bar), then copy the whole text that shows up.
 3. Clone the GitHub repository by entering the following command. Be sure to replace `<YOUR-GITHUB-USERNAME>` with your own username.
 ```
-git clone https://github.com/<YOUR-GITHUB-USERNAME>/document-chat.git
+git clone https://github.com/<YOUR-GITHUB-USERNAME>/AI-Learning-Assistant.git
 ```
 The code should now be in the folder you created. Navigate into the root folder containing the entire codebase by running the command:
 ```
-cd document-chat
+cd AI-Learning-Assistant
 ```
 
 ### Step 2: Upload Secrets
@@ -61,12 +61,29 @@ Moreover, you will need to upload your github username to Amazon SSM Parameter S
 
 ```
 aws ssm put-parameter \
-    --name "repository-owner-name" \
+    --name "aila-owner-name" \
     --value "<YOUR-GITHUB-USERNAME>" \
     --type String \
     --profile <YOUR-PROFILE-NAME>
 ```
 
+You would have to supply a custom database username when deploying the solution to increase security. Run the following command and ensure you replace `<YOUR-DB-USERNAME>` with the custom name of your choice.
+
+```
+aws secretsmanager create-secret \
+    --name AILASecrets \
+    --secret-string "{\"DB_Username\":\"<YOUR-DB-USERNAME>\"}"\
+    --profile <your-profile-name>
+```
+
+For example,
+
+```
+aws secretsmanager create-secret \
+    --name AILASecrets \
+    --secret-string "{\"DB_Username\":\"AILASecrets\"}"\
+    --profile <your-profile-name>
+```
 ### Step 3: CDK Deployment
 It's time to set up everything that goes on behind the scenes! For more information on how the backend works, feel free to refer to the Architecture Deep Dive, but an understanding of the backend is not necessary for deployment.
 
@@ -74,14 +91,6 @@ Open a terminal in the `/backend` directory.
 
 **Download Requirements**: Install requirements with npm by running `npm install` command.
 
-**Possible Modifications**:
-1. LLM model as `modelId` 
-2. Embedding model as `embeddingModelId`
-3. API stage (e.x. dev, prod, etc.) as `apiStage`
-4. Application name as `applicationName`
-All parameters can be set in the [cdk stack](../backend/lib/document-chat.ts) as follows:
-
-![](./images/stack_params.png)
 
 **Initialize the CDK stack**(required only if you have not deployed any resources with CDK in this region before). Please replace `<your-profile-name>` with the appropriate AWS profile used earlier.
 ```
@@ -92,29 +101,17 @@ cdk bootstrap aws://<YOUR_AWS_ACCOUNT_ID>/<YOUR_ACCOUNT_REGION> --profile <your-
 **Deploy CDK stack**
 You may run the following command to deploy the stacks all at once. Again, replace `<your-profile-name>` with the appropriate AWS profile used earlier.
 ```
-cdk deploy DocumentChat --parameters githubRepoName=document-chat --profile <your-profile-name>
+cdk deploy --all --profile <your-profile-name>
 ```
 
-Once the deployment is complete, you will receive the following output:
-
-![deployment output](./images/deployment_output.png)
-
-Take note of the `Amplify App ID` as it will be used in the next step. The `Amplify Branch URL` is the public URL you will use to access the web application.
+If you have trouble running the above command, try removing all the \ and run it in one line.
 
 ## Post-Deployment
 ### Step 1: Build AWS Amplify App
 
-If you'd like to access Amplify details via the AWS Console, you can:
 1. Log in to AWS console, and navigate to **AWS Amplify**. You can do so by typing `Amplify` in the search bar at the top.
-2. From `All apps`, click `DocumentChat-...`.
+2. From `All apps`, click `aila-amplify`.
 There, you have access to the `Amplify App ID` and the public domain name to use the web app.
-
-Run the following command to build the app. Please replace `<app-id>` with the app ID found in amplify and `<profile-name>` with the appropriate AWS profile used earlier. 
-```
-aws amplify start-job --job-type RELEASE --app-id <app-id> --branch-name main --profile <profile-name>
-```
-This will trigger the build. 
-When the build is completed, the Amplify console will display a `deployed` status.
 
 ### Step 2: Visit Web App
 You can now navigate to the web app URL to see your application in action.
@@ -123,7 +120,6 @@ You can now navigate to the web app URL to see your application in action.
 ### Taking down the deployed stack
 To take down the deployed stack for a fresh redeployment in the future, navigate to AWS Cloudformation on the AWS Console, click on the stack and hit Delete.
 
-Alternatively, run the following in the `/backend` folder:
-```
-cdk destroy DocumentChat --profile <your-profile-name>
-```
+Please wait for the stacks in each step to be properly deleted before deleting the stack downstream.
+
+Also make sure to delete secrets in Secrets Manager.

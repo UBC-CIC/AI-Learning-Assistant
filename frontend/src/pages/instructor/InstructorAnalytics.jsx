@@ -62,7 +62,6 @@ const InstructorAnalytics = ({ courseName, course_id }) => {
         );
         if (response.ok) {
           const analytics_data = await response.json();
-          console.log(analytics_data);
           setData(analytics_data);
           const graphDataFormatted = analytics_data.map((module) => ({
             module: module.module_name,
@@ -70,7 +69,6 @@ const InstructorAnalytics = ({ courseName, course_id }) => {
           }));
           setGraphData(graphDataFormatted);
 
-          console.log("Course analytics:", graphDataFormatted);
         } else {
           console.error("Failed to fetch analytics:", response.statusText);
         }

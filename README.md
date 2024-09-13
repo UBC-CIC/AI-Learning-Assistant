@@ -71,5 +71,11 @@ This application was architected and developed by [Sean Woo](https://www.linkedi
 
 This project is distributed under the [MIT License](LICENSE).
 
+Licenses of libraries and tools used by the system are listed below:
+
+[PostgreSQL license](https://www.postgresql.org/about/licence/)
+- For PostgreSQL and pgvector
+- "a liberal Open Source license, similar to the BSD or MIT licenses."
+
 [LLaMa 3 Community License Agreement](https://llama.meta.com/llama3/license/)
 - For Llama 3 70B Instruct model

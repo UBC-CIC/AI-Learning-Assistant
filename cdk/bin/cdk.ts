@@ -5,7 +5,6 @@ import { AmplifyStack } from '../lib/amplify-stack';
 import { ApiGatewayStack } from '../lib/api-gateway-stack';
 import { DatabaseStack } from '../lib/database-stack';
 import { DBFlowStack } from '../lib/dbFlow-stack';
-import { DynamoStack } from '../lib/llm-stack';
 import { VpcStack } from '../lib/vpc-stack';
 const app = new cdk.App();
 
@@ -16,7 +15,6 @@ const env = {
 
 const vpcStack = new VpcStack(app, 'VpcStack', { env });
 const dbStack = new DatabaseStack(app, 'DatabaseStack2', vpcStack, { env });
-const dynamoStack = new DynamoStack(app, 'DynamoStack',vpcStack,  { env });
 const apiStack = new ApiGatewayStack(app, 'ApiGatewayStack', dbStack, vpcStack,  { env });
 const dbFlowStack = new DBFlowStack(app, 'DBFlowStack', vpcStack, dbStack, apiStack, { env });
 const amplifyStack = new AmplifyStack(app, 'AmplifyStack',apiStack, { env });

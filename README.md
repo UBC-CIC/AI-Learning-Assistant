@@ -15,7 +15,7 @@ This prototype explores how Large Language Models (LLMs) can enhance education b
 
 ## High-Level Architecture
 
-The following architecture diagram illustrates the various AWS components utilized to deliver the solution. For an in-depth explanation of the frontend and backend stacks, please look at the [Architecture Deep Dive](docs/ArchitectureDeepDive.md).
+The following architecture diagram illustrates the various AWS components utilized to deliver the solution. For an in-depth explanation of the frontend and backend stacks, please look at the [Architecture Guide](docs/architecture.md).
 
 ![Alt text](docs/images/architecture.png)
 

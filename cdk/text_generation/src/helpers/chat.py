@@ -31,7 +31,21 @@ def create_dynamodb_history_table(table_name: str) -> bool:
     dynamodb_client = boto3.client("dynamodb")
     
     # Retrieve the list of tables that currently exist.
-    existing_tables = dynamodb_client.list_tables()['TableNames']
+    existing_tables = []
+    exclusive_start_table_name = None
+    
+    while True:
+        if exclusive_start_table_name:
+            response = dynamodb_client.list_tables(ExclusiveStartTableName=exclusive_start_table_name)
+        else:
+            response = dynamodb_client.list_tables()
+        
+        existing_tables.extend(response.get('TableNames', []))
+        
+        if 'LastEvaluatedTableName' in response:
+            exclusive_start_table_name = response['LastEvaluatedTableName']
+        else:
+            break
     
     if table_name not in existing_tables:  # Create a new table if it doesn't exist.
         # Create the DynamoDB table.

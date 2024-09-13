@@ -1,6 +1,7 @@
 import os
 import subprocess
 import zipfile
+import shutil
 
 # This script downloads the dependencies for text generation as ZIP files. Other unnecessary files that are also added need to be manually removed.
 
@@ -13,19 +14,21 @@ os.chdir(target_directory)
 packages = [
     'torch',
     'langchain',
-    # 'langchain-aws',
-    # 'langchain-core',
-    # 'langchain-community',
-    # 'langchain-experimental',
-    # 'langchain-postgres',
-    # 'psycopg[binary,pool]',
-    'open_clip_torch',
-    # 'psycopg2-binary',
-    # 'python-dotenv'
+    'open_clip_torch'
 ]
 
+pip_executable = shutil.which("pip")
+
+if not pip_executable:
+    raise RuntimeError("pip executable not found. Make sure pip is installed and accessible.")
+
 for package in packages:
-    subprocess.run(['pip', 'download', package])
+    try:
+        # Use the full path to pip to avoid any possible path hijacking
+        subprocess.run([pip_executable, 'download', package], check=True)
+    except subprocess.CalledProcessError as e:
+        print(f"Error downloading {package}: {e}")
+        continue
 
 for package in packages:
     package_wheel_file = None

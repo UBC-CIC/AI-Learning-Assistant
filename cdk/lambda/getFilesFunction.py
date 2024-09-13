@@ -39,11 +39,30 @@ def connect_to_db():
         return None
 
 def list_files_in_s3_prefix(bucket, prefix):
-    result = s3.list_objects_v2(Bucket=bucket, Prefix=prefix)
     files = []
-    if 'Contents' in result:
-        for obj in result['Contents']:
-            files.append(obj['Key'].replace(prefix, ''))
+    continuation_token = None
+
+    # Fetch all objects in the module directory, handling pagination
+    while True:
+        if continuation_token:
+            result = s3.list_objects_v2(
+                Bucket=bucket, 
+                Prefix=prefix, 
+                ContinuationToken=continuation_token
+            )
+        else:
+            result = s3.list_objects_v2(Bucket=bucket, Prefix=prefix)
+
+        if 'Contents' in result:
+            for obj in result['Contents']:
+                files.append(obj['Key'].replace(prefix, ''))
+
+        # Check if there's more data to fetch
+        if result.get('IsTruncated'):
+            continuation_token = result.get('NextContinuationToken')
+        else:
+            break
+
     return files
 
 def generate_presigned_url(bucket, key):

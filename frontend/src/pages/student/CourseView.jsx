@@ -171,7 +171,7 @@ export const CourseView = ({ course, setModule, setCourse }) => {
         </div>
       </header>
       <div className="flex flex-col">
-        <div className="text-black text-start text-lg font-roboto font-semibold p-2 ml-4">
+        <div className="text-black text-start text-xl font-roboto font-semibold p-2 ml-4">
           Learning Journey
         </div>
         <div className="p-2 ml-4 flex flex-row justify-center gap-x-20">
@@ -197,7 +197,7 @@ export const CourseView = ({ course, setModule, setCourse }) => {
             </div>
           ))}
         </div>
-        <div className="text-black text-start text-lg font-roboto font-semibold p-2 ml-4">
+        <div className="text-black text-start text-xl font-roboto font-semibold p-2 ml-4">
           Modules
         </div>
         <div className="flex justify-center items-center">

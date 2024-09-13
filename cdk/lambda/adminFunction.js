@@ -87,8 +87,13 @@ exports.handler = async (event) => {
             const enrollment = await sqlConnectionTableCreator`
                 INSERT INTO "Enrolments" (enrolment_id, course_id, user_email, enrolment_type, time_enroled)
                 VALUES (uuid_generate_v4(), ${course_id}, ${instructor_email}, 'instructor', CURRENT_TIMESTAMP)
-                ON CONFLICT (course_id, user_email) DO NOTHING
+                ON CONFLICT (course_id, user_email) 
+                DO UPDATE SET 
+                    enrolment_id = EXCLUDED.enrolment_id,
+                    enrolment_type = EXCLUDED.enrolment_type,
+                    time_enroled = EXCLUDED.time_enroled
                 RETURNING *;
+
             `;
 
             response.body = JSON.stringify(enrollment);

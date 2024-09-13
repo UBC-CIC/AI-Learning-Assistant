@@ -50,7 +50,7 @@ export function getIdentityCredentials(jwtToken, setCredentials) {
   const creds = new AWS.CognitoIdentityCredentials({
     IdentityPoolId: IDENTITY_POOL_ID,
     Logins: {
-      [`cognito-idp.ca-central-1.amazonaws.com/${USER_POOL_ID}`]: jwtToken,
+      [`cognito-idp.${REGION}.amazonaws.com/${USER_POOL_ID}`]: jwtToken,
     },
   });
 

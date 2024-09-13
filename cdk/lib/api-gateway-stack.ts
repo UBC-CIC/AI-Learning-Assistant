@@ -898,6 +898,7 @@ export class ApiGatewayStack extends cdk.Stack {
       ],
       // When deleting the stack, need to empty the Bucket and delete it manually
       removalPolicy: cdk.RemovalPolicy.RETAIN,
+      enforceSSL: true,
     });
 
     // Create the Lambda function for generating presigned URLs

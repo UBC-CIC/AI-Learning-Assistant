@@ -41,9 +41,13 @@ Please refer to the [Web App User Guide](./docs/userGuide.md) for instructions o
 └── frontend
     ├── public
     └── src
+        ├── assets
         ├── components
         ├── functions
         └── pages
+            ├── admin
+            ├── instructor
+            └── student
 ```
 
 1. `/cdk`: Contains the deployment code for the app's AWS infrastructure
@@ -56,10 +60,14 @@ Please refer to the [Web App User Guide](./docs/userGuide.md) for instructions o
 2. `/docs`: Contains documentation for the application
 3. `/frontend`: Contains the user interface of the application
     - `/public`: public assets used in the application
-    - `/src/common`: Contains shared components used in the application
-    - `/src/components`: Contains components used in the application
-    - `/src/routes`: Contains pages comprising the application's interface
-
+    - `/src`: contains the frontend code of the application
+        - `/assets`: Contains assets used in the application
+        - `/components`: Contains components used in the application
+        - `/functions`: Contains utility functions used in the application
+        - `/pages`: Contains pages used in the application
+            - `/admin`: Contains admin pages used in the application
+            - `/instructor`: Contains instructor pages used in the application
+            - `/student`: Contains student pages used in the application
 ## Changelog
 N/A
 

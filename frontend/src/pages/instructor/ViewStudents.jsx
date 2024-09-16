@@ -201,7 +201,7 @@ export const ViewStudents = ({ courseName, course_id }) => {
           {courseTitleCase(courseName)} Students
         </Typography>
         <Paper sx={{ width: "170%", overflow: "hidden", marginTop: 2 }}>
-          <TableContainer>
+          <TableContainer sx = {{ maxHeight: '50vh', overflowY: "auto"}}>
             <TextField
               label="Search by Student"
               variant="outlined"

@@ -52,6 +52,7 @@ export const AdminCreateCourse = ({ setSelectedComponent }) => {
   const [isActive, setIsActive] = useState(true);
   const [selectedInstructors, setSelectedInstructors] = useState([]);
   const [instructors, setInstructors] = useState([]);
+  const [submitting, setSubmitting] = useState(false);
   const handleStatusChange = (event) => {
     setIsActive(event.target.checked);
   };
@@ -240,6 +241,8 @@ export const AdminCreateCourse = ({ setSelectedComponent }) => {
         theme: "colored",
         transition: "Bounce",
       });
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -295,7 +298,7 @@ export const AdminCreateCourse = ({ setSelectedComponent }) => {
             margin="normal"
             multiline
             rows={4}
-            inputProps={{ maxLength: 1000}}
+            inputProps={{ maxLength: 1000 }}
             helperText={`${coursePrompt.length}/${CHARACTER_LIMIT}`}
           />
           <TextField
@@ -389,7 +392,12 @@ export const AdminCreateCourse = ({ setSelectedComponent }) => {
           <Button
             variant="contained"
             color="primary"
-            onClick={handleCreate}
+            onClick={() => {
+              if (!submitting) {
+                setSubmitting(true);
+                handleCreate();
+              }
+            }}
             fullWidth
             sx={{ mt: 2 }}
           >

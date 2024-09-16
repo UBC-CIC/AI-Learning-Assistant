@@ -123,7 +123,12 @@ export const AdminCourses = ({ setSelectedCourse }) => {
               Courses
             </Typography>
           </Box>
-          <TableContainer>
+          <TableContainer
+            sx={{
+              maxHeight: "70vh",
+              overflowY: "auto",
+            }}
+          >
             <TextField
               label="Search by User"
               variant="outlined"
@@ -198,13 +203,13 @@ export const AdminCourses = ({ setSelectedCourse }) => {
               <TableFooter>
                 <TableRow>
                   <TablePagination
-                    rowsPerPageOptions={[5, 5]}
+                    rowsPerPageOptions={[5, 10, 25]}
                     component="div"
                     count={filteredRows.length}
                     rowsPerPage={rowsPerPage}
                     page={page}
                     onPageChange={handleChangePage}
-                    //onRowsPerPageChange={handleChangeRowsPerPage}
+                    onRowsPerPageChange={handleChangeRowsPerPage}
                     sx={{
                       fontSize: 14, // Increased font size for pagination
                       minWidth: 400,

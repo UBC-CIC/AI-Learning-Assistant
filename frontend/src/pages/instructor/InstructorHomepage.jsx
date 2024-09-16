@@ -230,7 +230,8 @@ const InstructorHomepage = () => {
                   onChange={handleSearchChange}
                   sx={{ width: "100%", marginBottom: 2 }}
                 />
-                <TableContainer sx={{ width: "100%" }}>
+                <TableContainer sx={{ width: "100%", maxHeight: "70vh",
+              overflowY: "auto",}}>
                   <Table aria-label="course table">
                     <TableHead>
                       <TableRow>

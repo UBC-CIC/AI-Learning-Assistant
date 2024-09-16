@@ -249,7 +249,7 @@ export const CourseView = ({ course, setModule, setCourse }) => {
                       <TableCell sx={{ fontSize: "1rem" }}>
                         <div className="flex flex-row gap-1 items-center">
                           <FaInfoCircle className="text-xs" />
-                          <span className="text-sm">
+                          <span className="text-base">
                             {titleCase(entry.module_name)}
                           </span>
                         </div>

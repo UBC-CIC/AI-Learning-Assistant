@@ -407,8 +407,7 @@ exports.handler = async (event) => {
             // Find all student enrolments for the given course_id
             const enrolments = await sqlConnection`
                     SELECT enrolment_id FROM "Enrolments"
-                    WHERE course_id = ${course_id}
-                    AND enrolment_type = 'student';
+                    WHERE course_id = ${course_id};
                   `;
 
             // Create Student_Module entries for each enrolment

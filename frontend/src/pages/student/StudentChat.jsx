@@ -50,13 +50,20 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
   const [creatingSession, setCreatingSession] = useState(false);
   const [newMessage, setNewMessage] = useState(null);
   const [isAItyping, setIsAItyping] = useState(false);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (sessions.length === 0) {
+    if (
+      !loading &&
+      !creatingSession &&
+      !isSubmitting &&
+      !isAItyping &&
+      sessions.length === 0
+    ) {
       handleNewChat();
     }
-  }, [sessions]);
+  }, [sessions, creatingSession]);
 
   useEffect(() => {
     if (messagesEndRef.current) {
@@ -75,6 +82,7 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
 
   useEffect(() => {
     const fetchModule = async () => {
+      setLoading(true);
       if (!course || !module) {
         return;
       }
@@ -108,6 +116,8 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
         }
       } catch (error) {
         console.error("Error fetching module:", error);
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -186,7 +196,10 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
     if (session) {
       getSession = Promise.resolve(session);
     } else {
-      handleNewChat();
+      if (!creatingSession) {
+        setCreatingSession(true);
+        handleNewChat();
+      }
       setIsSubmitting(false);
       return;
     }
@@ -268,8 +281,8 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
       })
       .then((textGenData) => {
         setSession((prevSession) => ({
-          ...prevSession, 
-          session_name: textGenData.session_name, 
+          ...prevSession,
+          session_name: textGenData.session_name,
         }));
         const updateSessionName = `${
           import.meta.env.VITE_API_ENDPOINT
@@ -340,7 +353,7 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
   const handleKeyDown = (event) => {
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
-      handleSubmit(); 
+      handleSubmit();
     }
   };
 
@@ -353,7 +366,6 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
     let sessionData;
     let userEmail;
     let authToken;
-    setCreatingSession(true);
     setIsAItyping(true);
     return fetchAuthSession()
       .then((session) => {
@@ -392,6 +404,7 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
         setCurrentSessionId(sessionData.session_id);
         setSessions((prevItems) => [...prevItems, sessionData]);
         setSession(sessionData);
+        setCreatingSession(false);
 
         const textGenUrl = `${
           import.meta.env.VITE_API_ENDPOINT
@@ -432,7 +445,6 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
         setIsAItyping(false);
       })
       .finally(() => {
-        setCreatingSession(false);
         setIsAItyping(false);
       });
   };
@@ -504,7 +516,7 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
         const data = await response.json();
         setMessages((prevMessages) => {
           if (prevMessages.length >= 2) {
-            return prevMessages.slice(0, -2); 
+            return prevMessages.slice(0, -2);
           } else {
             return [];
           }
@@ -520,8 +532,8 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
     const handleResize = () => {
       const textarea = textareaRef.current;
       if (textarea) {
-        textarea.style.height = "auto"; 
-        textarea.style.height = `${textarea.scrollHeight}px`; 
+        textarea.style.height = "auto";
+        textarea.style.height = `${textarea.scrollHeight}px`;
 
         // Enforce max-height and add scroll when needed
         if (textarea.scrollHeight > parseInt(textarea.style.maxHeight)) {
@@ -601,7 +613,7 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
   }, [session]);
 
   if (!module) {
-    return <div>Loading...</div>; 
+    return <div>Loading...</div>;
   }
 
   return (
@@ -620,7 +632,10 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
         </div>
         <button
           onClick={() => {
-            handleNewChat();
+            if (!creatingSession) {
+              setCreatingSession(true);
+              handleNewChat();
+            }
           }}
           className="border border-black ml-8 mr-8 mt-0 mb-0 bg-transparent pt-1.5 pb-1.5"
         >
@@ -661,7 +676,7 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
           <textarea
             ref={textareaRef}
             className="text-sm w-full outline-none bg-[#f2f0f0] text-black resize-none max-h-32 ml-2 mr-2"
-            style={{ maxHeight: "8rem" }} 
+            style={{ maxHeight: "8rem" }}
             maxLength={2096}
           />
           <img

@@ -2,11 +2,11 @@ import React, { useContext } from "react";
 import { useNavigate } from "react-router-dom";
 // amplify
 import { signOut } from "aws-amplify/auth";
-import { UserContext } from "../App"; // Adjust the path based on your file structure
+import { UserContext } from "../App";
 
 const InstructorHeader = () => {
   const navigate = useNavigate();
-  const { setIsInstructorAsStudent } = useContext(UserContext); // Access the context state
+  const { setIsInstructorAsStudent } = useContext(UserContext);
 
   const handleSignOut = (event) => {
     event.preventDefault();

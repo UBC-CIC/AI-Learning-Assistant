@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useContext } from "react";
 import {
   Container,
   Typography,
@@ -15,6 +15,8 @@ import KeyboardArrowLeft from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRight from "@mui/icons-material/KeyboardArrowRight";
 import { useTheme } from "@mui/material/styles";
 import "react-toastify/dist/ReactToastify.css";
+import { useNavigate } from "react-router-dom";
+import { UserContext } from "../../App";
 
 const CHARACTER_LIMIT = 1000;
 function courseTitleCase(str) {
@@ -39,6 +41,14 @@ const PromptSettings = ({ courseName, course_id }) => {
   const [previousPrompts, setPreviousPrompts] = useState([]);
   const [activeStep, setActiveStep] = useState(0);
   const maxSteps = previousPrompts.length;
+  const { isInstructorAsStudent } = useContext(UserContext);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (isInstructorAsStudent) {
+      navigate("/");
+    }
+  }, [isInstructorAsStudent, navigate]);
 
   // Function to convert UTC timestamp to local time
   const convertToLocalTime = (timestamp) => {

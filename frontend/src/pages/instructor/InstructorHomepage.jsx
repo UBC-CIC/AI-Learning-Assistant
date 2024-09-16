@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import {
   Routes,
   Route,
@@ -37,7 +37,7 @@ import StudentDetails from "./StudentDetails";
 import InstructorNewConcept from "./InstructorNewConcept";
 import InstructorConcepts from "./InstructorConcepts";
 import InstructorEditConcept from "./InstructorEditConcept";
-
+import { UserContext } from "../../App";
 function titleCase(str) {
   if (typeof str !== "string") {
     return str;
@@ -113,7 +113,14 @@ const InstructorHomepage = () => {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [courseData, setCourseData] = useState([]);
+  const { isInstructorAsStudent } = useContext(UserContext);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (isInstructorAsStudent) {
+      navigate("/");
+    }
+  }, [isInstructorAsStudent, navigate]);
   // connect to api data
   useEffect(() => {
     const fetchCourses = async () => {

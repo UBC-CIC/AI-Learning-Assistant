@@ -285,34 +285,45 @@ export const AdminInstructors = ({ setSelectedInstructor }) => {
               InputLabelProps={{ sx: { fontSize: 14 } }}
             />
             <Table aria-label="instructors table">
-              <TableHead>
-                <TableRow>
-                  <TableCell sx={{ width: "30%", fontSize: 14 }}>
-                    First Name
-                  </TableCell>
-                  <TableCell sx={{ fontSize: 14 }}>Last Name</TableCell>
-                  <TableCell sx={{ fontSize: 14 }}>Email</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {filteredRows
-                  .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                  .map((row, index) => (
-                    <TableRow
-                      key={index}
-                      onClick={() => handleRowClick(row.email)}
-                      style={{ cursor: "pointer" }}
-                    >
-                      <TableCell sx={{ fontSize: 14 }}>
-                        {titleCase(row.user)}
+              {!loading ? (
+                <>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell sx={{ width: "30%", fontSize: 14 }}>
+                        First Name
                       </TableCell>
-                      <TableCell sx={{ fontSize: 14 }}>
-                        {titleCase(row.last)}
-                      </TableCell>
-                      <TableCell sx={{ fontSize: 14 }}>{row.email}</TableCell>
+                      <TableCell sx={{ fontSize: 14 }}>Last Name</TableCell>
+                      <TableCell sx={{ fontSize: 14 }}>Email</TableCell>
                     </TableRow>
-                  ))}
-              </TableBody>
+                  </TableHead>
+                  <TableBody>
+                    {filteredRows
+                      .slice(
+                        page * rowsPerPage,
+                        page * rowsPerPage + rowsPerPage
+                      )
+                      .map((row, index) => (
+                        <TableRow
+                          key={index}
+                          onClick={() => handleRowClick({row})}
+                          style={{ cursor: "pointer" }}
+                        >
+                          <TableCell sx={{ fontSize: 14 }}>
+                            {titleCase(row.user)}
+                          </TableCell>
+                          <TableCell sx={{ fontSize: 14 }}>
+                            {titleCase(row.last)}
+                          </TableCell>
+                          <TableCell sx={{ fontSize: 14 }}>
+                            {row.email}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                  </TableBody>
+                </>
+              ) : (
+                <TableBody>loading...</TableBody>
+              )}
               <TableFooter>
                 <TableRow>
                   <TablePagination

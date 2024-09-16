@@ -14,6 +14,7 @@ import {
   Switch,
   Paper,
   Toolbar,
+  Autocomplete,
 } from "@mui/material";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -143,15 +144,15 @@ export const AdminCreateCourse = ({ setSelectedComponent }) => {
 
       if (response.ok) {
         const data = await response.json();
-        const { course_id } = data;
-
+        const { course_id } = data;   
+        console.log('selectedInstructors',selectedInstructors)     
         const enrollPromises = selectedInstructors.map((instructor) =>
           fetch(
             `${
               import.meta.env.VITE_API_ENDPOINT
             }admin/enroll_instructor?course_id=${encodeURIComponent(
               course_id
-            )}&instructor_email=${encodeURIComponent(instructor)}`,
+            )}&instructor_email=${encodeURIComponent(instructor.email)}`,
             {
               method: "POST",
               headers: {
@@ -246,8 +247,8 @@ export const AdminCreateCourse = ({ setSelectedComponent }) => {
     }
   };
 
-  const handleChange = (event) => {
-    setSelectedInstructors(event.target.value);
+  const handleChange = (event, newValue) => {
+    setSelectedInstructors(newValue);
   };
   return (
     <Box
@@ -320,50 +321,43 @@ export const AdminCreateCourse = ({ setSelectedComponent }) => {
             inputProps={{ maxLength: 10, min: 0, step: 1 }}
           />
           <FormControl fullWidth sx={{ marginBottom: 2, marginTop: 2 }}>
-            <InputLabel id="select-instructors-label">
-              Assign Instructors
-            </InputLabel>
-            <Select
-              labelId="select-instructors-label"
+            <Autocomplete
               multiple
+              id="autocomplete-instructors"
+              options={instructors}
+              getOptionLabel={(option) => option.name}
               value={selectedInstructors}
               onChange={handleChange}
-              input={
-                <OutlinedInput
-                  id="select-multiple-chip"
-                  label="Assign Instructors"
-                />
+              isOptionEqualToValue={(option, value) =>
+                option.email === value.email
               }
-              renderValue={(selected) => (
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  variant="outlined"
+                  label="Assign Instructors"
+                  placeholder="Search instructors"
+                />
+              )}
+              renderTags={(tags, getTagProps) => (
                 <Box
                   sx={{
                     display: "flex",
                     flexWrap: "wrap",
                     gap: 0.5,
-                    backgroundColor: "transparent",
-                    color: "black",
                   }}
                 >
-                  {selected.map((value) => (
-                    <Chip key={value} label={value} />
+                  {tags.map((tag, index) => (
+                    <Chip
+                      key={tag.email}
+                      label={tag.name}
+                      {...getTagProps({ index })}
+                    />
                   ))}
                 </Box>
               )}
-              MenuProps={{
-                PaperProps: {
-                  style: {
-                    maxHeight: 200,
-                    overflowY: "auto",
-                  },
-                },
-              }}
-            >
-              {instructors.map((instructor) => (
-                <MenuItem key={instructor.id} value={instructor.email}>
-                  {instructor.name}
-                </MenuItem>
-              ))}
-            </Select>
+              filterSelectedOptions
+            />
           </FormControl>
           <FormControlLabel
             control={
@@ -385,8 +379,8 @@ export const AdminCreateCourse = ({ setSelectedComponent }) => {
               color: "black",
             }}
           >
-            {selectedInstructors.map((value) => (
-              <Chip key={value} label={value} />
+            {selectedInstructors.map((instructor) => (
+              <Chip key={instructor.email} label={instructor.name} />
             ))}
           </Box>
           <Button

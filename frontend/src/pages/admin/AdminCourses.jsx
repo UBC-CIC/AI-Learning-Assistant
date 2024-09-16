@@ -130,7 +130,7 @@ export const AdminCourses = ({ setSelectedCourse }) => {
             }}
           >
             <TextField
-              label="Search by User"
+              label="Search by Course"
               variant="outlined"
               value={searchQuery}
               onChange={handleSearchChange}

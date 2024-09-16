@@ -180,7 +180,7 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
   }
 
   const handleSubmit = () => {
-    if (isSubmitting || creatingSession) return;
+    if (isSubmitting || isAItyping || creatingSession) return;
     setIsSubmitting(true);
     let newSession;
     let authToken;

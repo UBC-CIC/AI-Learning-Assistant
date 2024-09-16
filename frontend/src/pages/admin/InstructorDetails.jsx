@@ -19,7 +19,9 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
-  DialogContentText
+  DialogContentText,
+  Autocomplete,
+  TextField
 } from "@mui/material";
 
 import { toast, ToastContainer } from "react-toastify";
@@ -184,7 +186,7 @@ const InstructorDetails = ({ instructorData, onBack }) => {
     try {
       const session = await fetchAuthSession();
       const token = session.tokens.idToken.toString();
-      console.log(instructor)
+      console.log(instructor);
       // Delete existing enrolments for the instructor
       const deleteResponse = await fetch(
         `${
@@ -315,39 +317,36 @@ const InstructorDetails = ({ instructorData, onBack }) => {
             Email: {instructorData.email}
           </Typography>
           <FormControl sx={{ width: "100%", marginBottom: 2, marginTop: 5 }}>
-            <InputLabel id="active-courses-label">Active Courses</InputLabel>
-            <Select
-              labelId="active-courses-label"
+            <Autocomplete
               multiple
+              id="active-courses-autocomplete"
+              options={allCourses}
               value={activeCourses}
-              onChange={handleCoursesChange}
-              input={
-                <OutlinedInput
-                  id="select-multiple-chip"
-                  label="Active Courses"
-                />
+              onChange={(event, newValue) => {
+                // Filter out duplicates
+                const uniqueCourses = Array.from(
+                  new Map(
+                    newValue.map((course) => [course.course_id, course])
+                  ).values()
+                );
+                setActiveCourses(uniqueCourses);
+              }}
+              getOptionLabel={(option) =>
+                `${option.course_department.toUpperCase()} ${
+                  option.course_number
+                }`
               }
-              renderValue={(selected) => (
-                <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
-                  {selected.map((value) => (
-                    <Chip
-                      key={value.course_id}
-                      label={`${value.course_department.toUpperCase()} ${
-                        value.course_number
-                      }`}
-                    />
-                  ))}
-                </Box>
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="Active Courses"
+                  variant="outlined"
+                />
               )}
-              MenuProps={MenuProps}
-            >
-              {allCourses.map((course) => (
-                <MenuItem key={course.course_id} value={course}>
-                  {course.course_department.toUpperCase()}{" "}
-                  {course.course_number}
-                </MenuItem>
-              ))}
-            </Select>
+              isOptionEqualToValue={(option, value) =>
+                option.course_id === value.course_id
+              }
+            />
           </FormControl>
         </Paper>
         <Grid container spacing={2}>

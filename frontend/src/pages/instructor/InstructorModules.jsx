@@ -16,21 +16,23 @@ function courseTitleCase(str) {
   const words = str.split(' ');
   return words.map((word, index) => {
     if (index === 0) {
-      return word.toUpperCase();
+      return word.toUpperCase(); // First word entirely in uppercase
     } else {
-      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+      return word.charAt(0).toUpperCase() + word.slice(1); // Only capitalize first letter, keep the rest unchanged
     }
   }).join(' ');
 }
+
 
 function titleCase(str) {
   if (typeof str !== 'string') {
     return str;
   }
-  return str.toLowerCase().split(' ').map(function(word) {
-    return word.charAt(0).toUpperCase() + word.slice(1);
+  return str.split(' ').map(function(word) {
+    return word.charAt(0).toUpperCase() + word.slice(1); // Capitalize only the first letter, leave the rest of the word unchanged
   }).join(' ');
 }
+
 
 
 const InstructorModules = ({ courseName, course_id }) => {

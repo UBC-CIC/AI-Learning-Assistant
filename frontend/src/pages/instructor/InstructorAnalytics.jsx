@@ -29,10 +29,9 @@ function titleCase(str) {
     return str;
   }
   return str
-    .toLowerCase()
     .split(" ")
     .map(function (word) {
-      return word.charAt(0).toUpperCase() + word.slice(1);
+      return word.charAt(0).toUpperCase() + word.slice(1); // Capitalize only the first letter, leave the rest of the word unchanged
     })
     .join(" ");
 }
@@ -68,7 +67,6 @@ const InstructorAnalytics = ({ courseName, course_id }) => {
             Messages: module.message_count,
           }));
           setGraphData(graphDataFormatted);
-
         } else {
           console.error("Failed to fetch analytics:", response.statusText);
         }

@@ -76,8 +76,8 @@
 | `user_email`                 | The email of the enrolled user              |
 | `course_id`                  | The ID of the associated course             |
 | `enrolment_type`             | The type of enrolment (e.g., student, instructor,admin)|
-| `course_completion_percentage`| The percentage of the course completed     |
-| `time_spent`                 | The time spent in the course (in minutes)   |
+| `course_completion_percentage`| The percentage of the course completed (currently unused)  |
+| `time_spent`                 | The time spent in the course (currently unused)   |
 | `time_enroled`               | The timestamp when the enrolment occurred   |
 
 

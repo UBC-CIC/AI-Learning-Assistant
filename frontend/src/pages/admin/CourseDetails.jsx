@@ -78,6 +78,7 @@ const CourseDetails = ({ course, onBack }) => {
       try {
         const session = await fetchAuthSession();
         var token = session.tokens.idToken.toString();
+        //replace if analytics for admin actions is needed
         const response = await fetch(
           `${
             import.meta.env.VITE_API_ENDPOINT

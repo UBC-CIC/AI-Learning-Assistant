@@ -6,9 +6,6 @@ let { SM_DB_CREDENTIALS, RDS_PROXY_ENDPOINT } = process.env;
 let sqlConnection = global.sqlConnection;
 
 exports.handler = async (event) => {
-  console.log("event",event)
-  const userId = event.requestContext.authorizer.userId;
-  console.log("userId:", userId);
   const response = {
     statusCode: 200,
     headers: {

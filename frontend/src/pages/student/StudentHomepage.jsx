@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useContext } from "react";
 import StudentHeader from "../../components/StudentHeader";
 import Container from "../Container";
 import { fetchAuthSession } from "aws-amplify/auth";
@@ -29,6 +29,7 @@ import {
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { fetchUserAttributes } from "aws-amplify/auth";
 import { useNavigate } from "react-router-dom";
+import { UserContext } from "../../App";
 // MUI theming
 const { palette } = createTheme();
 const { augmentColor } = palette;
@@ -59,6 +60,8 @@ export const StudentHomepage = ({ setCourse }) => {
   const [courses, setCourses] = useState([]);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const { isInstructorAsStudent, setIsInstructorAsStudent } =
+    useContext(UserContext);
 
   useEffect(() => {
     if (!loading && courses.length === 0) {
@@ -149,18 +152,34 @@ export const StudentHomepage = ({ setCourse }) => {
       const { email } = await fetchUserAttributes();
 
       var token = session.tokens.idToken.toString();
-      const response = await fetch(
-        `${
-          import.meta.env.VITE_API_ENDPOINT
-        }student/course?email=${encodeURIComponent(email)}`,
-        {
-          method: "GET",
-          headers: {
-            Authorization: token,
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      let response;
+      if (isInstructorAsStudent) {
+        response = await fetch(
+          `${
+            import.meta.env.VITE_API_ENDPOINT
+          }instructor/student_course?email=${encodeURIComponent(email)}`,
+          {
+            method: "GET",
+            headers: {
+              Authorization: token,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+      } else {
+        response = await fetch(
+          `${
+            import.meta.env.VITE_API_ENDPOINT
+          }student/course?email=${encodeURIComponent(email)}`,
+          {
+            method: "GET",
+            headers: {
+              Authorization: token,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+      }
       if (response.ok) {
         const data = await response.json();
         setCourses(data);
@@ -206,7 +225,7 @@ export const StudentHomepage = ({ setCourse }) => {
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
-              width: "calc(100% - 210px)",
+              width: "calc(100% - 240px)",
               paddingLeft: 4,
               paddingRight: 5,
             }}
@@ -252,8 +271,8 @@ export const StudentHomepage = ({ setCourse }) => {
                 display: "flex",
                 justifyContent: "center",
                 alignItems: "center",
-                height: "80vh", 
-                width: "100%", 
+                height: "80vh",
+                width: "100%",
               }}
             >
               <l-helix size="50" speed="2.5" color="#d21adb"></l-helix>
@@ -264,12 +283,12 @@ export const StudentHomepage = ({ setCourse }) => {
               sx={{
                 display: "flex",
                 flexDirection: "column",
-                alignItems: courses.length === 0 ? "center" : "flex-start", 
-                justifyContent: courses.length === 0 ? "center" : "flex-start", 
+                alignItems: courses.length === 0 ? "center" : "flex-start",
+                justifyContent: courses.length === 0 ? "center" : "flex-start",
                 width: "100%",
-                height: "calc(90vh - 100px)", 
-                overflowY: "auto", 
-                overflowX: "hidden", 
+                height: "calc(90vh - 100px)",
+                overflowY: "auto",
+                overflowX: "hidden",
               }}
             >
               {courses.length === 0 ? (
@@ -290,9 +309,9 @@ export const StudentHomepage = ({ setCourse }) => {
                     key={index}
                     sx={{
                       mb: 1,
-                      width: "calc(100% - 255px)",
+                      width: "calc(100% - 285px)",
                       maxWidth: "calc(100% - 255px)",
-                      minWidth: "calc(100% - 255px)",
+                      minWidth: "calc(100% - 285px)",
                       minHeight: "120px",
                       bgcolor: "transparent",
                       background: `linear-gradient(10deg, rgb(83.137% 92.157% 99.608%) 0%, rgb(83.213% 92.029% 99.612%) 6.25%, rgb(83.436% 91.649% 99.623%) 12.5%, rgb(83.798% 91.033% 99.641%) 18.75%, rgb(84.286% 90.204% 99.665%) 25%, rgb(84.88% 89.194% 99.695%) 31.25%, rgb(85.558% 88.041% 99.729%) 37.5%, rgb(86.294% 86.791% 99.766%) 43.75%, rgb(87.059% 85.49% 99.804%) 50%, rgb(87.824% 84.19% 99.842%) 56.25%, rgb(88.56% 82.939% 99.879%) 62.5%, rgb(89.238% 81.786% 99.913%) 68.75%, rgb(89.832% 80.776% 99.943%) 75%, rgb(90.319% 79.947% 99.967%) 81.25%, rgb(90.682% 79.331% 99.985%) 87.5%, rgb(90.905% 78.952% 99.996%) 93.75%, rgb(90.98% 78.824% 100%) 100%)`,

@@ -3,7 +3,7 @@ const { initializeConnection } = require("./libadmin.js");
 let { SM_DB_CREDENTIALS, RDS_PROXY_ENDPOINT } = process.env;
 
 // SQL conneciton from global variable at libadmin.js
-let sqlConnectionTableCreator = global.sqlConnectionTableCreator; 
+let sqlConnectionTableCreator = global.sqlConnectionTableCreator;
 
 exports.handler = async (event) => {
   const response = {
@@ -20,7 +20,7 @@ exports.handler = async (event) => {
   // Initialize the database connection if not already initialized
   if (!sqlConnectionTableCreator) {
     await initializeConnection(SM_DB_CREDENTIALS, RDS_PROXY_ENDPOINT);
-    sqlConnectionTableCreator = global.sqlConnectionTableCreator; 
+    sqlConnectionTableCreator = global.sqlConnectionTableCreator;
   }
 
   // Function to format student full names (lowercase and spaces replaced with "_")
@@ -85,24 +85,54 @@ exports.handler = async (event) => {
 
             // Insert enrollment into Enrolments table with current timestamp
             const enrollment = await sqlConnectionTableCreator`
-                INSERT INTO "Enrolments" (enrolment_id, course_id, user_email, enrolment_type, time_enroled)
-                VALUES (uuid_generate_v4(), ${course_id}, ${instructor_email}, 'instructor', CURRENT_TIMESTAMP)
-                ON CONFLICT (course_id, user_email) 
-                DO UPDATE SET 
-                    enrolment_id = EXCLUDED.enrolment_id,
-                    enrolment_type = EXCLUDED.enrolment_type,
-                    time_enroled = EXCLUDED.time_enroled
-                RETURNING *;
+                  INSERT INTO "Enrolments" (enrolment_id, course_id, user_email, enrolment_type, time_enroled)
+                  VALUES (uuid_generate_v4(), ${course_id}, ${instructor_email}, 'instructor', CURRENT_TIMESTAMP)
+                  ON CONFLICT (course_id, user_email) 
+                  DO UPDATE SET 
+                      enrolment_id = EXCLUDED.enrolment_id,
+                      enrolment_type = EXCLUDED.enrolment_type,
+                      time_enroled = EXCLUDED.time_enroled
+                  RETURNING enrolment_id;
+              `;
 
-            `;
+            const enrolment_id = enrollment[0]?.enrolment_id;
+            console.log(enrolment_id);
 
-            response.body = JSON.stringify(enrollment);
+            if (enrolment_id) {
+              // Retrieve all module IDs for the course
+              const modulesResult = await sqlConnectionTableCreator`
+                    SELECT module_id
+                    FROM "Course_Modules"
+                    WHERE concept_id IN (
+                        SELECT concept_id
+                        FROM "Course_Concepts"
+                        WHERE course_id = ${course_id}
+                    );
+                `;
+              console.log(modulesResult);
 
-            // // Insert into User Engagement Log
+              // Insert a record into Student_Modules for each module
+              const studentModuleInsertions = modulesResult.map((module) => {
+                return sqlConnectionTableCreator`
+                      INSERT INTO "Student_Modules" (student_module_id, course_module_id, enrolment_id, module_score, last_accessed, module_context_embedding)
+                      VALUES (uuid_generate_v4(), ${module.module_id}, ${enrolment_id}, 0, CURRENT_TIMESTAMP, NULL);
+                  `;
+              });
+
+              // Execute all insertions
+              await Promise.all(studentModuleInsertions);
+              console.log(studentModuleInsertions);
+            }
+
+            response.body = JSON.stringify({
+              message: "Instructor enrolled and modules created successfully.",
+            });
+
+            // Optionally insert into User Engagement Log (uncomment if needed)
             // await sqlConnectionTableCreator`
-            //             INSERT INTO "User_Engagement_Log" (log_id, user_email, course_id, module_id, enrolment_id, timestamp, engagement_type)
-            //             VALUES (uuid_generate_v4(), ${instructor_email}, ${course_id}, null, (SELECT enrolment_id FROM "Enrolments" WHERE course_id = ${course_id} AND user_email = ${instructor_email}), CURRENT_TIMESTAMP, 'enrollment_created')
-            //         `;
+            //   INSERT INTO "User_Engagement_Log" (log_id, user_email, course_id, module_id, enrolment_id, timestamp, engagement_type)
+            //   VALUES (uuid_generate_v4(), ${instructor_email}, ${course_id}, null, ${enrolment_id}, CURRENT_TIMESTAMP, 'enrollment_created');
+            // `;
           } catch (err) {
             response.statusCode = 500;
             console.log(err);
@@ -141,7 +171,7 @@ exports.handler = async (event) => {
 
             const accessBool = course_student_access.toLowerCase() === "true";
 
-            console.log(accessBool)
+            console.log(accessBool);
             // Insert new course into Courses table
             const newCourse = await sqlConnectionTableCreator`         
                 INSERT INTO "Courses" (

@@ -40,6 +40,23 @@ exports.handler = async (event) => {
   try {
     const pathData = event.httpMethod + " " + event.resource;
     switch (pathData) {
+      case "GET /instructor/student_course":
+        if (
+          event.queryStringParameters != null &&
+          event.queryStringParameters.email
+        ) {
+          const email = event.queryStringParameters.email;
+          data = await sqlConnection`SELECT "Courses".*
+					FROM "Enrolments"
+					JOIN "Courses" ON "Enrolments".course_id = "Courses".course_id
+					WHERE "Enrolments".user_email = ${email}
+					ORDER BY "Courses".course_name, "Courses".course_id;`;
+          response.body = JSON.stringify(data);
+        } else {
+          response.statusCode = 400;
+          response.body = "Invalid value";
+        }
+        break;
       case "GET /instructor/courses":
         if (
           event.queryStringParameters != null &&

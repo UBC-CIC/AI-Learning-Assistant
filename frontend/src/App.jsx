@@ -1,7 +1,7 @@
 import "./App.css";
 // amplify
 import { Amplify } from "aws-amplify";
-import { getCurrentUser, fetchAuthSession, decodeJWT } from "aws-amplify/auth";
+import { fetchAuthSession } from "aws-amplify/auth";
 import "@aws-amplify/ui-react/styles.css";
 // react-router
 import {
@@ -10,7 +10,7 @@ import {
   Routes,
   Navigate,
 } from "react-router-dom";
-import React, { useEffect, useState, createContext } from "react";
+import { useEffect, useState, createContext } from "react";
 // pages
 import Login from "./pages/Login";
 import StudentHomepage from "./pages/student/StudentHomepage";
@@ -18,6 +18,8 @@ import StudentChat from "./pages/student/StudentChat";
 import AdminHomepage from "./pages/admin/AdminHomepage";
 import InstructorHomepage from "./pages/instructor/InstructorHomepage";
 import CourseView from "./pages/student/CourseView";
+
+export const UserContext = createContext();
 
 Amplify.configure({
   API: {
@@ -40,9 +42,9 @@ Amplify.configure({
 function App() {
   const [user, setUser] = useState(null);
   const [userGroup, setUserGroup] = useState(null);
-  const [userInfo, setUserInfo] = useState({});
   const [course, setCourse] = useState(null);
   const [module, setModule] = useState(null);
+  const [isInstructorAsStudent, setIsInstructorAsStudent] = useState(false);
 
   useEffect(() => {
     const fetchAuthData = () => {
@@ -69,7 +71,11 @@ function App() {
     ) {
       return <AdminHomepage />;
     } else if (userGroup && userGroup.includes("instructor")) {
-      return <InstructorHomepage />;
+      if (isInstructorAsStudent) {
+        return <StudentHomepage setCourse={setCourse} />;
+      } else {
+        return <InstructorHomepage />;
+      }
     } else if (userGroup && userGroup.includes("student")) {
       return <StudentHomepage setCourse={setCourse} />;
     } else {
@@ -78,34 +84,41 @@ function App() {
   };
 
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element={user ? <Navigate to="/home" /> : <Login />} />
-        <Route
-          path="/student_chat/*"
-          element={
-            <StudentChat
-              course={course}
-              module={module}
-              setModule={setModule}
-              setCourse={setCourse}
-            />
-          }
-        />
-        <Route
-          path="/student_course/*"
-          element={
-            <CourseView
-              course={course}
-              setModule={setModule}
-              setCourse={setCourse}
-            />
-          }
-        />
-        <Route path="/home" element={getHomePage()} />
-        <Route path="/course/*" element={<InstructorHomepage />} />
-      </Routes>
-    </Router>
+    <UserContext.Provider
+      value={{ isInstructorAsStudent, setIsInstructorAsStudent }}
+    >
+      <Router>
+        <Routes>
+          <Route
+            path="/"
+            element={user ? <Navigate to="/home" /> : <Login />}
+          />
+          <Route
+            path="/student_chat/*"
+            element={
+              <StudentChat
+                course={course}
+                module={module}
+                setModule={setModule}
+                setCourse={setCourse}
+              />
+            }
+          />
+          <Route
+            path="/student_course/*"
+            element={
+              <CourseView
+                course={course}
+                setModule={setModule}
+                setCourse={setCourse}
+              />
+            }
+          />
+          <Route path="/home/*" element={getHomePage()} />
+          <Route path="/course/*" element={<InstructorHomepage />} />
+        </Routes>
+      </Router>
+    </UserContext.Provider>
   );
 }
 

@@ -26,12 +26,16 @@ import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 function titleCase(str) {
-  if (typeof str !== 'string') {
+  if (typeof str !== "string") {
     return str;
   }
-  return str.toLowerCase().split(' ').map(function(word) {
-    return word.charAt(0).toUpperCase() + word.slice(1);
-  }).join(' ');
+  return str
+    .toLowerCase()
+    .split(" ")
+    .map(function (word) {
+      return word.charAt(0).toUpperCase() + word.slice(1);
+    })
+    .join(" ");
 }
 
 const fetchInstructors = async () => {
@@ -271,62 +275,51 @@ export const AdminInstructors = ({ setSelectedInstructor }) => {
               variant="outlined"
               value={searchQuery}
               onChange={handleSearchChange}
-              sx={{ margin: 1, width: "90%", alignContent: "left" }}
-              InputProps={{ sx: { fontSize: 12 } }}
-              InputLabelProps={{ sx: { fontSize: 12 } }}
+              sx={{ margin: 1, width: "90%" }}
+              InputProps={{ sx: { fontSize: 14 } }}
+              InputLabelProps={{ sx: { fontSize: 14 } }}
             />
-            <Table aria-label="user table">
-              {!loading ? (
-                <>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell sx={{ width: "30%", fontSize: 12 }}>
-                        First Name
+            <Table aria-label="instructors table">
+              <TableHead>
+                <TableRow>
+                  <TableCell sx={{ width: "30%", fontSize: 14 }}>
+                    First Name
+                  </TableCell>
+                  <TableCell sx={{ fontSize: 14 }}>Last Name</TableCell>
+                  <TableCell sx={{ fontSize: 14 }}>Email</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {filteredRows
+                  .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                  .map((row, index) => (
+                    <TableRow
+                      key={index}
+                      onClick={() => handleRowClick(row.email)}
+                      style={{ cursor: "pointer" }}
+                    >
+                      <TableCell sx={{ fontSize: 14 }}>
+                        {titleCase(row.user)}
                       </TableCell>
-                      <TableCell sx={{ fontSize: 12 }}>Last Name</TableCell>
-                      <TableCell sx={{ fontSize: 12 }}>Email</TableCell>
+                      <TableCell sx={{ fontSize: 14 }}>
+                        {titleCase(row.last)}
+                      </TableCell>
+                      <TableCell sx={{ fontSize: 14 }}>{row.email}</TableCell>
                     </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {filteredRows
-                      .slice(
-                        page * rowsPerPage,
-                        page * rowsPerPage + rowsPerPage
-                      )
-                      .map((row, index) => (
-                        <TableRow
-                          key={index}
-                          onClick={() => handleRowClick({ row })}
-                          style={{ cursor: "pointer" }}
-                        >
-                          <TableCell sx={{ fontSize: 12 }}>
-                            {titleCase(row.user)}
-                          </TableCell>
-                          <TableCell sx={{ fontSize: 12 }}>
-                            {titleCase(row.last)}
-                          </TableCell>
-                          <TableCell sx={{ fontSize: 12 }}>
-                            {row.email}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                  </TableBody>
-                </>
-              ) : (
-                <>loading...</>
-              )}
+                  ))}
+              </TableBody>
               <TableFooter>
                 <TableRow>
                   <TablePagination
-                    rowsPerPageOptions={[5, 10, 25]}
+                    rowsPerPageOptions={[5, 5]}
                     component="div"
                     count={filteredRows.length}
-                    rowsPerPage={rowsPerPage}
+                    rowsPerPage={5}
                     page={page}
                     onPageChange={handleChangePage}
-                    onRowsPerPageChange={handleChangeRowsPerPage}
+                    // onRowsPerPageChange={handleChangeRowsPerPage}
                     sx={{
-                      fontSize: 12,
+                      fontSize: 14,
                       minWidth: 400,
                     }}
                   />
@@ -334,6 +327,7 @@ export const AdminInstructors = ({ setSelectedInstructor }) => {
               </TableFooter>
             </Table>
           </TableContainer>
+
           <Button
             variant="contained"
             color="primary"

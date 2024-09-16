@@ -130,21 +130,29 @@ export const AdminCourses = ({ setSelectedCourse }) => {
               value={searchQuery}
               onChange={handleSearchChange}
               sx={{ margin: 1, width: "90%", alignContent: "left" }}
-              InputProps={{ sx: { fontSize: 12 } }}
-              InputLabelProps={{ sx: { fontSize: 12 } }}
+              InputProps={{ sx: { fontSize: 14 } }} // Increased font size
+              InputLabelProps={{ sx: { fontSize: 14 } }} // Increased label font size
             />
             <Table aria-label="user table">
               {!loading ? (
                 <>
                   <TableHead>
                     <TableRow>
-                      <TableCell sx={{ width: "30%", fontSize: 12 }}>
+                      <TableCell sx={{ width: "30%", fontSize: 14 }}>
+                        {" "}
+                        {/* Increased font size */}
                         Course
                       </TableCell>
-                      <TableCell sx={{ fontSize: 12 }}>
+                      <TableCell sx={{ fontSize: 14 }}>
+                        {" "}
+                        {/* Increased font size */}
                         Course Access Code
                       </TableCell>
-                      <TableCell sx={{ fontSize: 12 }}>Status</TableCell>
+                      <TableCell sx={{ fontSize: 14 }}>
+                        {" "}
+                        {/* Increased font size */}
+                        Status
+                      </TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -159,10 +167,14 @@ export const AdminCourses = ({ setSelectedCourse }) => {
                           onClick={() => handleCourseClick({ row })}
                           style={{ cursor: "pointer" }}
                         >
-                          <TableCell sx={{ fontSize: 12 }}>
+                          <TableCell sx={{ fontSize: 14 }}>
+                            {" "}
+                            {/* Increased font size */}
                             {row.course.toUpperCase()}
                           </TableCell>
-                          <TableCell sx={{ fontSize: 12 }}>
+                          <TableCell sx={{ fontSize: 14 }}>
+                            {" "}
+                            {/* Increased font size */}
                             {row.instructor}
                           </TableCell>
                           <TableCell>
@@ -171,7 +183,7 @@ export const AdminCourses = ({ setSelectedCourse }) => {
                               color={
                                 row.status === "true" ? "primary" : "secondary"
                               }
-                              sx={{ fontSize: 10, padding: "4px 8px" }}
+                              sx={{ fontSize: 12, padding: "6px 12px" }} // Increased button padding and font size
                             >
                               {row.status === "true" ? "Active" : "Inactive"}
                             </Button>
@@ -186,15 +198,15 @@ export const AdminCourses = ({ setSelectedCourse }) => {
               <TableFooter>
                 <TableRow>
                   <TablePagination
-                    rowsPerPageOptions={[5, 10, 25]}
+                    rowsPerPageOptions={[5, 5]}
                     component="div"
                     count={filteredRows.length}
                     rowsPerPage={rowsPerPage}
                     page={page}
                     onPageChange={handleChangePage}
-                    onRowsPerPageChange={handleChangeRowsPerPage}
+                    //onRowsPerPageChange={handleChangeRowsPerPage}
                     sx={{
-                      fontSize: 12,
+                      fontSize: 14, // Increased font size for pagination
                       minWidth: 400,
                     }}
                   />

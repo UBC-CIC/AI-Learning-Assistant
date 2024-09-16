@@ -41,8 +41,9 @@ function titleCase(str) {
 }
 
 const CourseDetails = ({ course, onBack }) => {
+  const courseStatus = JSON.parse(course.status);
   const [activeInstructors, setActiveInstructors] = useState([]);
-  const [isActive, setIsActive] = useState(false);
+  const [isActive, setIsActive] = useState(courseStatus);
   const [loading, setLoading] = useState(true);
   const [allInstructors, setAllInstructors] = useState([]);
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);

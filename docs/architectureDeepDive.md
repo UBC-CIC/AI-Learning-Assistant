@@ -53,7 +53,6 @@
 | preferred_name | The preferred name of the user
 | time_account_created| The time the account was created in UTC
 | roles | The roles of the user
-| docstatus | The processing status of the document
 | last_sign_in | The time the user last signed in in UTC
 
 ### `Courses` table
@@ -133,7 +132,7 @@
 | `session_id`                 | The ID of the session                              |
 | `student_module_id`          | The ID of the associated student module            |
 | `session_name`               | The name of the session                            |
-| `session_context_embeddings` | A float array representing the session context embeddings |
+| `session_context_embeddings` | A float array representing the session context embeddings (currently unused) |
 | `last_accessed`              | The timestamp of the last time the session was accessed |
 
 ### `Messages` table
@@ -143,7 +142,7 @@
 | `message_id`       | The ID of the message                             |
 | `session_id`       | The ID of the associated session                  |
 | `student_sent`     | Whether the message was sent by the student (boolean) |
-| `message_content`  | The content of the message                        |
+| `message_content`  | The content of the message   (currently unused)                     |
 | `time_sent`        | The timestamp when the message was sent   
 
 

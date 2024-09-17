@@ -73,31 +73,27 @@ def get_vectorstore_retriever(
 
     return history_aware_retriever
 ```
-# Purpose
+#### Purpose
 
 Retrieves a vector store and returns a history-aware retriever that can contextualize retrievals based on previous chat history.
 
-# Process Flow
+#### Process Flow
 
-1. **Retrieve Vector Store**:
-   - Calls the `get_vectorstore` function with the provided configuration dictionary and embeddings to connect to the vector store.
-
-2. **Retriever Initialization**:
-   - Converts the vector store into a retriever by calling `vectorstore.as_retriever()`.
-
+1. **Retrieve Vector Store**: Calls the `get_vectorstore` function with the provided configuration dictionary and embeddings to connect to the vector store.
+2. **Retriever Initialization**: Converts the vector store into a retriever by calling `vectorstore.as_retriever()`.
 3. **History-Aware Retriever Creation**:
    - Defines a system prompt (`contextualize_q_system_prompt`) to instruct the LLM on how to contextualize questions based on chat history.
    - Uses `ChatPromptTemplate` to structure the prompt and create a dynamic message flow.
    - Combines the retriever and LLM with the contextualization prompt using the `create_history_aware_retriever` function to return a retriever that considers previous conversations when generating responses.
 
-# Inputs and Outputs
+#### Inputs and Outputs
 
-## Inputs
+- **Inputs**:
+  - `llm`: Language model instance used for generating responses and contextualizing questions.
+  - `vectorstore_config_dict`: Configuration dictionary for the vector store, containing parameters like collection name, database credentials, and connection details.
+  - `embeddings`: Embeddings instance for processing the documents.
 
-- `llm`: Language model instance used for generating responses and contextualizing questions.
-- `vectorstore_config_dict`: Configuration dictionary for the vector store, containing parameters like collection name, database credentials, and connection details.
-- `embeddings`: Embeddings instance for processing the documents.
+- **Outputs**:
+  - Returns a `VectorStoreRetriever` that is enhanced with history-aware capabilities, allowing it to reformulate questions based on the chat history and retrieve the most relevant documents from the vector store.
 
-## Outputs
-
-- Returns a `VectorStoreRetriever` that is enhanced with history-aware capabilities, allowing it to reformulate questions based on the chat history and retrieve the most relevant documents from the vector store.
+[🔼 Back to top](#table-of-contents)

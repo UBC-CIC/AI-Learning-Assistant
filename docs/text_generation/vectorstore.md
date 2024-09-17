@@ -81,10 +81,7 @@ Retrieves a vector store and returns a history-aware retriever that can contextu
 
 1. **Retrieve Vector Store**: Calls the `get_vectorstore` function with the provided configuration dictionary and embeddings to connect to the vector store.
 2. **Retriever Initialization**: Converts the vector store into a retriever by calling `vectorstore.as_retriever()`.
-3. **History-Aware Retriever Creation**:
-   - Defines a system prompt (`contextualize_q_system_prompt`) to instruct the LLM on how to contextualize questions based on chat history.
-   - Uses `ChatPromptTemplate` to structure the prompt and create a dynamic message flow.
-   - Combines the retriever and LLM with the contextualization prompt using the `create_history_aware_retriever` function to return a retriever that considers previous conversations when generating responses.
+3. **History-Aware Retriever Creation**: Defines a system prompt (`contextualize_q_system_prompt`) to instruct the LLM on how to contextualize questions based on chat history. Uses `ChatPromptTemplate` to structure the prompt and create a dynamic message flow. Combines the retriever and LLM with the contextualization prompt using the `create_history_aware_retriever` function to return a retriever that considers previous conversations when generating responses.
 
 #### Inputs and Outputs
 

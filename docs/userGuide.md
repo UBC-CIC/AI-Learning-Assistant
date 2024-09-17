@@ -12,6 +12,20 @@ Once you have deployed the solution, the following user guide will help you navi
 | [Student View](#student-view)  | How the Student views the project |
 
 ## Administrator View
+To sign up as an administrator, you need to sign up regularly first as a student:
+![image](./images/create-account.png)
+
+You then get a confirmation email to verify your email. Once you have a student account, to become an adminstrator, you need to change your user group with Cognito through the AWS Console:
+![image](./images/user-pool.png)
+
+After clicking the user pool of the project, you need to find your email:
+![image](./images/users.png)
+
+After clicking your email, you can add the 'admin' user group:
+![image](./images/add-user-group.png)
+![image](./images/select-admin.png)
+![image](./images/admin-added.png)
+
 Upon logging in as an administrator, they see the following home page:
 ![image](./images/admin-home-page.png)
 
@@ -35,9 +49,9 @@ The instructor can click on the "Student View" to see the project how a student 
 ![image](./images/instructor-analytics.png)
 
 Clicking the "Edit Concepts" tab leads to a page where the instructor can see a list of concepts within the course. Here a new concept can be created or existing concepts can be edited or deleted:
-![image](./images/instructor-edit-concepts.png)
-![image](./images/instructor-create-concepts.png)
-![image](./images/instructor-change-concepts.png)
+![image](./images/instructor-edit-concept.png)
+![image](./images/instructor-create-concept.png)
+![image](./images/instructor-change-concept.png)
 
 Clicking the "Edit Modules" tab leads to a page where the instructor can see a list of modules along with the concepts they belong to in that course. Here a new module can be created or existing modules can be edited:
 ![image](./images/instructor-edit-modules.png)

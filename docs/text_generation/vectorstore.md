@@ -1,9 +1,3 @@
-
-
-Thought for 32 seconds
-
-markdown
-Copy code
 # vectorstore.py
 
 ## Table of Contents <a name="table-of-contents"></a>

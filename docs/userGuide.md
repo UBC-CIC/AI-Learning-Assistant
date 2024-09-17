@@ -26,11 +26,18 @@ After clicking your email, you can add the 'admin' user group:
 ![image](./images/select-admin.png)
 ![image](./images/admin-added.png)
 
+Once the 'admin' user group is added, delete the 'student' user group:
+![image](./images/delete-student.png)
+![image](./images/only-admin.png)
+
 Upon logging in as an administrator, they see the following home page:
 ![image](./images/admin-home-page.png)
 
 Clicking the "ADD INSTRUCTOR" button opens a pop-up where the administrator can enter the email address of a user with an account to add them as an administrator:
 ![image](./images/admin-add-instructor.png)
+
+The administrator can also click an instructor in the list which takes them to a page consisting of that instructor's details which includes their name, email, and active courses:
+![image](./images/admin-instructor-details.png)
 
 In the "Courses" tab, the administrator can view a list of the courses available in this project:
 ![image](./images/admin-courses.png)

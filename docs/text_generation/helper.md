@@ -58,41 +58,28 @@ def get_vectorstore(
         logger.error(f"Error initializing vector store: {e}")
         return None
 ```
-# Purpose
+#### Purpose
 
 Initializes and returns a `PGVector` instance that connects to a PostgreSQL database and prepares a vector store for storing embedded document data.
 
-# Process Flow
+#### Process Flow
 
-## Database Connection Setup
+1. **Database Connection Setup**: Creates a connection string using the provided database credentials and logs successful connections or errors.
+2. **Vector Store Initialization**: Constructs a `PGVector` instance using the connection string, collection name, and embeddings. If successful, returns the initialized `PGVector` instance along with the connection string.
+3. **Error Handling**: Captures and logs any errors that occur during vector store initialization.
 
-- Creates a connection string using the provided database credentials.
-- Logs successful connections or errors.
+#### Inputs and Outputs
+- **Inputs**:
+  - `collection_name`: The name of the collection in the vector store.
+  - `embeddings`: The `BedrockEmbeddings` instance for creating embeddings.
+  - `dbname`: Database name.
+  - `user`: Database user.
+  - `password`: Database password.
+  - `host`: Host for the PostgreSQL database.
+  - `port`: Port for the PostgreSQL database.
 
-## Vector Store Initialization
-
-- Constructs a `PGVector` instance using the connection string, collection name, and embeddings.
-- If successful, returns the initialized `PGVector` instance along with the connection string.
-
-## Error Handling
-
-- Captures and logs any errors that occur during vector store initialization.
-
-# Inputs and Outputs
-
-## Inputs
-
-- `collection_name`: The name of the collection in the vector store.
-- `embeddings`: The `BedrockEmbeddings` instance for creating embeddings.
-- `dbname`: Database name.
-- `user`: Database user.
-- `password`: Database password.
-- `host`: Host for the PostgreSQL database.
-- `port`: Port for the PostgreSQL database.
-
-## Outputs
-
-- Returns the initialized `PGVector` instance and the connection string if successful.
-- Returns `None` if an error occurred during setup.
+- **Outputs**:
+  - Returns the initialized `PGVector` instance and the connection string if successful.
+  - Returns `None` if an error occurred during setup.
 
 [🔼 Back to top](#table-of-contents)

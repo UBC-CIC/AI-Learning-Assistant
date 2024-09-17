@@ -256,8 +256,6 @@ def get_llm_output(response: str) -> dict:
         llm_verdict = True
         llm_output = response.split("COMPETENCY ACHIEVED")[0]
     
-    # Currently just printing this dictionary, but I can also store it (e.g., as a .json) in case that would be easier
-    
     return dict(
         llm_output=llm_output,
         llm_verdict=llm_verdict

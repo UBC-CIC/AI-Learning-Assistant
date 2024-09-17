@@ -12,6 +12,7 @@
   - [Function: `get_student_query`](#get_student_query)
   - [Function: `get_initial_student_query`](#get_initial_student_query)
   - [Function: `get_response`](#get_response)
+  - [Function: `split_into_sentences`](#split_into_sentences)
   - [Function: `get_llm_output`](#get_llm_output)
 
 ## Script Overview <a name="script-overview"></a>
@@ -246,28 +247,83 @@ Generates a response to the student's query using the LLM and a history-aware re
 
 ---
 
+### Function: `split_into_sentences` <a name="split_into_sentences"></a>
+```python
+def split_into_sentences(paragraph: str) -> list[str]:
+    # Regular expression pattern
+    sentence_endings = r'(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\.|\?|\!)\s'
+    sentences = re.split(sentence_endings, paragraph)
+    return sentences
+```
+#### Purpose
+Splits a given paragraph into individual sentences using a regular expression to detect sentence boundaries while avoiding incorrect splits at abbreviations and edge cases.
+
+#### Process Flow
+1. **Regular Expression Pattern**: The pattern `sentence_endings` is designed to identify sentence boundaries marked by periods (`.`), question marks (`?`), or exclamation marks (`!`) followed by a whitespace character. Negative lookbehind assertions are used to prevent splitting on common abbreviations (e.g., "Dr.", "U.S."). Here is a breakdown of the regular expression pattern:
+  - `(?<!\w\.\w.)`: Negative lookbehind to avoid splitting within abbreviations like "e.g." or "U.S."
+  - `(?<![A-Z][a-z]\.)`: Negative lookbehind to avoid splitting after titles like "Dr." or "Mrs."
+  - `(?<=\.|\?|\!)`: Positive lookbehind to ensure the split occurs after a period (.), question mark (?), or exclamation mark (!).
+  - `\s`: Matches a whitespace character where the actual split will occur.
+3. **Split a paragraph into sentences**: The `re.split()` function uses the `sentence_endings` pattern to split the input paragraph into a list of sentences. This results in a list where each element is a sentence extracted from the paragraph. 
+4. **Return sentences list**: The function returns the list of sentences for further processing.
+
+#### Inputs and Outputs
+- **Inputs**:
+  - `paragraph` (*str*): The input text paragraph to be split into sentences.
+  
+- **Outputs**:
+  - Returns a `list[str]`: A list where each element is a sentence from the input paragraph.
+
+---
+
 ### Function: `get_llm_output` <a name="get_llm_output"></a>
 ```python
 def get_llm_output(response: str) -> dict:
-    llm_verdict = False
-    llm_output = response
+    if "COMPETENCY ACHIEVED" not in response:
+        return dict(
+            llm_output=response,
+            llm_verdict=False
+        )
     
-    if "COMPETENCY ACHIEVED" in response:
-        llm_verdict = True
-        llm_output = response.split("COMPETENCY ACHIEVED")[0]
-    
-    return dict(
-        llm_output=llm_output,
-        llm_verdict=llm_verdict
-    )
+    elif "COMPETENCY ACHIEVED" in response:
+        sentences = split_into_sentences(response)
+        
+        for i in range(len(sentences)):
+            if "COMPETENCY ACHIEVED" in sentences[i]:
+                llm_response = ' '.join(sentences[0:i-1])
+                
+                if sentences[i-1][-1] == '?':
+                    return dict(
+                        llm_output=llm_response,
+                        llm_verdict=False
+                    )
+                else:
+                    return dict(
+                        llm_output=llm_response,
+                        llm_verdict=True
+                    )
+    elif "compet" in response.lower() or "master" in response.lower():
+        return dict(
+            llm_output=response,
+            llm_verdict=True
+        )
 ```
 #### Purpose
-Processes the response from the LLM to determine if competency in the topic has been achieved by the student.
+Processes the response from the LLM to determine if competency in the topic has been achieved by the student, and extracts the relevant output.
 
 #### Process Flow
-1. **Check Competency**: If the LLM output includes "COMPETENCY ACHIEVED", it indicates that the student has mastered the topic.
-2. **Output Processing**: Removes the "COMPETENCY ACHIEVED" part from the response and returns the processed output.
-3. **Return Competency Status**: Returns the final response and a flag indicating whether competency has been achieved.
+1. **Check for "COMPETENCY ACHIEVED" Absence**: If **"COMPETENCY ACHIEVED"** is **not** in the response, return the original response with `llm_verdict` set to `False`.
+2. **Check for "COMPETENCY ACHIEVED" Presence**: If **"COMPETENCY ACHIEVED"** is in the response:
+  - Splits the response into sentences using `split_into_sentences(response)`.
+  - Iterates through the sentences to find the one containing **"COMPETENCY ACHIEVED"**.
+  - Extracts all sentences before **"COMPETENCY ACHIEVED"** and joins them into `llm_response`.
+  - Checks the punctuation of the sentence immediately before **"COMPETENCY ACHIEVED"**:
+    - If the preceding sentence ends with a question mark (`?`):
+      - Sets `llm_verdict` to `False` (indicating competency not achieved).
+    - Else:
+      - Sets `llm_verdict` to `True` (indicating competency achieved).
+  - Returns `llm_response` and `llm_verdict`.
+3. **Check for Keywords "compet" or "master"**: If the **"compet"** or **"master"** word stems are in the response, return the original response with `llm_verdict` set to `True`.
 
 #### Inputs and Outputs
 - **Inputs**:

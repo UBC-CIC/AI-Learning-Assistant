@@ -95,6 +95,59 @@ def get_module_name(module_id):
             connection.close()
         logger.info("Connection closed.")
 
+def get_system_prompt(course_id):
+    connection = None
+    cur = None
+    try:
+        logger.info(f"Fetching system prompt for course_id: {course_id}")
+        db_secret = get_secret()
+
+        connection_params = {
+            'dbname': db_secret["dbname"],
+            'user': db_secret["username"],
+            'password': db_secret["password"],
+            'host': db_secret["host"],
+            'port': db_secret["port"]
+        }
+
+        connection_string = " ".join([f"{key}={value}" for key, value in connection_params.items()])
+
+        connection = psycopg2.connect(connection_string)
+        cur = connection.cursor()
+        logger.info("Connected to RDS instance!")
+
+        cur.execute("""
+            SELECT system_prompt 
+            FROM "Courses" 
+            WHERE course_id = %s;
+        """, (course_id,))
+        
+        result = cur.fetchone()
+        logger.info(f"Query result: {result}")
+        system_prompt = result[0] if result else None
+        
+        cur.close()
+        connection.close()
+        
+        if system_prompt:
+            logger.info(f"System prompt for course_id {course_id} found: {system_prompt}")
+        else:
+            logger.warning(f"No system prompt found for course_id {course_id}")
+        
+        return system_prompt
+
+    except Exception as e:
+        logger.error(f"Error fetching system prompt: {e}")
+        if connection:
+            connection.rollback()
+        return None
+    finally:
+        if cur:
+            cur.close()
+        if connection:
+            connection.close()
+        logger.info("Connection closed.")
+
 def handler(event, context):
     logger.info("Text Generation Lambda function is called!")
 
@@ -142,6 +195,21 @@ def handler(event, context):
                 "Access-Control-Allow-Methods": "*",
             },
             'body': json.dumps('Missing required parameter: module_id')
+        }
+    
+    system_prompt = get_system_prompt(course_id)
+
+    if system_prompt is None:
+        logger.error(f"Error fetching system prompt for course_id: {course_id}")
+        return {
+            'statusCode': 400,
+            "headers": {
+                "Content-Type": "application/json",
+                "Access-Control-Allow-Headers": "*",
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "*",
+            },
+            'body': json.dumps('Error fetching system prompt')
         }
     
     topic = get_module_name(module_id)
@@ -232,7 +300,8 @@ def handler(event, context):
             llm=llm,
             history_aware_retriever=history_aware_retriever,
             table_name=TABLE_NAME,
-            session_id=session_id
+            session_id=session_id,
+            course_system_prompt=system_prompt
         )
     except Exception as e:
         logger.error(f"Error getting response: {e}")

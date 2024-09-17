@@ -119,7 +119,8 @@ def get_response(
     llm: ChatBedrock,
     history_aware_retriever,
     table_name: str,
-    session_id: str
+    session_id: str,
+    course_system_prompt: str
 ) -> dict:
     """
     Generates a response to a query using the LLM and a history-aware retriever for context.
@@ -141,7 +142,7 @@ def get_response(
         "system"
         "You are an instructor for a course. "
         f"Your job is to help the student master the topic: {topic}. \n"        
-        "Engage with the student by asking questions and conversing with them to identify any gaps in their understanding of the topic. All questions must end with a question mark. If you identify gaps, address these gaps by providing explanations, answering the student's questions, and referring to the relevant context to help the student gain a comprehensive understanding of the topic. "
+        f"{course_system_prompt}"
         "Continue this process until you determine that the student has mastered the topic. \nOnce mastery is achieved, include COMPETENCY ACHIEVED in your response and do not ask any further questions about the topic. "
         "Use the following pieces of retrieved context to answer "
         "a question asked by the student. Use three sentences maximum and keep the "

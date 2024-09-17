@@ -189,7 +189,6 @@ const FileManagement = ({
         </CardContent>
       </Card>
 
-      {/* Confirmation Dialog */}
       <Dialog open={isDialogOpen} onClose={handleCancelReplace}>
         <DialogTitle>File Exists</DialogTitle>
         <DialogContent>

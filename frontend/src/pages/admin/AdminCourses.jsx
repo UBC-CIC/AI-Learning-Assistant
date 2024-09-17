@@ -130,7 +130,7 @@ export const AdminCourses = ({ setSelectedCourse }) => {
             }}
           >
             <TextField
-              label="Search by User"
+              label="Search by Course"
               variant="outlined"
               value={searchQuery}
               onChange={handleSearchChange}
@@ -144,18 +144,12 @@ export const AdminCourses = ({ setSelectedCourse }) => {
                   <TableHead>
                     <TableRow>
                       <TableCell sx={{ width: "30%", fontSize: 14 }}>
-                        {" "}
-                        {/* Increased font size */}
                         Course
                       </TableCell>
                       <TableCell sx={{ fontSize: 14 }}>
-                        {" "}
-                        {/* Increased font size */}
                         Course Access Code
                       </TableCell>
                       <TableCell sx={{ fontSize: 14 }}>
-                        {" "}
-                        {/* Increased font size */}
                         Status
                       </TableCell>
                     </TableRow>
@@ -173,13 +167,9 @@ export const AdminCourses = ({ setSelectedCourse }) => {
                           style={{ cursor: "pointer" }}
                         >
                           <TableCell sx={{ fontSize: 14 }}>
-                            {" "}
-                            {/* Increased font size */}
                             {row.course.toUpperCase()}
                           </TableCell>
                           <TableCell sx={{ fontSize: 14 }}>
-                            {" "}
-                            {/* Increased font size */}
                             {row.instructor}
                           </TableCell>
                           <TableCell>
@@ -198,7 +188,7 @@ export const AdminCourses = ({ setSelectedCourse }) => {
                   </TableBody>
                 </>
               ) : (
-                <>loading...</>
+                <TableBody>loading...</TableBody>
               )}
               <TableFooter>
                 <TableRow>

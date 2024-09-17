@@ -23,18 +23,33 @@ const calculateColor = (score) => {
     return "bg-red-500"; // Red for null scores
   }
 
-  const redStart = 255; // Starting red component
-  const redEnd = 180; // Ending red component for lighter purple
-  const blueStart = 0; // Starting blue component
-  const blueEnd = 200; // Ending blue component for lighter purple
+  const redStart = 255; // Starting red component for red
+  const redMiddle = 255; // Red component for less vibrant yellow
+  const redEnd = 0; // Ending red component for green
 
-  // Calculate the color ratio based on the score (0 to 100)
-  const ratio = score / 100;
+  const greenStart = 0; // Starting green component for red
+  const greenMiddle = 200; // Less vibrant yellow (lower green component)
+  const greenEnd = 150; // Ending green component for green
 
-  // Interpolate between vivid red (255, 0, 0) and lighter purple (180, 0, 200)
-  const r = Math.round(redStart + ratio * (redEnd - redStart));
-  const g = 0; // Green stays 0 in the gradient
-  const b = Math.round(blueStart + ratio * (blueEnd - blueStart));
+  const blueStart = 0; // Starting blue component for red
+  const blueMiddle = 0; // Blue component for less vibrant yellow
+  const blueEnd = 0; // Ending blue component for green
+
+  let r, g, b;
+
+  if (score <= 50) {
+    // Transition from red to less vibrant yellow
+    const ratio = score / 50; // Ratio from 0 to 1
+    r = redStart;
+    g = greenStart + ratio * (greenMiddle - greenStart);
+    b = blueStart + ratio * (blueMiddle - blueStart);
+  } else {
+    // Transition from less vibrant yellow to green
+    const ratio = (score - 50) / 50; // Ratio from 0 to 1
+    r = redMiddle + ratio * (redEnd - redMiddle);
+    g = greenMiddle + ratio * (greenEnd - greenMiddle);
+    b = blueMiddle + ratio * (blueEnd - blueMiddle);
+  }
 
   return `rgb(${r}, ${g}, ${b})`;
 };
@@ -76,10 +91,9 @@ function titleCase(str) {
     return str;
   }
   return str
-    .toLowerCase()
     .split(" ")
     .map(function (word) {
-      return word.charAt(0).toUpperCase() + word.slice(1);
+      return word.charAt(0).toUpperCase() + word.slice(1); // Capitalize only the first letter, leave the rest of the word unchanged
     })
     .join(" ");
 }
@@ -127,6 +141,7 @@ export const CourseView = ({ course, setModule, setCourse }) => {
           setData(data);
           setConcepts(getUniqueConceptNames(data));
           setLoading(false);
+          console.log(data);
         } else {
           console.error("Failed to fetch name:", response.statusText);
         }
@@ -220,6 +235,9 @@ export const CourseView = ({ course, setModule, setCourse }) => {
                   <TableRow>
                     <TableCell sx={{ fontSize: "1.1rem" }}>Module</TableCell>
                     <TableCell sx={{ fontSize: "1.1rem" }}>
+                      Concept
+                    </TableCell>{" "}
+                    <TableCell sx={{ fontSize: "1.1rem" }}>
                       Completion
                     </TableCell>
                     <TableCell sx={{ fontSize: "1.1rem" }}>Review</TableCell>
@@ -231,10 +249,13 @@ export const CourseView = ({ course, setModule, setCourse }) => {
                       <TableCell sx={{ fontSize: "1rem" }}>
                         <div className="flex flex-row gap-1 items-center">
                           <FaInfoCircle className="text-xs" />
-                          <span className="text-sm">
+                          <span className="text-base">
                             {titleCase(entry.module_name)}
                           </span>
                         </div>
+                      </TableCell>
+                      <TableCell sx={{ fontSize: "1rem" }}>
+                        {titleCase(entry.concept_name)}{" "}
                       </TableCell>
                       {entry.module_score === 100 ? (
                         <TableCell sx={{ fontSize: "1rem" }}>

@@ -22,6 +22,8 @@ import {
   DialogContent,
   DialogTitle,
   DialogContentText,
+  Autocomplete,
+  TextField,
 } from "@mui/material";
 
 import { toast, ToastContainer } from "react-toastify";
@@ -120,12 +122,11 @@ const CourseDetails = ({ course, onBack }) => {
     handleDelete();
   };
 
-  const handleInstructorsChange = (event) => {
-    const newInstructors = event.target.value;
+  const handleInstructorsChange = (event, newValue) => {
     // Filter out duplicates
     const uniqueInstructors = Array.from(
       new Map(
-        newInstructors.map((instructor) => [instructor.user_email, instructor])
+        newValue.map((instructor) => [instructor.user_email, instructor])
       ).values()
     );
     setActiveInstructors(uniqueInstructors);
@@ -352,45 +353,38 @@ const CourseDetails = ({ course, onBack }) => {
             </Typography>
             <Divider sx={{ p: 1, marginBottom: 3 }} />
             <FormControl fullWidth sx={{ marginBottom: 2 }}>
-              <InputLabel id="select-instructors-label">
-                Active Instructors
-              </InputLabel>
-              <Select
-                labelId="select-instructors-label"
+              <Autocomplete
                 multiple
+                id="autocomplete-instructors"
+                options={allInstructors}
+                getOptionLabel={(option) =>
+                  option.first_name && option.last_name
+                    ? `${titleCase(option.first_name)} ${titleCase(
+                        option.last_name
+                      )}`
+                    : option.user_email
+                }
                 value={activeInstructors}
                 onChange={handleInstructorsChange}
-                input={
-                  <OutlinedInput
-                    id="select-multiple-chip"
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
                     label="Active Instructors"
+                    variant="outlined"
                   />
-                }
-                renderValue={(selected) => (
-                  <Box
-                    sx={{
-                      display: "flex",
-                      flexWrap: "wrap",
-                      gap: 0.5,
-                    }}
-                  >
-                    {selected.map((value) => (
-                      <Chip key={value.user_email} label={value.user_email} />
-                    ))}
-                  </Box>
                 )}
-              >
-                {allInstructors.map((instructor) => (
-                  <MenuItem key={instructor.user_email} value={instructor}>
-                    {instructor.first_name && instructor.last_name
-                      ? `${titleCase(instructor.first_name)} ${titleCase(
-                          instructor.last_name
-                        )}`
-                      : instructor.user_email}
-                  </MenuItem>
-                ))}
-              </Select>
+                renderTags={(value, getTagProps) =>
+                  value.map((option, index) => (
+                    <Chip
+                      label={option.user_email}
+                      {...getTagProps({ index })}
+                      key={option.user_email}
+                    />
+                  ))
+                }
+              />
             </FormControl>
+
             <FormControlLabel
               control={
                 <Switch checked={isActive} onChange={handleStatusChange} />

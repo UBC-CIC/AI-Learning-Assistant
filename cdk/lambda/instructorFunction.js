@@ -95,51 +95,65 @@ exports.handler = async (event) => {
           const courseId = event.queryStringParameters.course_id;
 
           try {
-            // Query to get all modules and their message counts
+            // Query to get all modules and their message counts, filtering by student role
             const messageCreations = await sqlConnection`
-                      SELECT cm.module_id, cm.module_name, COUNT(m.message_id) AS message_count, cm.module_number, cc.concept_number
-                      FROM "Course_Modules" cm
-                      JOIN "Course_Concepts" cc ON cm.concept_id = cc.concept_id
-                      LEFT JOIN "Student_Modules" sm ON cm.module_id = sm.course_module_id
-                      LEFT JOIN "Sessions" s ON sm.student_module_id = s.student_module_id
-                      LEFT JOIN "Messages" m ON s.session_id = m.session_id
-                      WHERE cc.course_id = ${courseId}
-                      GROUP BY cm.module_id, cm.module_name, cm.module_number, cc.concept_number
-                      ORDER BY cc.concept_number ASC, cm.module_number ASC;
-                  `;
-            // Query to get the number of module accesses using User_Engagement_Log
+                SELECT cm.module_id, cm.module_name, COUNT(m.message_id) AS message_count, cm.module_number, cc.concept_number
+                FROM "Course_Modules" cm
+                JOIN "Course_Concepts" cc ON cm.concept_id = cc.concept_id
+                LEFT JOIN "Student_Modules" sm ON cm.module_id = sm.course_module_id
+                LEFT JOIN "Sessions" s ON sm.student_module_id = s.student_module_id
+                LEFT JOIN "Messages" m ON s.session_id = m.session_id
+                LEFT JOIN "Enrolments" e ON sm.enrolment_id = e.enrolment_id
+                LEFT JOIN "Users" u ON e.user_email = u.user_email
+                WHERE cc.course_id = ${courseId}
+                AND 'student' = ANY(u.roles)
+                GROUP BY cm.module_id, cm.module_name, cm.module_number, cc.concept_number
+                ORDER BY cc.concept_number ASC, cm.module_number ASC;
+              `;
+
+            // Query to get the number of module accesses using User_Engagement_Log, filtering by student role
             const moduleAccesses = await sqlConnection`
-              SELECT cm.module_id, COUNT(uel.log_id) AS access_count
-              FROM "Course_Modules" cm
-              JOIN "Course_Concepts" cc ON cm.concept_id = cc.concept_id
-              LEFT JOIN "User_Engagement_Log" uel ON cm.module_id = uel.module_id
-              WHERE cc.course_id = ${courseId} AND uel.engagement_type = 'module access'
-              GROUP BY cm.module_id;
-            `;
+                SELECT cm.module_id, COUNT(uel.log_id) AS access_count
+                FROM "Course_Modules" cm
+                JOIN "Course_Concepts" cc ON cm.concept_id = cc.concept_id
+                LEFT JOIN "User_Engagement_Log" uel ON cm.module_id = uel.module_id
+                LEFT JOIN "Enrolments" e ON uel.enrolment_id = e.enrolment_id
+                LEFT JOIN "Users" u ON e.user_email = u.user_email
+                WHERE cc.course_id = ${courseId} 
+                AND uel.engagement_type = 'module access'
+                AND 'student' = ANY(u.roles)
+                GROUP BY cm.module_id;
+              `;
 
-            // Query to get the average score for each module
+            // Query to get the average score for each module, filtering by student role
             const averageScores = await sqlConnection`
-                      SELECT cm.module_id, AVG(sm.module_score) AS average_score
-                      FROM "Course_Modules" cm
-                      JOIN "Course_Concepts" cc ON cm.concept_id = cc.concept_id
-                      LEFT JOIN "Student_Modules" sm ON cm.module_id = sm.course_module_id
-                      WHERE cc.course_id = ${courseId}
-                      GROUP BY cm.module_id;
-                  `;
+                SELECT cm.module_id, AVG(sm.module_score) AS average_score
+                FROM "Course_Modules" cm
+                JOIN "Course_Concepts" cc ON cm.concept_id = cc.concept_id
+                LEFT JOIN "Student_Modules" sm ON cm.module_id = sm.course_module_id
+                LEFT JOIN "Enrolments" e ON sm.enrolment_id = e.enrolment_id
+                LEFT JOIN "Users" u ON e.user_email = u.user_email
+                WHERE cc.course_id = ${courseId}
+                AND 'student' = ANY(u.roles)
+                GROUP BY cm.module_id;
+              `;
 
-            // Query to get the percentage of perfect scores for each module
+            // Query to get the percentage of perfect scores for each module, filtering by student role
             const perfectScores = await sqlConnection`
-              SELECT cm.module_id, 
-                    CASE 
-                        WHEN COUNT(sm.student_module_id) = 0 THEN 0 
-                        ELSE COUNT(CASE WHEN sm.module_score = 100 THEN 1 END) * 100.0 / COUNT(sm.student_module_id)
-                    END AS perfect_score_percentage
-              FROM "Course_Modules" cm
-              JOIN "Course_Concepts" cc ON cm.concept_id = cc.concept_id
-              LEFT JOIN "Student_Modules" sm ON cm.module_id = sm.course_module_id
-              WHERE cc.course_id = ${courseId}
-              GROUP BY cm.module_id;
-          `;
+                SELECT cm.module_id, 
+                  CASE 
+                      WHEN COUNT(sm.student_module_id) = 0 THEN 0 
+                      ELSE COUNT(CASE WHEN sm.module_score = 100 THEN 1 END) * 100.0 / COUNT(sm.student_module_id)
+                  END AS perfect_score_percentage
+                FROM "Course_Modules" cm
+                JOIN "Course_Concepts" cc ON cm.concept_id = cc.concept_id
+                LEFT JOIN "Student_Modules" sm ON cm.module_id = sm.course_module_id
+                LEFT JOIN "Enrolments" e ON sm.enrolment_id = e.enrolment_id
+                LEFT JOIN "Users" u ON e.user_email = u.user_email
+                WHERE cc.course_id = ${courseId}
+                AND 'student' = ANY(u.roles)
+                GROUP BY cm.module_id;
+              `;
 
             // Combine all data into a single response, ensuring all modules are included
             const analyticsData = messageCreations.map((module) => {

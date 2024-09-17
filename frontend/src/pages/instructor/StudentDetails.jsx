@@ -190,6 +190,7 @@ const StudentDetails = () => {
         <IconButton
           onClick={handleBackClick}
           sx={{ position: "absolute", top: 44, left: 30 }}
+          aria-label="Go back"
         >
           <ArrowBackIcon />
         </IconButton>

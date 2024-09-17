@@ -19,26 +19,30 @@ export class AmplifyStack extends cdk.Stack {
     super(scope, id, props);
 
     const amplifyYaml = yaml.parse(`
-    version: 1
-    applications:
-      - appRoot: frontend
-        frontend:
-          phases:
-            preBuild:
-              commands:
-                - pwd
-                - npm ci
-            build:
-              commands:
-                - npm run build
-          artifacts:
-            baseDirectory: dist
-            files:
-              - '**/*'
-          cache:
-            paths:
-              - 'node_modules/**/*'
-    `);
+      version: 1
+      applications:
+        - appRoot: frontend
+          frontend:
+            phases:
+              preBuild:
+                commands:
+                  - pwd
+                  - npm ci
+              build:
+                commands:
+                  - npm run build
+            artifacts:
+              baseDirectory: dist
+              files:
+                - '**/*'
+            cache:
+              paths:
+                - 'node_modules/**/*'
+            redirects:
+              - source: </^[^.]+$|.(?!(css|gif|ico|jpg|js|png|txt|svg|woff|woff2|ttf|map|json|webp)$)([^.]+$)/>
+                target: /
+                status: 404
+      `);
 
     const username = cdk.aws_ssm.StringParameter.valueForStringParameter(
       this,
@@ -67,6 +71,6 @@ export class AmplifyStack extends cdk.Stack {
       buildSpec: BuildSpec.fromObjectToYaml(amplifyYaml),
     });
 
-    amplifyApp.addBranch('main')
+    amplifyApp.addBranch("main");
   }
 }

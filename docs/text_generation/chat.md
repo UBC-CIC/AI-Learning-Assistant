@@ -20,6 +20,7 @@ This script integrates AWS services like DynamoDB and Bedrock LLM with LangChain
 
 ### Import Libraries <a name="import-libraries"></a>
 - **boto3**: AWS SDK to interact with services like DynamoDB and manage resources.
+- **re**: The re library in Python is used for working with regular expressions, which are sequences of characters that form search patterns.
 - **ChatBedrock**: Interface for interacting with AWS Bedrock LLM.
 - **ChatPromptTemplate, MessagesPlaceholder**: Templates for setting up prompts in LangChain with chat history awareness.
 - **create_stuff_documents_chain, create_retrieval_chain**: LangChain utilities to combine document chains and retrieval chains for context-aware question-answering.

@@ -35,7 +35,6 @@ def lambda_handler(event, context):
 
     course_id = query_params.get("course_id", "")
     module_id = query_params.get("module_id", "")
-    module_name = query_params.get("module_name", "")
     file_type = query_params.get("file_type", "")
     file_name = query_params.get("file_name", "")
 
@@ -49,12 +48,6 @@ def lambda_handler(event, context):
         return {
             'statusCode': 400,
             'body': json.dumps('Missing required parameter: module_id')
-        }
-
-    if not module_name:
-        return {
-            'statusCode': 400,
-            'body': json.dumps('Missing required parameter: module_name')
         }
     
     if not file_name:
@@ -76,7 +69,7 @@ def lambda_handler(event, context):
     }
     
     if file_type in allowed_document_types:
-        key = f"{course_id}/{module_name}_{module_id}/documents/{file_name}.{file_type}"
+        key = f"{course_id}/{module_id}/documents/{file_name}.{file_type}"
         content_type = allowed_document_types[file_type]
     else:
         return {
@@ -87,7 +80,6 @@ def lambda_handler(event, context):
     logger.info({
         "course_id": course_id,
         "module_id": module_id,
-        "module_name": module_name,
         "file_type": file_type,
         "file_name": file_name,
     })

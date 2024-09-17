@@ -12,13 +12,11 @@ BUCKET = os.environ["BUCKET"]
 def lambda_handler(event, context):
     query_params = event.get("queryStringParameters", {})
     course_id = query_params.get("course_id", "")
-    module_name = query_params.get("module_name", "")
     module_id = query_params.get("module_id", "")
 
-    if not course_id or not module_name or not module_id:
+    if not course_id or not module_id:
         logger.error("Missing required parameters", extra={
             "course_id": course_id,
-            "module_name": module_name,
             "module_id": module_id
         })
         return {
@@ -29,11 +27,11 @@ def lambda_handler(event, context):
                 "Access-Control-Allow-Origin": "*",
                 "Access-Control-Allow-Methods": "*",
             },
-            'body': json.dumps("Missing required parameters: course_id, module_name, or module_id")
+            'body': json.dumps("Missing required parameters: course_id, or module_id")
         }
 
     try:
-        module_prefix = f"{course_id}/{module_name}_{module_id}/"
+        module_prefix = f"{course_id}/{module_id}/"
 
         objects_to_delete = []
         continuation_token = None

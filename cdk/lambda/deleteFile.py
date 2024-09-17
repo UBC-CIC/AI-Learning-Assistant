@@ -76,15 +76,13 @@ def lambda_handler(event, context):
 
     course_id = query_params.get("course_id", "")
     module_id = query_params.get("module_id", "")
-    module_name = query_params.get("module_name", "")
     file_name = query_params.get("file_name", "")
     file_type = query_params.get("file_type", "")
 
-    if not course_id or not module_id or not module_name or not file_name or not file_type:
+    if not course_id or not module_id or not file_name or not file_type:
         logger.error("Missing required parameters", extra={
             "course_id": course_id,
             "module_id": module_id,
-            "module_name": module_name,
             "file_name": file_name,
             "file_type": file_type
         })
@@ -96,7 +94,7 @@ def lambda_handler(event, context):
                 "Access-Control-Allow-Origin": "*",
                 "Access-Control-Allow-Methods": "*",
             },
-            'body': json.dumps('Missing required parameters: course_id, module_id, module_name, file_name, or file_type')
+            'body': json.dumps('Missing required parameters: course_id, module_id, file_name, or file_type')
         }
 
     try:
@@ -109,7 +107,7 @@ def lambda_handler(event, context):
         # Determine the folder based on the file type
         if file_type in allowed_document_types:
             folder = "documents"
-            objects_to_delete.append({"Key": f"{course_id}/{module_name}_{module_id}/{folder}/{file_name}.{file_type}"})
+            objects_to_delete.append({"Key": f"{course_id}/{module_id}/{folder}/{file_name}.{file_type}"})
         else:
             return {
                 'statusCode': 400,

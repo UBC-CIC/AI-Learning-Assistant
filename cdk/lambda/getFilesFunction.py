@@ -116,13 +116,11 @@ def lambda_handler(event, context):
 
     course_id = query_params.get("course_id", "")
     module_id = query_params.get("module_id", "")
-    module_name = query_params.get("module_name", "")
 
-    if not course_id or not module_id or not module_name:
+    if not course_id or not module_id:
         logger.error("Missing required parameters", extra={
             "course_id": course_id,
             "module_id": module_id,
-            "module_name": module_name
         })
         return {
             'statusCode': 400,
@@ -132,11 +130,11 @@ def lambda_handler(event, context):
                 "Access-Control-Allow-Origin": "*",
                 "Access-Control-Allow-Methods": "*",
             },
-            'body': json.dumps('Missing required parameters: course_id, module_id, or module_name')
+            'body': json.dumps('Missing required parameters: course_id, or module_id')
         }
 
     try:
-        document_prefix = f"{course_id}/{module_name}_{module_id}/documents/"
+        document_prefix = f"{course_id}/{module_id}/documents/"
 
         document_files = list_files_in_s3_prefix(BUCKET, document_prefix)
 

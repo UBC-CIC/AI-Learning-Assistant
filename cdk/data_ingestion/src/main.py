@@ -44,12 +44,11 @@ def connect_to_db():
         return None
 
 def parse_s3_file_path(file_key):
-    # Assuming the file path is of the format: {course_id}/{module_name}_{module_id}/{documents}/{file_name}.{file_type}
+    # Assuming the file path is of the format: {course_id}/{module_id}/{documents}/{file_name}.{file_type}
     try:
-        course_id, module_and_id, file_category, filename_with_ext = file_key.split('/')
-        module_name, module_id = module_and_id.split('_')
+        course_id, module_id, file_category, filename_with_ext = file_key.split('/')
         file_name, file_type = filename_with_ext.split('.')
-        return course_id, module_name, module_id, file_category, file_name, file_type
+        return course_id, module_id, file_category, file_name, file_type
     except Exception as e:
         logger.error(f"Error parsing S3 file path: {e}")
         return {
@@ -181,8 +180,8 @@ def handler(event, context):
             file_key = record['s3']['object']['key']
 
             # Parse the file path
-            course_id, module_name, module_id, file_category, file_name, file_type = parse_s3_file_path(file_key)
-            if not course_id or not module_name or not module_id or not file_name or not file_type:
+            course_id, module_id, file_category, file_name, file_type = parse_s3_file_path(file_key)
+            if not course_id or not module_id or not file_name or not file_type:
                 return {
                     "statusCode": 400,
                     "body": json.dumps("Error parsing S3 file path.")

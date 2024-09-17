@@ -574,6 +574,7 @@ export const Login = () => {
                 <Typography component="h1" variant="h5" paddingBottom={3}>
                   Create your account
                 </Typography>
+
                 <Box sx={{ mt: 1 }}>
                   <Grid container spacing={2}>
                     <Grid item xs={12} sm={6}>
@@ -645,6 +646,18 @@ export const Login = () => {
                       />
                     </Grid>
                   </Grid>
+                  <Typography
+                    variant="body2"
+                    color="textSecondary"
+                    align="center"
+                    paddingBottom={2}
+                    marginTop={2}
+                  >
+                    Providing personal information is optional and entirely at
+                    your discretion. You can use this app without sharing any
+                    personal details beyond those necessary for account setup.
+                  </Typography>
+
                   <Button
                     fullWidth
                     variant="contained"
@@ -790,7 +803,9 @@ export const Login = () => {
                   paddingRight: 15,
                 }}
               >
-                <Typography fullWidthvariant="h5">Reset Password</Typography>
+                <Typography fullWidthvariant="h5" sx={{ mb: 3 }}>
+                  Reset Password
+                </Typography>
                 {step === "requestReset" && (
                   <>
                     <Grid item xs={12} md={12}>
@@ -815,7 +830,7 @@ export const Login = () => {
                   </>
                 )}
                 {step === "confirmReset" && (
-                  <Grid item xs={12} sm={8} md={5} component={Paper} square>
+                  <Grid item xs={12} sm={8} md={5} square>
                     <Box
                       component="form"
                       noValidate
@@ -877,15 +892,6 @@ export const Login = () => {
                   <Typography color="error" sx={{ mt: 2 }}>
                     {error}
                   </Typography>
-                )}
-                {message && (
-                  <Link
-                    href="#"
-                    variant="body2"
-                    onClick={() => setForgotPassword(false)}
-                  >
-                    Sign in
-                  </Link>
                 )}
                 <Grid container sx={{ mt: 4 }}>
                   <Grid item xs>

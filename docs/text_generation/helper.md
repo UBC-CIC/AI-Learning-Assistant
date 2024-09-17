@@ -38,21 +38,6 @@ def get_vectorstore(
     host: str, 
     port: int
 ) -> Optional[PGVector]:
-    """
-    Initialize and return a PGVector instance.
-    
-    Args:
-    collection_name (str): The name of the collection.
-    embeddings (BedrockEmbeddings): The embeddings instance.
-    dbname (str): The name of the database.
-    user (str): The database user.
-    password (str): The database password.
-    host (str): The database host.
-    port (int): The database port.
-    
-    Returns:
-    Optional[PGVector]: The initialized PGVector instance, or None if an error occurred.
-    """
     try:
         connection_string = (
             f"postgresql+psycopg://{user}:{password}@{host}:{port}/{dbname}"

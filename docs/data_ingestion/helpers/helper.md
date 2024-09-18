@@ -22,7 +22,6 @@ This script is designed to interact with an AWS S3 bucket, process course-relate
 - **PGVector**: PostgreSQL-based vector store for storing and retrieving vectorized documents.
 - **SQLRecordManager**: For managing the document records in the database.
 - **process_documents**: A helper function from `processing.documents` to process documents and add them to the vector store.
-- **PostgresByteStore**: Custom store for byte-level data in PostgreSQL.
 
 ### AWS and Database Setup <a name="aws-and-database-setup"></a>
 - **boto3.client('s3')**: Initializes the S3 client to interact with AWS S3, used for fetching course documents from S3 buckets.
@@ -137,8 +136,6 @@ def store_course_data(
     )
     
     if vectorstore:
-        store = PostgresByteStore(connection_string, vectorstore_config_dict['collection_name'])
-        
         # define record manager
         namespace = f"pgvector/{vectorstore_config_dict['collection_name']}"
         record_manager = SQLRecordManager(
@@ -167,7 +164,6 @@ Processes the course data from an S3 bucket and stores it into the vector store,
    - Calls `get_vectorstore` to initialize the PGVector instance based on the configuration dictionary and embeddings.
    - If the vector store initialization fails, logs the error and terminates the process.
 2. **Set Up Document Store**:
-   - If vector store initialization is successful, sets up a document store using `PostgresByteStore`.
    - Defines a `SQLRecordManager` to manage document records in the vector store and creates the schema for the record manager.
 3. **Document Processing**:
    - Calls the `process_documents` function, which processes the documents stored in the S3 bucket under the specified course folder.

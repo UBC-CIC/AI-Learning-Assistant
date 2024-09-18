@@ -5,11 +5,9 @@ import psycopg2
 
 from langchain_community.embeddings import BedrockEmbeddings
 from langchain_postgres import PGVector
-from langchain.retrievers.multi_vector import MultiVectorRetriever
 from langchain.indexes import SQLRecordManager
 
 from processing.documents import process_documents
-from helpers.store import PostgresByteStore
 s3 = boto3.client('s3')
 
 # Setup logging
@@ -85,17 +83,7 @@ def store_course_data(
         port=int(vectorstore_config_dict['port'])
     )
     
-    
-    
     if vectorstore:
-        store = PostgresByteStore(connection_string, vectorstore_config_dict['collection_name'])
-        
-        retriever = MultiVectorRetriever(
-            vectorstore=vectorstore, 
-            docstore=store, 
-            id_key="doc_id",
-        )
-        
         # define record manager
         namespace = f"pgvector/{vectorstore_config_dict['collection_name']}"
         record_manager = SQLRecordManager(

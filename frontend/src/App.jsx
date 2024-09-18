@@ -2,6 +2,8 @@ import "./App.css";
 // amplify
 import { Amplify } from "aws-amplify";
 import { fetchAuthSession } from "aws-amplify/auth";
+import { cognitoUserPoolsTokenProvider } from "aws-amplify/auth/cognito";
+import { CookieStorage } from "aws-amplify/utils";
 import "@aws-amplify/ui-react/styles.css";
 // react-router
 import {
@@ -35,9 +37,20 @@ Amplify.configure({
       userPoolClientId: import.meta.env.VITE_COGNITO_USER_POOL_CLIENT_ID,
       userPoolId: import.meta.env.VITE_COGNITO_USER_POOL_ID,
       allowGuestAccess: false,
+      cookieStorage: {
+        // Secure Cookie Configuration
+        domain: 'http://localhost:5173/', // Set your domain here
+        path: '/',
+        expires: 365, // Optional: Cookie expiration in days
+        secure: true, // Ensure cookie is sent only over HTTPS
+        sameSite: 'Strict', // Prevent CSRF attacks
+        httpOnly: true, // Prevent JavaScript from accessing the cookie
+      },
     },
   },
 });
+
+cognitoUserPoolsTokenProvider.setKeyValueStorage(new CookieStorage());
 
 function App() {
   const [user, setUser] = useState(null);

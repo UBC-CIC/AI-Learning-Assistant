@@ -37,6 +37,7 @@ To deploy this solution, you will need to generate a GitHub personal access toke
 
 **Once you create a token, please note down its value as you will use it later in the deployment process.**
 
+Docker must also be running for the deployment to work.
 ## Deployment
 ### Step 1: Fork & Clone The Repository
 First, you need to fork the repository. To create a fork, navigate to the [main branch](https://github.com/UBC-CIC/AI-Learning-Assistant) of this repository. Then, in the top-right corner, click `Fork`.

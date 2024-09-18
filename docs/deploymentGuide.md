@@ -1,14 +1,22 @@
 # Deployment Guide
 
 ## Table of Contents
-- [Requirements](#requirements)
-- [Pre-Deployment](#pre-deployment)
-- [Deployment](#deployment)
-    - [Step 1: Clone The Repository](#step-1-fork--clone-the-repository)
+- [Deployment Guide](#deployment-guide)
+  - [Table of Contents](#table-of-contents)
+  - [Requirements](#requirements)
+  - [Pre-Deployment](#pre-deployment)
+    - [Create GitHub Personal Access Token](#create-github-personal-access-token)
+  - [Deployment](#deployment)
+    - [Step 1: Fork \& Clone The Repository](#step-1-fork--clone-the-repository)
     - [Step 2: Upload Secrets](#step-2-upload-secrets)
     - [Step 3: CDK Deployment](#step-3-cdk-deployment)
-- [Post-Deployment](#post-deployment)
-- [Cleanup](#cleanup)
+  - [Post-Deployment](#post-deployment)
+    - [Step 1: Build AWS Amplify App](#step-1-build-aws-amplify-app)
+    - [Step 2: Change Redirects](#step-2-change-redirects)
+    - [Step 3: Change CORS](#step-3-change-cors)
+    - [Step 4: Visit Web App](#step-4-visit-web-app)
+  - [Cleanup](#cleanup)
+    - [Taking down the deployed stack](#taking-down-the-deployed-stack)
 
 ## Requirements
 Before you deploy, you must have the following installed on your device:
@@ -111,9 +119,25 @@ If you have trouble running the above command, try removing all the \ and run it
 
 1. Log in to AWS console, and navigate to **AWS Amplify**. You can do so by typing `Amplify` in the search bar at the top.
 2. From `All apps`, click `aila-amplify`.
-There, you have access to the `Amplify App ID` and the public domain name to use the web app.
+3. Then click `main` under `branches`
+4. Click `run job` and wait for the build to complete.
+5. You now have access to the `Amplify App ID` and the public domain name to use the web app.
 
-### Step 2: Visit Web App
+### Step 2: Change Redirects
+
+1. Click back to navigate to `aila-amplify/Overview`
+2. In the left side bar click   `Rewrites and Redirects` under `Hosting`
+3. Click `manage redirects` on the top right
+4. Click `add rewrite`
+5. For `Source address` type `</^[^.]+$|.(?!(css|gif|ico|jpg|js|png|txt|svg|woff|woff2|ttf|map|json|webp)$)([^.]+$)/>`
+6. For `Target address` type `/`
+7. For `Type` select `404 (Redirect)`
+8. Click `Save`
+
+
+### Step 3: Change CORS
+
+### Step 4: Visit Web App
 You can now navigate to the web app URL to see your application in action.
 
 ## Cleanup

@@ -1,6 +1,6 @@
 const { initializeConnection } = require("./lib.js");
-const AWS = require("aws-sdk");
-let { SM_DB_CREDENTIALS, RDS_PROXY_ENDPOINT } = process.env;
+const { CognitoIdentityProviderClient, AdminListGroupsForUserCommand, AdminGetUserCommand, AdminAddUserToGroupCommand, AdminRemoveUserFromGroupCommand } = require("@aws-sdk/client-cognito-identity-provider");
+const { SM_DB_CREDENTIALS, RDS_PROXY_ENDPOINT } = process.env;
 let sqlConnection = global.sqlConnection;
 
 exports.handler = async (event) => {
@@ -10,28 +10,25 @@ exports.handler = async (event) => {
   }
 
   const { userName, userPoolId } = event;
+  const client = new CognitoIdentityProviderClient();
+
   try {
-    const cognitoIdp = new AWS.CognitoIdentityServiceProvider();
-
     // Get user groups from Cognito
-    const userGroups = await cognitoIdp
-      .adminListGroupsForUser({
-        UserPoolId: userPoolId,
-        Username: userName,
-      })
-      .promise();
-
-    const cognitoRoles = userGroups.Groups.map((group) => group.GroupName);
+    const userGroupsCommand = new AdminListGroupsForUserCommand({
+      UserPoolId: userPoolId,
+      Username: userName,
+    });
+    const userGroupsResponse = await client.send(userGroupsCommand);
+    const cognitoRoles = userGroupsResponse.Groups.map(group => group.GroupName);
 
     // Get user attributes
-    const userAttributes = await cognitoIdp
-      .adminGetUser({
-        UserPoolId: userPoolId,
-        Username: userName,
-      })
-      .promise();
+    const userAttributesCommand = new AdminGetUserCommand({
+      UserPoolId: userPoolId,
+      Username: userName,
+    });
+    const userAttributesResponse = await client.send(userAttributesCommand);
 
-    const emailAttr = userAttributes.UserAttributes.find(attr => attr.Name === 'email');
+    const emailAttr = userAttributesResponse.UserAttributes.find(attr => attr.Name === 'email');
     const email = emailAttr ? emailAttr.Value : null;
 
     // Retrieve roles from the database
@@ -66,21 +63,19 @@ exports.handler = async (event) => {
         console.log(`DB roles updated to match Cognito (${cognitoNonAdminRole})`);
       } else if (dbRoles.length && dbRoles[0] !== cognitoNonAdminRole) {
         // If DB role doesn't match Cognito and isn't admin, update Cognito to match DB
-        await cognitoIdp
-          .adminRemoveUserFromGroup({
-            UserPoolId: userPoolId,
-            Username: userName,
-            GroupName: cognitoNonAdminRole
-          })
-          .promise();
+        const removeFromGroupCommand = new AdminRemoveUserFromGroupCommand({
+          UserPoolId: userPoolId,
+          Username: userName,
+          GroupName: cognitoNonAdminRole,
+        });
+        const addToGroupCommand = new AdminAddUserToGroupCommand({
+          UserPoolId: userPoolId,
+          Username: userName,
+          GroupName: dbRoles[0],
+        });
 
-        await cognitoIdp
-          .adminAddUserToGroup({
-            UserPoolId: userPoolId,
-            Username: userName,
-            GroupName: dbRoles[0]
-          })
-          .promise();
+        await client.send(removeFromGroupCommand);
+        await client.send(addToGroupCommand);
 
         console.log(`Cognito roles updated to match DB (${dbRoles[0]})`);
       }
@@ -88,7 +83,7 @@ exports.handler = async (event) => {
 
     return event;
   } catch (err) {
-    console.log(err);
+    console.error(err);
     return event;
   }
 };

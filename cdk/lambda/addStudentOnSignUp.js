@@ -1,7 +1,7 @@
 const { initializeConnection } = require("./lib.js");
-const AWS = require("aws-sdk");
+const { CognitoIdentityProviderClient, AdminGetUserCommand, AdminAddUserToGroupCommand } = require("@aws-sdk/client-cognito-identity-provider");
 
-let { SM_DB_CREDENTIALS, RDS_PROXY_ENDPOINT } = process.env;
+const { SM_DB_CREDENTIALS, RDS_PROXY_ENDPOINT } = process.env;
 let sqlConnection = global.sqlConnection;
 
 exports.handler = async (event) => {
@@ -11,18 +11,17 @@ exports.handler = async (event) => {
   }
 
   const { userName, userPoolId } = event;
+  const client = new CognitoIdentityProviderClient();
 
   try {
-    const cognitoIdp = new AWS.CognitoIdentityServiceProvider();
     // Get user attributes from Cognito to retrieve the email
-    const userAttributes = await cognitoIdp
-      .adminGetUser({
-        UserPoolId: userPoolId,
-        Username: userName,
-      })
-      .promise();
+    const getUserCommand = new AdminGetUserCommand({
+      UserPoolId: userPoolId,
+      Username: userName,
+    });
+    const userAttributesResponse = await client.send(getUserCommand);
 
-    const emailAttr = userAttributes.UserAttributes.find(
+    const emailAttr = userAttributesResponse.UserAttributes.find(
       (attr) => attr.Name === "email"
     );
     const email = emailAttr ? emailAttr.Value : null;
@@ -38,13 +37,12 @@ exports.handler = async (event) => {
     const newGroupName = dbRoles.length > 0 ? dbRoles[0] : "student";
 
     // Add the user to the new group without removing existing groups
-    await cognitoIdp
-      .adminAddUserToGroup({
-        UserPoolId: userPoolId,
-        Username: userName,
-        GroupName: newGroupName,
-      })
-      .promise();
+    const addUserToGroupCommand = new AdminAddUserToGroupCommand({
+      UserPoolId: userPoolId,
+      Username: userName,
+      GroupName: newGroupName,
+    });
+    await client.send(addUserToGroupCommand);
 
     return event;
   } catch (err) {

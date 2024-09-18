@@ -1,8 +1,4 @@
 const { initializeConnection } = require("./libadmin.js");
-const {
-  SecretsManagerClient,
-  GetSecretValueCommand,
-} = require("@aws-sdk/client-secrets-manager");
 
 let { SM_DB_CREDENTIALS, RDS_PROXY_ENDPOINT } = process.env;
 
@@ -10,30 +6,12 @@ let { SM_DB_CREDENTIALS, RDS_PROXY_ENDPOINT } = process.env;
 let sqlConnectionTableCreator = global.sqlConnectionTableCreator;
 
 exports.handler = async (event) => {
-  let allowedOrigin = "*";
-
-  try {
-    // Initialize Secrets Manager Client
-    const secretsManagerClient = new SecretsManagerClient();
-
-    // Fetch the secret for allowed origin from Secrets Manager
-    const secretName = "aila-amplify-url";
-    const command = new GetSecretValueCommand({ SecretId: secretName });
-    const secretValue = await secretsManagerClient.send(command);
-
-    if (secretValue && secretValue.SecretString) {
-      const secretJson = JSON.parse(secretValue.SecretString);
-      allowedOrigin = secretJson.allowedOrigin || "*";
-    }
-  } catch (error) {
-    console.error("Error fetching secret, defaulting to '*':", error);
-  }
   const response = {
     statusCode: 200,
     headers: {
       "Access-Control-Allow-Headers":
         "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token",
-      "Access-Control-Allow-Origin": allowedOrigin,
+      "Access-Control-Allow-Origin": "*",
       "Access-Control-Allow-Methods": "*",
     },
     body: "",

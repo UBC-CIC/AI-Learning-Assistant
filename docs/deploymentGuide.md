@@ -27,6 +27,7 @@ Before you deploy, you must have the following installed on your device:
 - [AWS CDK](https://docs.aws.amazon.com/cdk/v2/guide/cli.html) *(v2.122.0 > required)*
 - [npm](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm)
 - [node](https://nodejs.org/en/learn/getting-started/how-to-install-nodejs) *(v20.0.0 > required)*
+- [docker](https://www.docker.com/products/docker-desktop/)
 
 ## Pre-Deployment
 ### Create GitHub Personal Access Token

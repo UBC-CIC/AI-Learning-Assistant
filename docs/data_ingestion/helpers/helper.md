@@ -20,7 +20,6 @@ This script is designed to interact with an AWS S3 bucket, process course-relate
 - **psycopg2**: For interacting with PostgreSQL databases.
 - **BedrockEmbeddings**: LangChain community embeddings instance for handling document embeddings.
 - **PGVector**: PostgreSQL-based vector store for storing and retrieving vectorized documents.
-- **MultiVectorRetriever**: Multi-vector retriever for querying the vector store.
 - **SQLRecordManager**: For managing the document records in the database.
 - **process_documents**: A helper function from `processing.documents` to process documents and add them to the vector store.
 - **PostgresByteStore**: Custom store for byte-level data in PostgreSQL.
@@ -140,12 +139,6 @@ def store_course_data(
     if vectorstore:
         store = PostgresByteStore(connection_string, vectorstore_config_dict['collection_name'])
         
-        retriever = MultiVectorRetriever(
-            vectorstore=vectorstore, 
-            docstore=store, 
-            id_key="doc_id",
-        )
-        
         # define record manager
         namespace = f"pgvector/{vectorstore_config_dict['collection_name']}"
         record_manager = SQLRecordManager(
@@ -173,9 +166,8 @@ Processes the course data from an S3 bucket and stores it into the vector store,
 1. **Initialize Vector Store**:
    - Calls `get_vectorstore` to initialize the PGVector instance based on the configuration dictionary and embeddings.
    - If the vector store initialization fails, logs the error and terminates the process.
-2. **Set Up Document Store and Retriever**:
+2. **Set Up Document Store**:
    - If vector store initialization is successful, sets up a document store using `PostgresByteStore`.
-   - Initializes a `MultiVectorRetriever` to handle document retrieval from the vector store using embeddings.
    - Defines a `SQLRecordManager` to manage document records in the vector store and creates the schema for the record manager.
 3. **Document Processing**:
    - Calls the `process_documents` function, which processes the documents stored in the S3 bucket under the specified course folder.

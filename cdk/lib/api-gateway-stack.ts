@@ -816,7 +816,7 @@ export class ApiGatewayStack extends cdk.Stack {
       "TextGenLambdaDockerFunc",
       {
         code: lambda.DockerImageCode.fromImageAsset("./text_generation"),
-        memorySize: 2048,
+        memorySize: 512,
         timeout: cdk.Duration.seconds(300),
         vpc: vpcStack.vpc, // Pass the VPC
         functionName: "TextGenLambdaDockerFunc",
@@ -856,23 +856,6 @@ export class ApiGatewayStack extends cdk.Stack {
 
     // Attach the custom Bedrock policy to Lambda function
     textGenLambdaDockerFunc.addToRolePolicy(bedrockPolicyStatement);
-
-    // Create Guardrail for Regex Filtering
-    const guardrail = new bedrock.CfnGuardrail(this, 'RegexAttackGuardrail', {
-      name: 'RegexAttackProtectionGuardrail',
-      blockedInputMessaging: 'Ha! Nice try! Your input has been blocked due to potentially malicious content (Regex Attack Prevention).',
-      blockedOutputsMessaging: 'Sorry! My response has been blocked due to potentially malicious content (Regex Attack Prevention).',
-      sensitiveInformationPolicyConfig: {
-        regexesConfig: [
-          {
-            action: 'BLOCK',
-            name: 'DangerousRegexPattern',
-            pattern: '.*[.*+?^${}()|[\]\\].*',
-            description: 'Blocks input containing malicious regex attack patterns.',
-          },
-        ],
-      },
-    });
 
     // Grant access to Secret Manager
     textGenLambdaDockerFunc.addToRolePolicy(

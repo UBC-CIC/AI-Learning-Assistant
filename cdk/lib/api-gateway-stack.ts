@@ -21,6 +21,7 @@ import { parse, stringify } from "yaml";
 import { Fn } from "aws-cdk-lib";
 import { Asset } from "aws-cdk-lib/aws-s3-assets";
 import * as s3 from "aws-cdk-lib/aws-s3";
+import * as bedrock from "aws-cdk-lib/aws-bedrock";
 import * as secretsmanager from "aws-cdk-lib/aws-secretsmanager";
 
 export class ApiGatewayStack extends cdk.Stack {
@@ -855,6 +856,23 @@ export class ApiGatewayStack extends cdk.Stack {
 
     // Attach the custom Bedrock policy to Lambda function
     textGenLambdaDockerFunc.addToRolePolicy(bedrockPolicyStatement);
+
+    // Create Guardrail for Regex Filtering
+    const guardrail = new bedrock.CfnGuardrail(this, 'RegexAttackGuardrail', {
+      name: 'RegexAttackProtectionGuardrail',
+      blockedInputMessaging: 'Ha! Nice try! Your input has been blocked due to potentially malicious content (Regex Attack Prevention).',
+      blockedOutputsMessaging: 'Sorry! My response has been blocked due to potentially malicious content (Regex Attack Prevention).',
+      sensitiveInformationPolicyConfig: {
+        regexesConfig: [
+          {
+            action: 'BLOCK',
+            name: 'DangerousRegexPattern',
+            pattern: '.*[.*+?^${}()|[\]\\].*',
+            description: 'Blocks input containing malicious regex attack patterns.',
+          },
+        ],
+      },
+    });
 
     // Grant access to Secret Manager
     textGenLambdaDockerFunc.addToRolePolicy(

@@ -18,7 +18,13 @@ export class AmplifyStack extends cdk.Stack {
   ) {
     super(scope, id, props);
 
-    const amplifyYaml = yaml.parse(`
+    // Define the GitHub repository name as a parameter
+    const githubRepoName = new cdk.CfnParameter(this, "githubRepoName", {
+      type: "String",
+      description: "The name of the GitHub repository",
+    }).valueAsString;
+
+    const amplifyYaml = yaml.parse(` 
       version: 1
       applications:
         - appRoot: frontend
@@ -42,7 +48,7 @@ export class AmplifyStack extends cdk.Stack {
               - source: </^[^.]+$|.(?!(css|gif|ico|jpg|js|png|txt|svg|woff|woff2|ttf|map|json|webp)$)([^.]+$)/>
                 target: /
                 status: 404
-      `);
+    `);
 
     const username = cdk.aws_ssm.StringParameter.valueForStringParameter(
       this,
@@ -53,7 +59,7 @@ export class AmplifyStack extends cdk.Stack {
       appName: "aila-amplify",
       sourceCodeProvider: new GitHubSourceCodeProvider({
         owner: username,
-        repository: "AI-LEARNING-ASSISTANT",
+        repository: githubRepoName,
         oauthToken: cdk.SecretValue.secretsManager(
           "github-personal-access-token",
           {

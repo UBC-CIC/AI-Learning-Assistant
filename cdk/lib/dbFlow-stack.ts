@@ -81,7 +81,7 @@ export class DBFlowStack extends Stack {
               RDS_PROXY_ENDPOINT: db.rdsProxyEndpoint, // RDS Proxy Endpoint
             },
             vpc: db.dbInstance.vpc,
-            code: lambda.Code.fromAsset("lambda.initializer"),
+            code: lambda.Code.fromAsset("lambda/initializer"),
             layers: [psycopgLambdaLayer],
             role: lambdaRole,
         });

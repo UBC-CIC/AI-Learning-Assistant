@@ -439,7 +439,7 @@ export class ApiGatewayStack extends cdk.Stack {
 
     const lambdaStudentFunction = new lambda.Function(this, "studentFunction", {
       runtime: lambda.Runtime.NODEJS_20_X,
-      code: lambda.Code.fromAsset("lambda/studentFunction"),
+      code: lambda.Code.fromAsset("lambda/lib"),
       handler: "studentFunction.handler",
       timeout: Duration.seconds(300),
       vpc: vpcStack.vpc,
@@ -469,7 +469,7 @@ export class ApiGatewayStack extends cdk.Stack {
       "instructorFunction",
       {
         runtime: lambda.Runtime.NODEJS_20_X,
-        code: lambda.Code.fromAsset("lambda/instructorFunction"),
+        code: lambda.Code.fromAsset("lambda/lib"),
         handler: "instructorFunction.handler",
         timeout: Duration.seconds(300),
         vpc: vpcStack.vpc,
@@ -623,7 +623,7 @@ export class ApiGatewayStack extends cdk.Stack {
 
     const AutoSignupLambda = new lambda.Function(this, "addStudentOnSignUp", {
       runtime: lambda.Runtime.NODEJS_20_X,
-      code: lambda.Code.fromAsset("lambda/addStudentOnSignUp"),
+      code: lambda.Code.fromAsset("lambda/lib"),
       handler: "addStudentOnSignUp.handler",
       timeout: Duration.seconds(300),
       environment: {
@@ -639,7 +639,7 @@ export class ApiGatewayStack extends cdk.Stack {
 
     const adjustUserRoles = new lambda.Function(this, "adjustUserRoles", {
       runtime: lambda.Runtime.NODEJS_20_X,
-      code: lambda.Code.fromAsset("lambda/adjustUserRoles"),
+      code: lambda.Code.fromAsset("lambda/lib"),
       handler: "adjustUserRoles.handler",
       timeout: Duration.seconds(300),
       environment: {

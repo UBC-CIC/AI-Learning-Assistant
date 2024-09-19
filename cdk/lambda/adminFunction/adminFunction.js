@@ -1,4 +1,4 @@
-const { initializeConnection } = require("../libadmin.js");
+const { initializeConnection } = require("./libadmin.js");
 
 let { SM_DB_CREDENTIALS, RDS_PROXY_ENDPOINT } = process.env;
 

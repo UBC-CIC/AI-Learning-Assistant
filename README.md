@@ -68,6 +68,11 @@ Please refer to the [Web App User Guide](./docs/userGuide.md) for instructions o
             - `/admin`: Contains admin pages used in the application
             - `/instructor`: Contains instructor pages used in the application
             - `/student`: Contains student pages used in the application
+
+## Deeper Dive
+
+Here you can learn about how this project performs retrieval-augmented generation (RAG). For a deeper dive into how we use Large Language Models (LLMs) to generate text, please refer to the [Text Generation](./docs/text_generation) folder. For more knowledge on how data is consumed and interpreted for the LLM, please refer to the [Data Ingestion](./docs/data_ingestion) folder.
+
 ## Changelog
 N/A
 

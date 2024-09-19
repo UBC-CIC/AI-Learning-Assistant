@@ -8,7 +8,6 @@ import secrets
 DB_SECRET_NAME = os.environ["DB_SECRET_NAME"]
 DB_USER_SECRET_NAME = os.environ["DB_USER_SECRET_NAME"]
 DB_PROXY = os.environ["DB_PROXY"]
-RDS_PROXY_ENDPOINT = os.environ["RDS_PROXY_ENDPOINT"]
 print(psycopg2.__version__)
 
 
@@ -24,7 +23,7 @@ def createConnection():
     connection = psycopg2.connect(
         user=dbSecret["username"],
         password=dbSecret["password"],
-        host=RDS_PROXY_ENDPOINT,
+        host=dbSecret["host"],
         dbname=dbSecret["dbname"],
         # sslmode="require"
     )

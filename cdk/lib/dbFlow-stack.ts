@@ -78,7 +78,6 @@ export class DBFlowStack extends Stack {
               DB_SECRET_NAME: db.secretPathAdminName,     // Admin Secret Manager name that only use once here.
               DB_USER_SECRET_NAME: db.secretPathUser.secretName,
               DB_PROXY: db.secretPathTableCreator.secretName,
-              RDS_PROXY_ENDPOINT: db.rdsProxyEndpoint, // RDS Proxy Endpoint
             },
             vpc: db.dbInstance.vpc,
             code: lambda.Code.fromAsset("lambda/initializer"),

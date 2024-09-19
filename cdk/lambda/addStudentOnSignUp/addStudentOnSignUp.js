@@ -1,4 +1,4 @@
-const { initializeConnection } = require("./lib.js");
+const { initializeConnection } = require("../lib.js");
 const { CognitoIdentityProviderClient, AdminGetUserCommand, AdminAddUserToGroupCommand } = require("@aws-sdk/client-cognito-identity-provider");
 
 const { SM_DB_CREDENTIALS, RDS_PROXY_ENDPOINT } = process.env;

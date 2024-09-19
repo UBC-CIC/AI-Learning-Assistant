@@ -11,6 +11,7 @@ dynamodb_client = boto3.client('dynamodb')
 
 TABLE_NAME = "API-Gateway-Test-Table-Name"
 DB_SECRET_NAME = os.environ["SM_DB_CREDENTIALS"]
+RDS_PROXY_ENDPOINT = os.environ["RDS_PROXY_ENDPOINT"]
 
 def get_secret():
     # secretsmanager client to get db credentials
@@ -26,7 +27,7 @@ def connect_to_db():
             'dbname': db_secret["dbname"],
             'user': db_secret["username"],
             'password': db_secret["password"],
-            'host': db_secret["host"],
+            'host': RDS_PROXY_ENDPOINT,
             'port': db_secret["port"]
         }
         connection_string = " ".join([f"{key}={value}" for key, value in connection_params.items()])

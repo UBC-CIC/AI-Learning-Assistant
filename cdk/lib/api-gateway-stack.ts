@@ -439,7 +439,7 @@ export class ApiGatewayStack extends cdk.Stack {
 
     const lambdaStudentFunction = new lambda.Function(this, "studentFunction", {
       runtime: lambda.Runtime.NODEJS_20_X,
-      code: lambda.Code.fromAsset("lambda"),
+      code: lambda.Code.fromAsset("lambda.studentFunction"),
       handler: "studentFunction.handler",
       timeout: Duration.seconds(300),
       vpc: vpcStack.vpc,
@@ -469,7 +469,7 @@ export class ApiGatewayStack extends cdk.Stack {
       "instructorFunction",
       {
         runtime: lambda.Runtime.NODEJS_20_X,
-        code: lambda.Code.fromAsset("lambda"),
+        code: lambda.Code.fromAsset("lambda.instructorFunction"),
         handler: "instructorFunction.handler",
         timeout: Duration.seconds(300),
         vpc: vpcStack.vpc,
@@ -497,7 +497,7 @@ export class ApiGatewayStack extends cdk.Stack {
 
     const lambdaAdminFunction = new lambda.Function(this, "adminFunction", {
       runtime: lambda.Runtime.NODEJS_20_X,
-      code: lambda.Code.fromAsset("lambda"),
+      code: lambda.Code.fromAsset("lambda.adminFunction"),
       handler: "adminFunction.handler",
       timeout: Duration.seconds(300),
       vpc: vpcStack.vpc,
@@ -521,37 +521,6 @@ export class ApiGatewayStack extends cdk.Stack {
     const cfnLambda_Admin = lambdaAdminFunction.node
       .defaultChild as lambda.CfnFunction;
     cfnLambda_Admin.overrideLogicalId("adminFunction");
-
-    const lambdaTechAdminFunction = new lambda.Function(
-      this,
-      "techadminFunction",
-      {
-        runtime: lambda.Runtime.NODEJS_20_X,
-        code: lambda.Code.fromAsset("lambda"),
-        handler: "techadminFunction.handler",
-        timeout: Duration.seconds(300),
-        vpc: vpcStack.vpc,
-        environment: {
-          SM_DB_CREDENTIALS: db.secretPathUser.secretName,
-          RDS_PROXY_ENDPOINT: db.rdsProxyEndpoint,
-        },
-        functionName: "techadminFunction",
-        memorySize: 512,
-        layers: [postgres],
-        role: lambdaRole,
-      }
-    );
-
-    // Add the permission to the Lambda function's policy to allow API Gateway access
-    lambdaTechAdminFunction.addPermission("AllowApiGatewayInvoke", {
-      principal: new iam.ServicePrincipal("apigateway.amazonaws.com"),
-      action: "lambda:InvokeFunction",
-      sourceArn: `arn:aws:execute-api:${this.region}:${this.account}:${this.api.restApiId}/*/*/*`,
-    });
-
-    const cfnLambda_Tech_Admin = lambdaTechAdminFunction.node
-      .defaultChild as lambda.CfnFunction;
-    cfnLambda_Tech_Admin.overrideLogicalId("techadminFunction");
 
     const coglambdaRole = new iam.Role(this, "cognitoLambdaRole", {
       roleName: "cognitoLambdaRole",
@@ -654,7 +623,7 @@ export class ApiGatewayStack extends cdk.Stack {
 
     const AutoSignupLambda = new lambda.Function(this, "addStudentOnSignUp", {
       runtime: lambda.Runtime.NODEJS_20_X,
-      code: lambda.Code.fromAsset("lambda"),
+      code: lambda.Code.fromAsset("lambda.addStudentOnSignUp"),
       handler: "addStudentOnSignUp.handler",
       timeout: Duration.seconds(300),
       environment: {
@@ -670,7 +639,7 @@ export class ApiGatewayStack extends cdk.Stack {
 
     const adjustUserRoles = new lambda.Function(this, "adjustUserRoles", {
       runtime: lambda.Runtime.NODEJS_20_X,
-      code: lambda.Code.fromAsset("lambda"),
+      code: lambda.Code.fromAsset("lambda.adjustUserRoles"),
       handler: "adjustUserRoles.handler",
       timeout: Duration.seconds(300),
       environment: {
@@ -713,7 +682,7 @@ export class ApiGatewayStack extends cdk.Stack {
       "admin-authorization-api-gateway",
       {
         runtime: lambda.Runtime.NODEJS_20_X,
-        code: lambda.Code.fromAsset("lambda"),
+        code: lambda.Code.fromAsset("lambda.adminAuthorizerFunction"),
         handler: "adminAuthorizerFunction.handler",
         timeout: Duration.seconds(300),
         vpc: vpcStack.vpc,
@@ -746,7 +715,7 @@ export class ApiGatewayStack extends cdk.Stack {
       "student-authorization-api-gateway",
       {
         runtime: lambda.Runtime.NODEJS_20_X,
-        code: lambda.Code.fromAsset("lambda"),
+        code: lambda.Code.fromAsset("lambda.studentAuthorizerFunction"),
         handler: "studentAuthorizerFunction.handler",
         timeout: Duration.seconds(300),
         vpc: vpcStack.vpc,
@@ -781,7 +750,7 @@ export class ApiGatewayStack extends cdk.Stack {
       "instructor-authorization-api-gateway",
       {
         runtime: lambda.Runtime.NODEJS_20_X,
-        code: lambda.Code.fromAsset("lambda"),
+        code: lambda.Code.fromAsset("lambda.instructorAuthorizerFunction"),
         handler: "instructorAuthorizerFunction.handler",
         timeout: Duration.seconds(300),
         vpc: vpcStack.vpc,
@@ -914,7 +883,7 @@ export class ApiGatewayStack extends cdk.Stack {
       "GeneratePreSignedURLFunc",
       {
         runtime: lambda.Runtime.PYTHON_3_9,
-        code: lambda.Code.fromAsset("lambda"),
+        code: lambda.Code.fromAsset("lambda.generatePreSignedURL"),
         handler: "generatePreSignedURL.lambda_handler",
         timeout: Duration.seconds(300),
         memorySize: 128,
@@ -1015,7 +984,7 @@ export class ApiGatewayStack extends cdk.Stack {
      */
     const getFilesFunction = new lambda.Function(this, "GetFilesFunction", {
       runtime: lambda.Runtime.PYTHON_3_9,
-      code: lambda.Code.fromAsset("lambda"),
+      code: lambda.Code.fromAsset("lambda.getFilesFunction"),
       handler: "getFilesFunction.lambda_handler",
       timeout: Duration.seconds(300),
       memorySize: 128,
@@ -1065,7 +1034,7 @@ export class ApiGatewayStack extends cdk.Stack {
      */
     const deleteFile = new lambda.Function(this, "DeleteFileFunc", {
       runtime: lambda.Runtime.PYTHON_3_9,
-      code: lambda.Code.fromAsset("lambda"),
+      code: lambda.Code.fromAsset("lambda.deleteFile"),
       handler: "deleteFile.lambda_handler",
       timeout: Duration.seconds(300),
       memorySize: 128,
@@ -1114,7 +1083,7 @@ export class ApiGatewayStack extends cdk.Stack {
      */
     const deleteModuleFunction = new lambda.Function(this, "DeleteModuleFunc", {
       runtime: lambda.Runtime.PYTHON_3_9,
-      code: lambda.Code.fromAsset("lambda"),
+      code: lambda.Code.fromAsset("lambda.deleteModule"),
       handler: "deleteModule.lambda_handler",
       timeout: Duration.seconds(300),
       memorySize: 128,
@@ -1148,7 +1117,7 @@ export class ApiGatewayStack extends cdk.Stack {
      */
     const deleteLastMessage = new lambda.Function(this, "DeleteLastMessage", {
       runtime: lambda.Runtime.PYTHON_3_9,
-      code: lambda.Code.fromAsset("lambda"),
+      code: lambda.Code.fromAsset("lambda.deleteLastMessage"),
       handler: "deleteLastMessage.lambda_handler",
       timeout: Duration.seconds(300),
       memorySize: 128,

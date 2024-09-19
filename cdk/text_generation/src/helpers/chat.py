@@ -218,6 +218,8 @@ def get_llm_output(response: str) -> dict:
     dict: A dictionary containing the processed output from the LLM and a boolean 
     flag indicating whether competency has been achieved.
     """
+
+    competion_sentence = " Congratulations! You have achieved mastery over this module! Please try other modules to continue your learning journey! :)"
     
     if "COMPETENCY ACHIEVED" not in response:
         return dict(
@@ -240,12 +242,12 @@ def get_llm_output(response: str) -> dict:
                     )
                 else:
                     return dict(
-                        llm_output=llm_response,
+                        llm_output=llm_response + competion_sentence,
                         llm_verdict=True
                     )
     elif "compet" in response or "master" in response:
         return dict(
-            llm_output=response,
+            llm_output=response + competion_sentence,
             llm_verdict=True
         )
 

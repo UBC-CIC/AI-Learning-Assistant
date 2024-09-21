@@ -471,12 +471,13 @@ exports.handler = async (event) => {
 
             // Fetch the roles for the user
             const userRoleData = await sqlConnectionTableCreator`
-                  SELECT roles
-                  FROM "Users"
-                  WHERE user_email = ${userEmail};
-                `;
+                    SELECT roles, user_id
+                    FROM "Users"
+                    WHERE user_email = ${userEmail};
+                  `;
 
             const userRoles = userRoleData[0]?.roles;
+            const userId = userRoleData[0]?.user_id;
 
             if (!userRoles || !userRoles.includes("instructor")) {
               response.statusCode = 400;
@@ -493,14 +494,20 @@ exports.handler = async (event) => {
 
             // Update the roles in the database
             await sqlConnectionTableCreator`
-                  UPDATE "Users"
-                  SET roles = ${updatedRoles}
-                  WHERE user_email = ${userEmail};
-                `;
+                    UPDATE "Users"
+                    SET roles = ${updatedRoles}
+                    WHERE user_email = ${userEmail};
+                  `;
+
+            // Delete all enrolments where the enrolment type is instructor
+            await sqlConnectionTableCreator`
+                    DELETE FROM "Enrolments"
+                    WHERE user_id = ${userId} AND enrolment_type = 'instructor';
+                  `;
 
             response.statusCode = 200;
             response.body = JSON.stringify({
-              message: `User role updated to student for ${userEmail}`,
+              message: `User role updated to student for ${userEmail} and all instructor enrolments deleted.`,
             });
           } catch (err) {
             console.log(err);

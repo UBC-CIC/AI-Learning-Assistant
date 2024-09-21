@@ -83,16 +83,33 @@ exports.handler = async (event) => {
           try {
             const { course_id, instructor_email } = event.queryStringParameters;
 
+            // Retrieve user_id from Users table
+            const userResult = await sqlConnectionTableCreator`
+                SELECT user_id
+                FROM "Users"
+                WHERE user_email = ${instructor_email};
+              `;
+
+            const user_id = userResult[0]?.user_id;
+
+            if (!user_id) {
+              response.statusCode = 400;
+              response.body = JSON.stringify({
+                error: "Instructor email not found",
+              });
+              break;
+            }
+
             // Insert enrollment into Enrolments table with current timestamp
             const enrollment = await sqlConnectionTableCreator`
-                  INSERT INTO "Enrolments" (enrolment_id, course_id, user_email, enrolment_type, time_enroled)
-                  VALUES (uuid_generate_v4(), ${course_id}, ${instructor_email}, 'instructor', CURRENT_TIMESTAMP)
-                  ON CONFLICT (course_id, user_email) 
-                  DO UPDATE SET 
-                      enrolment_id = EXCLUDED.enrolment_id,
-                      enrolment_type = EXCLUDED.enrolment_type,
-                      time_enroled = EXCLUDED.time_enroled
-                  RETURNING enrolment_id;
+                INSERT INTO "Enrolments" (enrolment_id, course_id, user_id, enrolment_type, time_enroled)
+                VALUES (uuid_generate_v4(), ${course_id}, ${user_id}, 'instructor', CURRENT_TIMESTAMP)
+                ON CONFLICT (course_id, user_id) 
+                DO UPDATE SET 
+                    enrolment_id = EXCLUDED.enrolment_id,
+                    enrolment_type = EXCLUDED.enrolment_type,
+                    time_enroled = EXCLUDED.time_enroled
+                RETURNING enrolment_id;
               `;
 
             const enrolment_id = enrollment[0]?.enrolment_id;
@@ -101,21 +118,21 @@ exports.handler = async (event) => {
             if (enrolment_id) {
               // Retrieve all module IDs for the course
               const modulesResult = await sqlConnectionTableCreator`
-                    SELECT module_id
-                    FROM "Course_Modules"
-                    WHERE concept_id IN (
-                        SELECT concept_id
-                        FROM "Course_Concepts"
-                        WHERE course_id = ${course_id}
-                    );
+                  SELECT module_id
+                  FROM "Course_Modules"
+                  WHERE concept_id IN (
+                      SELECT concept_id
+                      FROM "Course_Concepts"
+                      WHERE course_id = ${course_id}
+                  );
                 `;
               console.log(modulesResult);
 
               // Insert a record into Student_Modules for each module
               const studentModuleInsertions = modulesResult.map((module) => {
                 return sqlConnectionTableCreator`
-                      INSERT INTO "Student_Modules" (student_module_id, course_module_id, enrolment_id, module_score, last_accessed, module_context_embedding)
-                      VALUES (uuid_generate_v4(), ${module.module_id}, ${enrolment_id}, 0, CURRENT_TIMESTAMP, NULL);
+                    INSERT INTO "Student_Modules" (student_module_id, course_module_id, enrolment_id, module_score, last_accessed, module_context_embedding)
+                    VALUES (uuid_generate_v4(), ${module.module_id}, ${enrolment_id}, 0, CURRENT_TIMESTAMP, NULL);
                   `;
               });
 
@@ -130,8 +147,8 @@ exports.handler = async (event) => {
 
             // Optionally insert into User Engagement Log (uncomment if needed)
             // await sqlConnectionTableCreator`
-            //   INSERT INTO "User_Engagement_Log" (log_id, user_email, course_id, module_id, enrolment_id, timestamp, engagement_type)
-            //   VALUES (uuid_generate_v4(), ${instructor_email}, ${course_id}, null, ${enrolment_id}, CURRENT_TIMESTAMP, 'enrollment_created');
+            //   INSERT INTO "User_Engagement_Log" (log_id, user_id, course_id, module_id, enrolment_id, timestamp, engagement_type)
+            //   VALUES (uuid_generate_v4(), ${user_id}, ${course_id}, null, ${enrolment_id}, CURRENT_TIMESTAMP, 'enrollment_created');
             // `;
           } catch (err) {
             response.statusCode = 500;
@@ -165,69 +182,30 @@ exports.handler = async (event) => {
 
             const { system_prompt } = JSON.parse(event.body);
 
-            const ext = await sqlConnectionTableCreator`
-            CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-            `;
-
-            const accessBool = course_student_access.toLowerCase() === "true";
-
-            console.log(accessBool);
             // Insert new course into Courses table
             const newCourse = await sqlConnectionTableCreator`         
-                INSERT INTO "Courses" (
-                    course_id,
-                    course_name,
-                    course_department,
-                    course_number,
-                    course_access_code,
-                    course_student_access,
-                    system_prompt
-                )
-                VALUES (
-                    uuid_generate_v4(),
-                    ${course_name},
-                    ${course_department},
-                    ${course_number},
-                    ${course_access_code},
-                    ${accessBool},
-                    ${system_prompt}
-                )
-                RETURNING *;
-            `;
+                  INSERT INTO "Courses" (
+                      course_id,
+                      course_name,
+                      course_department,
+                      course_number,
+                      course_access_code,
+                      course_student_access,
+                      system_prompt
+                  )
+                  VALUES (
+                      uuid_generate_v4(),
+                      ${course_name},
+                      ${course_department},
+                      ${course_number},
+                      ${course_access_code},
+                      ${course_student_access.toLowerCase() === "true"},
+                      ${system_prompt}
+                  )
+                  RETURNING *;
+              `;
 
             console.log(newCourse);
-            const courseId = newCourse[0].course_id;
-            console.log(courseId);
-
-            // // Create the dynamic table [Course_Id]
-            // await sqlConnectionTableCreator`
-            //     CREATE TABLE IF NOT EXISTS ${sqlConnectionTableCreator(courseId)} (
-            //         chunk_id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
-            //         course_id uuid,
-            //         file_id uuid,
-            //         vectors float[]
-            //     );
-            // `;
-            // // Add the foreign key for course_id
-            // await sqlConnectionTableCreator`
-            //   ALTER TABLE ${sqlConnectionTableCreator(courseId)}
-            //   ADD CONSTRAINT fk_course_id
-            //   FOREIGN KEY (course_id)
-            //   REFERENCES "Courses"(course_id)
-            //   ON DELETE CASCADE
-            //   ON UPDATE CASCADE;
-            // `;
-
-            // // Add the foreign key for file_id
-            // await sqlConnectionTableCreator`
-            //   ALTER TABLE ${sqlConnectionTableCreator(courseId)}
-            //   ADD CONSTRAINT fk_file_id
-            //   FOREIGN KEY (file_id)
-            //   REFERENCES "Module_Files"(file_id)
-            //   ON DELETE CASCADE
-            //   ON UPDATE CASCADE;
-            // `;
-
             response.body = JSON.stringify(newCourse[0]);
           } catch (err) {
             response.statusCode = 500;
@@ -248,11 +226,11 @@ exports.handler = async (event) => {
 
           // SQL query to fetch all instructors for a given course
           const instructors = await sqlConnectionTableCreator`
-                  SELECT u.user_email, u.first_name, u.last_name
-                  FROM "Enrolments" e
-                  JOIN "Users" u ON e.user_email = u.user_email
-                  WHERE e.course_id = ${course_id} AND e.enrolment_type = 'instructor';
-                `;
+              SELECT u.user_email, u.first_name, u.last_name
+              FROM "Enrolments" e
+              JOIN "Users" u ON e.user_id = u.user_id
+              WHERE e.course_id = ${course_id} AND e.enrolment_type = 'instructor';
+            `;
 
           response.body = JSON.stringify(instructors);
         } else {
@@ -269,11 +247,12 @@ exports.handler = async (event) => {
 
           // SQL query to fetch all courses for a given instructor
           const courses = await sqlConnectionTableCreator`
-                  SELECT c.course_id, c.course_name, c.course_department, c.course_number
-                  FROM "Enrolments" e
-                  JOIN "Courses" c ON e.course_id = c.course_id
-                  WHERE e.user_email = ${instructor_email} AND e.enrolment_type = 'instructor';
-                `;
+              SELECT c.course_id, c.course_name, c.course_department, c.course_number
+              FROM "Enrolments" e
+              JOIN "Courses" c ON e.course_id = c.course_id
+              JOIN "Users" u ON e.user_id = u.user_id
+              WHERE u.user_email = ${instructor_email} AND e.enrolment_type = 'instructor';
+            `;
 
           response.body = JSON.stringify(courses);
         } else {
@@ -316,11 +295,27 @@ exports.handler = async (event) => {
         ) {
           try {
             const { instructor_email } = event.queryStringParameters;
-            // Delete all enrolments for the instructor where enrolment_type is 'instructor'
+
+            // Retrieve the user's ID
+            const userResult = await sqlConnectionTableCreator`
+                        SELECT user_id 
+                        FROM "Users"
+                        WHERE user_email = ${instructor_email};
+                    `;
+
+            const userId = userResult[0]?.user_id;
+
+            if (!userId) {
+              response.statusCode = 404;
+              response.body = JSON.stringify({ error: "Instructor not found" });
+              return;
+            }
+
+            // Delete all enrolments for the instructor
             await sqlConnectionTableCreator`
-                      DELETE FROM "Enrolments"
-                      WHERE user_email = ${instructor_email} AND enrolment_type = 'instructor';
-                  `;
+                        DELETE FROM "Enrolments"
+                        WHERE user_id = ${userId} AND enrolment_type = 'instructor';
+                    `;
 
             response.body = JSON.stringify({
               message: "Instructor enrolments deleted successfully.",
@@ -406,9 +401,9 @@ exports.handler = async (event) => {
           try {
             // Check if the user exists
             const existingUser = await sqlConnectionTableCreator`
-                        SELECT * FROM "Users"
-                        WHERE user_email = ${instructorEmail};
-                    `;
+                          SELECT * FROM "Users"
+                          WHERE user_email = ${instructorEmail};
+                      `;
 
             if (existingUser.length > 0) {
               const userRoles = existingUser[0].roles;
@@ -433,10 +428,10 @@ exports.handler = async (event) => {
                 );
 
                 await sqlConnectionTableCreator`
-                              UPDATE "Users"
-                              SET roles = ARRAY['instructor']
-                              WHERE user_email = ${instructorEmail};
-                          `;
+                                UPDATE "Users"
+                                SET roles = ${newRoles}
+                                WHERE user_email = ${instructorEmail};
+                            `;
 
                 response.statusCode = 200;
                 response.body = JSON.stringify({
@@ -447,9 +442,9 @@ exports.handler = async (event) => {
             } else {
               // Create a new user with the role 'instructor'
               await sqlConnectionTableCreator`
-                            INSERT INTO "Users" (user_email, roles)
-                            VALUES (${instructorEmail}, ARRAY['instructor']);
-                        `;
+                              INSERT INTO "Users" (user_email, roles)
+                              VALUES (${instructorEmail}, ARRAY['instructor']);
+                          `;
 
               response.statusCode = 201;
               response.body = JSON.stringify({
@@ -476,10 +471,10 @@ exports.handler = async (event) => {
 
             // Fetch the roles for the user
             const userRoleData = await sqlConnectionTableCreator`
-                SELECT roles
-                FROM "Users"
-                WHERE user_email = ${userEmail};
-              `;
+                  SELECT roles
+                  FROM "Users"
+                  WHERE user_email = ${userEmail};
+                `;
 
             const userRoles = userRoleData[0]?.roles;
 
@@ -498,10 +493,10 @@ exports.handler = async (event) => {
 
             // Update the roles in the database
             await sqlConnectionTableCreator`
-                UPDATE "Users"
-                SET roles = ${updatedRoles}
-                WHERE user_email = ${userEmail};
-              `;
+                  UPDATE "Users"
+                  SET roles = ${updatedRoles}
+                  WHERE user_email = ${userEmail};
+                `;
 
             response.statusCode = 200;
             response.body = JSON.stringify({

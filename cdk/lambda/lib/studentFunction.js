@@ -143,16 +143,38 @@ exports.handler = async (event) => {
       case "GET /student/course":
         if (
           event.queryStringParameters != null &&
-          event.queryStringParameters.email
+          event.queryStringParameters.user_email
         ) {
-          const email = event.queryStringParameters.email;
-          data = await sqlConnection`SELECT "Courses".*
-					FROM "Enrolments"
-					JOIN "Courses" ON "Enrolments".course_id = "Courses".course_id
-					WHERE "Enrolments".user_email = ${email}
-          AND "Courses".course_student_access = TRUE
-					ORDER BY "Courses".course_name, "Courses".course_id;`;
-          response.body = JSON.stringify(data);
+          const user_email = event.queryStringParameters.user_email;
+
+          try {
+            // Retrieve the user ID using the user_email
+            const userResult = await sqlConnection`
+                SELECT user_id FROM "Users" WHERE user_email = ${user_email};
+              `;
+
+            if (userResult.length === 0) {
+              response.statusCode = 404;
+              response.body = JSON.stringify({ error: "User not found" });
+              break;
+            }
+
+            const user_id = userResult[0].user_id;
+
+            // Query to get courses for the user
+            const data = await sqlConnection`
+                SELECT "Courses".*
+                FROM "Enrolments"
+                WHERE "Enrolments".user_id = ${user_id}
+                AND "Courses".course_student_access = TRUE
+                ORDER BY "Courses".course_name, "Courses".course_id;
+              `;
+            response.body = JSON.stringify(data);
+          } catch (err) {
+            response.statusCode = 500;
+            console.error(err);
+            response.body = JSON.stringify({ error: "Internal server error" });
+          }
         } else {
           response.statusCode = 400;
           response.body = "Invalid value";
@@ -161,13 +183,26 @@ exports.handler = async (event) => {
       case "GET /student/course_page":
         if (
           event.queryStringParameters != null &&
-          event.queryStringParameters.email &&
+          event.queryStringParameters.user_email &&
           event.queryStringParameters.course_id
         ) {
-          const studentEmail = event.queryStringParameters.email;
+          const studentEmail = event.queryStringParameters.user_email;
           const courseId = event.queryStringParameters.course_id;
 
           try {
+            // Retrieve the user ID using the user_email
+            const userResult = await sqlConnection`
+                SELECT user_id FROM "Users" WHERE user_email = ${studentEmail};
+              `;
+
+            if (userResult.length === 0) {
+              response.statusCode = 404;
+              response.body = JSON.stringify({ error: "User not found" });
+              break;
+            }
+
+            const userId = userResult[0].user_id;
+
             data = await sqlConnection`
                 WITH StudentEnrollment AS (
                   SELECT 
@@ -175,7 +210,7 @@ exports.handler = async (event) => {
                   FROM 
                     "Enrolments"
                   WHERE 
-                    "Enrolments".user_email = ${studentEmail}
+                    "Enrolments".user_id = ${userId}
                     AND "Enrolments".course_id = ${courseId}
                   LIMIT 1
                 )
@@ -225,26 +260,39 @@ exports.handler = async (event) => {
       case "GET /student/module":
         if (
           event.queryStringParameters != null &&
-          event.queryStringParameters.email &&
+          event.queryStringParameters.user_email &&
           event.queryStringParameters.course_id &&
           event.queryStringParameters.module_id
         ) {
           try {
             const moduleId = event.queryStringParameters.module_id;
-            const studentEmail = event.queryStringParameters.email;
+            const studentEmail = event.queryStringParameters.user_email;
             const courseId = event.queryStringParameters.course_id;
+
+            // Get the user_id for the specific student
+            const userResult = await sqlConnection`
+                SELECT user_id FROM "Users" WHERE user_email = ${studentEmail};
+              `;
+
+            if (userResult.length === 0) {
+              response.statusCode = 404;
+              response.body = JSON.stringify({ error: "User not found" });
+              break;
+            }
+
+            const userId = userResult[0].user_id;
 
             // Get the student_module_id for the specific student and module
             const studentModuleData = await sqlConnection`
-                SELECT student_module_id
-                FROM "Student_Modules"
-                WHERE course_module_id = ${moduleId}
-                  AND enrolment_id = (
-                    SELECT enrolment_id
-                    FROM "Enrolments"
-                    WHERE user_email = ${studentEmail} AND course_id = ${courseId}
-                  )
-              `;
+                  SELECT student_module_id
+                  FROM "Student_Modules"
+                  WHERE course_module_id = ${moduleId}
+                    AND enrolment_id = (
+                      SELECT enrolment_id
+                      FROM "Enrolments"
+                      WHERE user_id = ${userId} AND course_id = ${courseId}
+                    )
+                `;
 
             const studentModuleId = studentModuleData[0]?.student_module_id;
 
@@ -258,41 +306,41 @@ exports.handler = async (event) => {
 
             // Update the last accessed timestamp for the Student_Modules entry
             await sqlConnection`
-                UPDATE "Student_Modules"
-                SET last_accessed = CURRENT_TIMESTAMP
-                WHERE student_module_id = ${studentModuleId};
-              `;
+                  UPDATE "Student_Modules"
+                  SET last_accessed = CURRENT_TIMESTAMP
+                  WHERE student_module_id = ${studentModuleId};
+                `;
 
             // Retrieve session data specific to the student's module
             const data = await sqlConnection`
-                SELECT "Sessions".*
-                FROM "Sessions"
-                WHERE student_module_id = ${studentModuleId}
-                ORDER BY "Sessions".last_accessed, "Sessions".session_id;
-              `;
+                  SELECT "Sessions".*
+                  FROM "Sessions"
+                  WHERE student_module_id = ${studentModuleId}
+                  ORDER BY "Sessions".last_accessed, "Sessions".session_id;
+                `;
 
             // Get enrolment ID for the log entry
             const enrolmentData = await sqlConnection`
-                SELECT "Enrolments".enrolment_id
-                FROM "Enrolments"
-                WHERE user_email = ${studentEmail} AND course_id = ${courseId};
-              `;
+                  SELECT "Enrolments".enrolment_id
+                  FROM "Enrolments"
+                  WHERE user_id = ${userId} AND course_id = ${courseId};
+                `;
 
             const enrolmentId = enrolmentData[0]?.enrolment_id;
 
             // Insert into User_Engagement_Log
             await sqlConnection`
-                INSERT INTO "User_Engagement_Log" (log_id, user_email, course_id, module_id, enrolment_id, timestamp, engagement_type)
-                VALUES (
-                  uuid_generate_v4(),
-                  ${studentEmail},
-                  ${courseId},
-                  ${moduleId},
-                  ${enrolmentId},
-                  CURRENT_TIMESTAMP,
-                  'module access'
-                )
-              `;
+                  INSERT INTO "User_Engagement_Log" (log_id, user_email, course_id, module_id, enrolment_id, timestamp, engagement_type)
+                  VALUES (
+                    uuid_generate_v4(),
+                    ${studentEmail},
+                    ${courseId},
+                    ${moduleId},
+                    ${enrolmentId},
+                    CURRENT_TIMESTAMP,
+                    'module access'
+                  )
+                `;
 
             response.body = JSON.stringify(data);
           } catch (err) {
@@ -319,17 +367,30 @@ exports.handler = async (event) => {
             const courseId = event.queryStringParameters.course_id;
             const sessionName = event.queryStringParameters.session_name;
 
+            // Get the user_id for the specific student
+            const userResult = await sqlConnection`
+                SELECT user_id FROM "Users" WHERE user_email = ${studentEmail};
+              `;
+
+            if (userResult.length === 0) {
+              response.statusCode = 404;
+              response.body = JSON.stringify({ error: "User not found" });
+              break;
+            }
+
+            const userId = userResult[0].user_id;
+
             // Get the student_module_id for the specific student and module
             const studentModuleData = await sqlConnection`
-                SELECT student_module_id
-                FROM "Student_Modules"
-                WHERE course_module_id = ${moduleId}
-                  AND enrolment_id = (
-                    SELECT enrolment_id
-                    FROM "Enrolments"
-                    WHERE user_email = ${studentEmail} AND course_id = ${courseId}
-                  )
-              `;
+                  SELECT student_module_id
+                  FROM "Student_Modules"
+                  WHERE course_module_id = ${moduleId}
+                    AND enrolment_id = (
+                      SELECT enrolment_id
+                      FROM "Enrolments"
+                      WHERE user_id = ${userId} AND course_id = ${courseId}
+                    )
+                `;
 
             const studentModuleId = studentModuleData[0]?.student_module_id;
 
@@ -343,46 +404,46 @@ exports.handler = async (event) => {
 
             // Update last_accessed for the Student_Module entry
             await sqlConnection`
-                UPDATE "Student_Modules"
-                SET last_accessed = CURRENT_TIMESTAMP
-                WHERE student_module_id = ${studentModuleId}
-              `;
+                  UPDATE "Student_Modules"
+                  SET last_accessed = CURRENT_TIMESTAMP
+                  WHERE student_module_id = ${studentModuleId}
+                `;
 
             // Insert a new session with the session_name
             const sessionData = await sqlConnection`
-                INSERT INTO "Sessions" (session_id, student_module_id, session_name, session_context_embeddings, last_accessed)
-                VALUES (
-                  uuid_generate_v4(),
-                  ${studentModuleId},
-                  ${sessionName},
-                  ARRAY[]::float[],
-                  CURRENT_TIMESTAMP
-                )
-                RETURNING *;
-              `;
+                  INSERT INTO "Sessions" (session_id, student_module_id, session_name, session_context_embeddings, last_accessed)
+                  VALUES (
+                    uuid_generate_v4(),
+                    ${studentModuleId},
+                    ${sessionName},
+                    ARRAY[]::float[],
+                    CURRENT_TIMESTAMP
+                  )
+                  RETURNING *;
+                `;
 
             // Insert an entry into the User_Engagement_Log
             const enrolmentData = await sqlConnection`
-                SELECT enrolment_id
-                FROM "Enrolments"
-                WHERE user_email = ${studentEmail} AND course_id = ${courseId}
-              `;
+                  SELECT enrolment_id
+                  FROM "Enrolments"
+                  WHERE user_id = ${userId} AND course_id = ${courseId}
+                `;
 
             const enrolmentId = enrolmentData[0]?.enrolment_id;
 
             if (enrolmentId) {
               await sqlConnection`
-                  INSERT INTO "User_Engagement_Log" (log_id, user_email, course_id, module_id, enrolment_id, timestamp, engagement_type)
-                  VALUES (
-                    uuid_generate_v4(),
-                    ${studentEmail},
-                    ${courseId},
-                    ${moduleId},
-                    ${enrolmentId},
-                    CURRENT_TIMESTAMP,
-                    'session creation'
-                  )
-                `;
+                    INSERT INTO "User_Engagement_Log" (log_id, user_email, course_id, module_id, enrolment_id, timestamp, engagement_type)
+                    VALUES (
+                      uuid_generate_v4(),
+                      ${studentEmail},
+                      ${courseId},
+                      ${moduleId},
+                      ${enrolmentId},
+                      CURRENT_TIMESTAMP,
+                      'session creation'
+                    )
+                  `;
             }
 
             response.body = JSON.stringify(sessionData);
@@ -410,30 +471,43 @@ exports.handler = async (event) => {
           const moduleId = event.queryStringParameters.module_id;
 
           try {
+            // Get the user_id for the specific student
+            const userResult = await sqlConnection`
+                SELECT user_id FROM "Users" WHERE user_email = ${studentEmail};
+              `;
+
+            if (userResult.length === 0) {
+              response.statusCode = 404;
+              response.body = JSON.stringify({ error: "User not found" });
+              break;
+            }
+
+            const userId = userResult[0].user_id;
+
             // Update last_accessed for the corresponding Student_Module entry
             await sqlConnection`
-                UPDATE "Student_Modules"
-                SET last_accessed = CURRENT_TIMESTAMP
-                WHERE student_module_id = (
-                  SELECT student_module_id
-                  FROM "Sessions"
-                  WHERE session_id = ${sessionId}
-                );
-              `;
+                  UPDATE "Student_Modules"
+                  SET last_accessed = CURRENT_TIMESTAMP
+                  WHERE student_module_id = (
+                    SELECT student_module_id
+                    FROM "Sessions"
+                    WHERE session_id = ${sessionId}
+                  );
+                `;
 
             // Delete the session and get the result
             const deleteResult = await sqlConnection`
-                DELETE FROM "Sessions"
-                WHERE session_id = ${sessionId}
-                RETURNING *;
-              `;
+                  DELETE FROM "Sessions"
+                  WHERE session_id = ${sessionId}
+                  RETURNING *;
+                `;
 
             // Get the enrolment ID
             const enrolmentData = await sqlConnection`
-                SELECT "Enrolments".enrolment_id
-                FROM "Enrolments"
-                WHERE user_email = ${studentEmail} AND course_id = ${courseId};
-              `;
+                  SELECT "Enrolments".enrolment_id
+                  FROM "Enrolments"
+                  WHERE user_id = ${userId} AND course_id = ${courseId};
+                `;
 
             // Check if enrolmentData is defined and has rows
             if (!enrolmentData || !enrolmentData.length) {
@@ -447,9 +521,9 @@ exports.handler = async (event) => {
             // Insert an entry into the User_Engagement_Log if enrolment exists
             if (enrolmentId) {
               await sqlConnection`
-                  INSERT INTO "User_Engagement_Log" (log_id, user_email, course_id, module_id, enrolment_id, timestamp, engagement_type)
-                  VALUES (uuid_generate_v4(), ${studentEmail}, ${courseId}, ${moduleId}, ${enrolmentId}, CURRENT_TIMESTAMP, 'session deletion');
-                `;
+                    INSERT INTO "User_Engagement_Log" (log_id, user_email, course_id, module_id, enrolment_id, timestamp, engagement_type)
+                    VALUES (uuid_generate_v4(), ${studentEmail}, ${courseId}, ${moduleId}, ${enrolmentId}, CURRENT_TIMESTAMP, 'session deletion');
+                  `;
             }
 
             response.body = JSON.stringify({ success: "session deleted" });
@@ -523,31 +597,43 @@ exports.handler = async (event) => {
           try {
             // Insert the new message into the Messages table with a generated UUID for message_id
             const messageData = await sqlConnection`
-                      INSERT INTO "Messages" (message_id, session_id, student_sent, message_content, time_sent)
-                      VALUES (uuid_generate_v4(), ${sessionId}, true, ${message_content}, CURRENT_TIMESTAMP)
-                      RETURNING *;
-                    `;
+                INSERT INTO "Messages" (message_id, session_id, student_sent, message_content, time_sent)
+                VALUES (uuid_generate_v4(), ${sessionId}, true, ${message_content}, CURRENT_TIMESTAMP)
+                RETURNING *;
+              `;
 
             // Update the last_accessed field in the Sessions table
             await sqlConnection`
-                      UPDATE "Sessions"
-                      SET last_accessed = CURRENT_TIMESTAMP
-                      WHERE session_id = ${sessionId};
-                    `;
+                UPDATE "Sessions"
+                SET last_accessed = CURRENT_TIMESTAMP
+                WHERE session_id = ${sessionId};
+              `;
 
-            const enrolmentData = await sqlConnection`
-                      SELECT "Enrolments".enrolment_id
-                      FROM "Enrolments"
-                      WHERE user_email = ${studentEmail} AND course_id = ${courseId};
-                    `;
+            // Retrieve user_id based on studentEmail
+            const userData = await sqlConnection`
+                SELECT user_id
+                FROM "Users"
+                WHERE user_email = ${studentEmail};
+              `;
 
-            const enrolmentId = enrolmentData[0]?.enrolment_id;
+            const userId = userData[0]?.user_id;
 
-            if (enrolmentId) {
-              await sqlConnection`
-                          INSERT INTO "User_Engagement_Log" (log_id, user_email, course_id, module_id, enrolment_id, timestamp, engagement_type)
-                          VALUES (uuid_generate_v4(), ${studentEmail}, ${courseId}, ${moduleId}, ${enrolmentId}, CURRENT_TIMESTAMP, 'message creation');
-                        `;
+            if (userId) {
+              // Retrieve the enrolment ID using user_id
+              const enrolmentData = await sqlConnection`
+                  SELECT enrolment_id
+                  FROM "Enrolments"
+                  WHERE user_id = ${userId} AND course_id = ${courseId};
+                `;
+
+              const enrolmentId = enrolmentData[0]?.enrolment_id;
+
+              if (enrolmentId) {
+                await sqlConnection`
+                    INSERT INTO "User_Engagement_Log" (log_id, user_id, course_id, module_id, enrolment_id, timestamp, engagement_type)
+                    VALUES (uuid_generate_v4(), ${userId}, ${courseId}, ${moduleId}, ${enrolmentId}, CURRENT_TIMESTAMP, 'message creation');
+                  `;
+              }
             }
 
             response.body = JSON.stringify(messageData);
@@ -586,31 +672,43 @@ exports.handler = async (event) => {
           try {
             // Insert the new AI message into the Messages table with a generated UUID for message_id
             const messageData = await sqlConnection`
-                      INSERT INTO "Messages" (message_id, session_id, student_sent, message_content, time_sent)
-                      VALUES (uuid_generate_v4(), ${sessionId}, false, ${message_content}, CURRENT_TIMESTAMP)
-                      RETURNING *;
-                  `;
+                INSERT INTO "Messages" (message_id, session_id, student_sent, message_content, time_sent)
+                VALUES (uuid_generate_v4(), ${sessionId}, false, ${message_content}, CURRENT_TIMESTAMP)
+                RETURNING *;
+              `;
 
             // Update the last_accessed field in the Sessions table
             await sqlConnection`
-                      UPDATE "Sessions"
-                      SET last_accessed = CURRENT_TIMESTAMP
-                      WHERE session_id = ${sessionId};
+                UPDATE "Sessions"
+                SET last_accessed = CURRENT_TIMESTAMP
+                WHERE session_id = ${sessionId};
+              `;
+
+            // Retrieve user_id based on studentEmail
+            const userData = await sqlConnection`
+                SELECT user_id
+                FROM "Users"
+                WHERE user_email = ${studentEmail};
+              `;
+
+            const userId = userData[0]?.user_id;
+
+            if (userId) {
+              // Retrieve the enrolment ID using user_id
+              const enrolmentData = await sqlConnection`
+                  SELECT enrolment_id
+                  FROM "Enrolments"
+                  WHERE user_id = ${userId} AND course_id = ${courseId};
+                `;
+
+              const enrolmentId = enrolmentData[0]?.enrolment_id;
+
+              if (enrolmentId) {
+                await sqlConnection`
+                    INSERT INTO "User_Engagement_Log" (log_id, user_id, course_id, module_id, enrolment_id, timestamp, engagement_type)
+                    VALUES (uuid_generate_v4(), ${userId}, ${courseId}, ${moduleId}, ${enrolmentId}, CURRENT_TIMESTAMP, 'AI message creation');
                   `;
-
-            const enrolmentData = await sqlConnection`
-                      SELECT "Enrolments".enrolment_id
-                      FROM "Enrolments"
-                      WHERE user_email = ${studentEmail} AND course_id = ${courseId};
-                  `;
-
-            const enrolmentId = enrolmentData[0]?.enrolment_id;
-
-            if (enrolmentId) {
-              await sqlConnection`
-                          INSERT INTO "User_Engagement_Log" (log_id, user_email, course_id, module_id, enrolment_id, timestamp, engagement_type)
-                          VALUES (uuid_generate_v4(), ${studentEmail}, ${courseId}, ${moduleId}, ${enrolmentId}, CURRENT_TIMESTAMP, 'AI message creation');
-                      `;
+              }
             }
 
             response.body = JSON.stringify(messageData);
@@ -638,12 +736,12 @@ exports.handler = async (event) => {
 
             // Retrieve the course_id using the access code
             const courseResult = await sqlConnection`
-                      SELECT course_id
-                      FROM "Courses"
-                      WHERE course_access_code = ${course_access_code}
-                      AND course_student_access = TRUE
-                      LIMIT 1;
-                  `;
+                SELECT course_id
+                FROM "Courses"
+                WHERE course_access_code = ${course_access_code}
+                AND course_student_access = TRUE
+                LIMIT 1;
+              `;
 
             if (courseResult.length === 0) {
               response.statusCode = 404;
@@ -655,13 +753,30 @@ exports.handler = async (event) => {
 
             const course_id = courseResult[0].course_id;
 
+            // Retrieve user_id based on student_email
+            const userResult = await sqlConnection`
+                SELECT user_id
+                FROM "Users"
+                WHERE user_email = ${student_email};
+              `;
+
+            const userId = userResult[0]?.user_id;
+
+            if (!userId) {
+              response.statusCode = 404;
+              response.body = JSON.stringify({
+                error: "User not found.",
+              });
+              break;
+            }
+
             // Insert enrollment into Enrolments table
             const enrollmentResult = await sqlConnection`
-                      INSERT INTO "Enrolments" (enrolment_id, user_email, course_id, enrolment_type, time_enroled)
-                      VALUES (uuid_generate_v4(), ${student_email}, ${course_id}, 'student', CURRENT_TIMESTAMP)
-                      ON CONFLICT (course_id, user_email) DO NOTHING
-                      RETURNING enrolment_id;
-                  `;
+                INSERT INTO "Enrolments" (enrolment_id, user_id, course_id, enrolment_type, time_enrolled)
+                VALUES (uuid_generate_v4(), ${userId}, ${course_id}, 'student', CURRENT_TIMESTAMP)
+                ON CONFLICT (course_id, user_id) DO NOTHING
+                RETURNING enrolment_id;
+              `;
 
             const enrolment_id = enrollmentResult[0]?.enrolment_id;
             console.log(enrolment_id);
@@ -669,22 +784,22 @@ exports.handler = async (event) => {
             if (enrolment_id) {
               // Retrieve all module IDs for the course
               const modulesResult = await sqlConnection`
-                          SELECT module_id
-                          FROM "Course_Modules"
-                          WHERE concept_id IN (
-                              SELECT concept_id
-                              FROM "Course_Concepts"
-                              WHERE course_id = ${course_id}
-                          );
-                      `;
+                  SELECT module_id
+                  FROM "Course_Modules"
+                  WHERE concept_id IN (
+                    SELECT concept_id
+                    FROM "Course_Concepts"
+                    WHERE course_id = ${course_id}
+                  );
+                `;
               console.log(modulesResult);
 
               // Insert a record into Student_Modules for each module
               const studentModuleInsertions = modulesResult.map((module) => {
                 return sqlConnection`
-                              INSERT INTO "Student_Modules" (student_module_id, course_module_id, enrolment_id, module_score, last_accessed, module_context_embedding)
-                              VALUES (uuid_generate_v4(), ${module.module_id}, ${enrolment_id}, 0, CURRENT_TIMESTAMP, NULL);
-                          `;
+                    INSERT INTO "Student_Modules" (student_module_id, course_module_id, enrolment_id, module_score, last_accessed, module_context_embedding)
+                    VALUES (uuid_generate_v4(), ${module.module_id}, ${enrolment_id}, 0, CURRENT_TIMESTAMP, NULL);
+                  `;
               });
 
               // Execute all insertions
@@ -788,7 +903,24 @@ exports.handler = async (event) => {
             const llmVerdict =
               event.queryStringParameters.llm_verdict === "true"; // Convert to boolean
 
-            // Get the student_module_id for the specific student and module
+            // Retrieve user_id from the Users table
+            const userData = await sqlConnection`
+                SELECT user_id
+                FROM "Users"
+                WHERE user_email = ${studentEmail}
+              `;
+
+            const userId = userData[0]?.user_id;
+
+            if (!userId) {
+              response.statusCode = 404;
+              response.body = JSON.stringify({
+                error: "User not found",
+              });
+              break;
+            }
+
+            // Get the student_module_id for the specific student and module using user_id
             const studentModuleData = await sqlConnection`
                 SELECT student_module_id, module_score
                 FROM "Student_Modules"
@@ -796,7 +928,7 @@ exports.handler = async (event) => {
                   AND enrolment_id = (
                     SELECT enrolment_id
                     FROM "Enrolments"
-                    WHERE user_email = ${studentEmail} AND course_id = ${courseId}
+                    WHERE user_id = ${userId} AND course_id = ${courseId}
                   )
               `;
 

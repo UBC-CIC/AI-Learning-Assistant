@@ -46,11 +46,27 @@ exports.handler = async (event) => {
           event.queryStringParameters.email
         ) {
           const email = event.queryStringParameters.email;
+
+          // First, get the user_id for the given email
+          const userResult = await sqlConnection`
+            SELECT user_id FROM "Users" WHERE user_email = ${email};
+          `;
+
+          if (userResult.length === 0) {
+            response.statusCode = 404;
+            response.body = "User not found";
+            break;
+          }
+
+          const userId = userResult[0].user_id;
+
+          // Now, fetch the courses for that user_id
           data = await sqlConnection`SELECT "Courses".*
-					FROM "Enrolments"
-					JOIN "Courses" ON "Enrolments".course_id = "Courses".course_id
-					WHERE "Enrolments".user_email = ${email}
-					ORDER BY "Courses".course_name, "Courses".course_id;`;
+            FROM "Enrolments"
+            JOIN "Courses" ON "Enrolments".course_id = "Courses".course_id
+            WHERE "Enrolments".user_id = ${userId}
+            ORDER BY "Courses".course_name, "Courses".course_id;`;
+
           response.body = JSON.stringify(data);
         } else {
           response.statusCode = 400;
@@ -67,13 +83,13 @@ exports.handler = async (event) => {
           try {
             // Query to get all courses where the instructor is enrolled
             const data = await sqlConnection`
-          SELECT c.*
-          FROM "Enrolments" e
-          JOIN "Courses" c ON e.course_id = c.course_id
-          WHERE e.user_email = ${instructorEmail}
-          AND e.enrolment_type = 'instructor'
-          ORDER BY c.course_name, c.course_id;
-        `;
+            SELECT c.*
+            FROM "Enrolments" e
+            JOIN "Courses" c ON e.course_id = c.course_id
+            WHERE e.user_email = ${instructorEmail}
+            AND e.enrolment_type = 'instructor'
+            ORDER BY c.course_name, c.course_id;
+          `;
 
             response.statusCode = 200;
             response.body = JSON.stringify(data);
@@ -97,63 +113,63 @@ exports.handler = async (event) => {
           try {
             // Query to get all modules and their message counts, filtering by student role
             const messageCreations = await sqlConnection`
-                SELECT cm.module_id, cm.module_name, COUNT(m.message_id) AS message_count, cm.module_number, cc.concept_number
-                FROM "Course_Modules" cm
-                JOIN "Course_Concepts" cc ON cm.concept_id = cc.concept_id
-                LEFT JOIN "Student_Modules" sm ON cm.module_id = sm.course_module_id
-                LEFT JOIN "Sessions" s ON sm.student_module_id = s.student_module_id
-                LEFT JOIN "Messages" m ON s.session_id = m.session_id
-                LEFT JOIN "Enrolments" e ON sm.enrolment_id = e.enrolment_id
-                LEFT JOIN "Users" u ON e.user_email = u.user_email
-                WHERE cc.course_id = ${courseId}
-                AND 'student' = ANY(u.roles)
-                GROUP BY cm.module_id, cm.module_name, cm.module_number, cc.concept_number
-                ORDER BY cc.concept_number ASC, cm.module_number ASC;
-              `;
+                  SELECT cm.module_id, cm.module_name, COUNT(m.message_id) AS message_count, cm.module_number, cc.concept_number
+                  FROM "Course_Modules" cm
+                  JOIN "Course_Concepts" cc ON cm.concept_id = cc.concept_id
+                  LEFT JOIN "Student_Modules" sm ON cm.module_id = sm.course_module_id
+                  LEFT JOIN "Sessions" s ON sm.student_module_id = s.student_module_id
+                  LEFT JOIN "Messages" m ON s.session_id = m.session_id
+                  LEFT JOIN "Enrolments" e ON sm.enrolment_id = e.enrolment_id
+                  LEFT JOIN "Users" u ON e.user_email = u.user_email
+                  WHERE cc.course_id = ${courseId}
+                  AND 'student' = ANY(u.roles)
+                  GROUP BY cm.module_id, cm.module_name, cm.module_number, cc.concept_number
+                  ORDER BY cc.concept_number ASC, cm.module_number ASC;
+                `;
 
             // Query to get the number of module accesses using User_Engagement_Log, filtering by student role
             const moduleAccesses = await sqlConnection`
-                SELECT cm.module_id, COUNT(uel.log_id) AS access_count
-                FROM "Course_Modules" cm
-                JOIN "Course_Concepts" cc ON cm.concept_id = cc.concept_id
-                LEFT JOIN "User_Engagement_Log" uel ON cm.module_id = uel.module_id
-                LEFT JOIN "Enrolments" e ON uel.enrolment_id = e.enrolment_id
-                LEFT JOIN "Users" u ON e.user_email = u.user_email
-                WHERE cc.course_id = ${courseId} 
-                AND uel.engagement_type = 'module access'
-                AND 'student' = ANY(u.roles)
-                GROUP BY cm.module_id;
-              `;
+                  SELECT cm.module_id, COUNT(uel.log_id) AS access_count
+                  FROM "Course_Modules" cm
+                  JOIN "Course_Concepts" cc ON cm.concept_id = cc.concept_id
+                  LEFT JOIN "User_Engagement_Log" uel ON cm.module_id = uel.module_id
+                  LEFT JOIN "Enrolments" e ON uel.enrolment_id = e.enrolment_id
+                  LEFT JOIN "Users" u ON e.user_email = u.user_email
+                  WHERE cc.course_id = ${courseId} 
+                  AND uel.engagement_type = 'module access'
+                  AND 'student' = ANY(u.roles)
+                  GROUP BY cm.module_id;
+                `;
 
             // Query to get the average score for each module, filtering by student role
             const averageScores = await sqlConnection`
-                SELECT cm.module_id, AVG(sm.module_score) AS average_score
-                FROM "Course_Modules" cm
-                JOIN "Course_Concepts" cc ON cm.concept_id = cc.concept_id
-                LEFT JOIN "Student_Modules" sm ON cm.module_id = sm.course_module_id
-                LEFT JOIN "Enrolments" e ON sm.enrolment_id = e.enrolment_id
-                LEFT JOIN "Users" u ON e.user_email = u.user_email
-                WHERE cc.course_id = ${courseId}
-                AND 'student' = ANY(u.roles)
-                GROUP BY cm.module_id;
-              `;
+                  SELECT cm.module_id, AVG(sm.module_score) AS average_score
+                  FROM "Course_Modules" cm
+                  JOIN "Course_Concepts" cc ON cm.concept_id = cc.concept_id
+                  LEFT JOIN "Student_Modules" sm ON cm.module_id = sm.course_module_id
+                  LEFT JOIN "Enrolments" e ON sm.enrolment_id = e.enrolment_id
+                  LEFT JOIN "Users" u ON e.user_email = u.user_email
+                  WHERE cc.course_id = ${courseId}
+                  AND 'student' = ANY(u.roles)
+                  GROUP BY cm.module_id;
+                `;
 
             // Query to get the percentage of perfect scores for each module, filtering by student role
             const perfectScores = await sqlConnection`
-                SELECT cm.module_id, 
-                  CASE 
-                      WHEN COUNT(sm.student_module_id) = 0 THEN 0 
-                      ELSE COUNT(CASE WHEN sm.module_score = 100 THEN 1 END) * 100.0 / COUNT(sm.student_module_id)
-                  END AS perfect_score_percentage
-                FROM "Course_Modules" cm
-                JOIN "Course_Concepts" cc ON cm.concept_id = cc.concept_id
-                LEFT JOIN "Student_Modules" sm ON cm.module_id = sm.course_module_id
-                LEFT JOIN "Enrolments" e ON sm.enrolment_id = e.enrolment_id
-                LEFT JOIN "Users" u ON e.user_email = u.user_email
-                WHERE cc.course_id = ${courseId}
-                AND 'student' = ANY(u.roles)
-                GROUP BY cm.module_id;
-              `;
+                  SELECT cm.module_id, 
+                    CASE 
+                        WHEN COUNT(sm.student_module_id) = 0 THEN 0 
+                        ELSE COUNT(CASE WHEN sm.module_score = 100 THEN 1 END) * 100.0 / COUNT(sm.student_module_id)
+                    END AS perfect_score_percentage
+                  FROM "Course_Modules" cm
+                  JOIN "Course_Concepts" cc ON cm.concept_id = cc.concept_id
+                  LEFT JOIN "Student_Modules" sm ON cm.module_id = sm.course_module_id
+                  LEFT JOIN "Enrolments" e ON sm.enrolment_id = e.enrolment_id
+                  LEFT JOIN "Users" u ON e.user_email = u.user_email
+                  WHERE cc.course_id = ${courseId}
+                  AND 'student' = ANY(u.roles)
+                  GROUP BY cm.module_id;
+                `;
 
             // Combine all data into a single response, ensuring all modules are included
             const analyticsData = messageCreations.map((module) => {
@@ -214,10 +230,10 @@ exports.handler = async (event) => {
           try {
             // Check if a concept with the same name already exists for the given course
             const existingConcept = await sqlConnection`
-                SELECT * FROM "Course_Concepts"
-                WHERE course_id = ${courseId}
-                AND concept_name = ${concept_name};
-              `;
+                  SELECT * FROM "Course_Concepts"
+                  WHERE course_id = ${courseId}
+                  AND concept_name = ${concept_name};
+                `;
 
             if (existingConcept.length > 0) {
               response.statusCode = 400;
@@ -229,12 +245,12 @@ exports.handler = async (event) => {
 
             // Insert the new concept into the Course_Concepts table using uuid_generate_v4() for concept_id
             await sqlConnection`
-                INSERT INTO "Course_Concepts" (
-                  "concept_id", "course_id", "concept_number", "concept_name"
-                ) VALUES (
-                  uuid_generate_v4(), ${courseId}, ${conceptNumber}, ${concept_name}
-                );
-              `;
+                  INSERT INTO "Course_Concepts" (
+                    "concept_id", "course_id", "concept_number", "concept_name"
+                  ) VALUES (
+                    uuid_generate_v4(), ${courseId}, ${conceptNumber}, ${concept_name}
+                  );
+                `;
 
             response.statusCode = 201;
             response.body = JSON.stringify({
@@ -414,9 +430,9 @@ exports.handler = async (event) => {
 
             // Insert into User Engagement Log
             await sqlConnection`
-                    INSERT INTO "User_Engagement_Log" (log_id, user_email, course_id, module_id, enrolment_id, timestamp, engagement_type)
-                    VALUES (uuid_generate_v4(), ${instructor_email}, ${course_id}, ${newModule[0].module_id}, null, CURRENT_TIMESTAMP, 'instructor_created_module')
-                  `;
+                  INSERT INTO "User_Engagement_Log" (log_id, user_id, course_id, module_id, enrolment_id, timestamp, engagement_type)
+                  VALUES (uuid_generate_v4(), (SELECT user_id FROM "Users" WHERE user_email = ${instructor_email}), ${course_id}, ${newModule[0].module_id}, null, CURRENT_TIMESTAMP, 'instructor_created_module')
+              `;
 
             // Find all student enrolments for the given course_id
             const enrolments = await sqlConnection`
@@ -464,15 +480,15 @@ exports.handler = async (event) => {
             try {
               // Update the module in the Course_Modules table
               await sqlConnection`
-                  UPDATE "Course_Modules"
-                  SET module_name = ${module_name}, module_number = ${module_number}
-                  WHERE module_id = ${module_id};
-                `;
+                    UPDATE "Course_Modules"
+                    SET module_name = ${module_name}, module_number = ${module_number}
+                    WHERE module_id = ${module_id};
+                  `;
 
               // Insert into User Engagement Log
               await sqlConnection`
-                    INSERT INTO "User_Engagement_Log" (log_id, user_email, course_id, module_id, enrolment_id, timestamp, engagement_type)
-                    VALUES (uuid_generate_v4(), ${instructor_email}, NULL, ${module_id}, NULL, CURRENT_TIMESTAMP, 'instructor_edited_module');
+                    INSERT INTO "User_Engagement_Log" (log_id, user_id, course_id, module_id, enrolment_id, timestamp, engagement_type)
+                    VALUES (uuid_generate_v4(), (SELECT user_id FROM "Users" WHERE user_email = ${instructor_email}), NULL, ${module_id}, NULL, CURRENT_TIMESTAMP, 'instructor_edited_module');
                   `;
 
               response.statusCode = 200;
@@ -515,11 +531,11 @@ exports.handler = async (event) => {
             try {
               // Check if another module with the same name already exists under the same concept
               const existingModule = await sqlConnection`
-                  SELECT * FROM "Course_Modules"
-                  WHERE concept_id = ${concept_id}
-                  AND module_name = ${module_name}
-                  AND module_id != ${module_id};
-                `;
+                    SELECT * FROM "Course_Modules"
+                    WHERE concept_id = ${concept_id}
+                    AND module_name = ${module_name}
+                    AND module_id != ${module_id};
+                  `;
 
               if (existingModule.length > 0) {
                 response.statusCode = 400;
@@ -532,16 +548,16 @@ exports.handler = async (event) => {
 
               // Update the module in the Course_Modules table
               await sqlConnection`
-                  UPDATE "Course_Modules"
-                  SET module_name = ${module_name}, concept_id = ${concept_id}
-                  WHERE module_id = ${module_id};
-                `;
+                    UPDATE "Course_Modules"
+                    SET module_name = ${module_name}, concept_id = ${concept_id}
+                    WHERE module_id = ${module_id};
+                  `;
 
               // Insert into User Engagement Log
               await sqlConnection`
-                  INSERT INTO "User_Engagement_Log" (log_id, user_email, course_id, module_id, enrolment_id, timestamp, engagement_type)
-                  VALUES (uuid_generate_v4(), ${instructor_email}, NULL, ${module_id}, NULL, CURRENT_TIMESTAMP, 'instructor_edited_module');
-                `;
+                    INSERT INTO "User_Engagement_Log" (log_id, user_id, course_id, module_id, enrolment_id, timestamp, engagement_type)
+                    VALUES (uuid_generate_v4(), (SELECT user_id FROM "Users" WHERE user_email = ${instructor_email}), NULL, ${module_id}, NULL, CURRENT_TIMESTAMP, 'instructor_edited_module');
+                  `;
 
               response.statusCode = 200;
               response.body = JSON.stringify({
@@ -581,10 +597,10 @@ exports.handler = async (event) => {
 
             // Retrieve the current system prompt
             const currentPromptResult = await sqlConnection`
-                    SELECT system_prompt
-                    FROM "Courses"
-                    WHERE course_id = ${course_id};
-                  `;
+                      SELECT system_prompt
+                      FROM "Courses"
+                      WHERE course_id = ${course_id};
+                    `;
 
             if (currentPromptResult.length === 0) {
               response.statusCode = 404;
@@ -596,35 +612,35 @@ exports.handler = async (event) => {
 
             // Update system prompt for the course in Courses table
             const updatedCourse = await sqlConnection`
-                    UPDATE "Courses"
-                    SET system_prompt = ${prompt}
-                    WHERE course_id = ${course_id}
-                    RETURNING *;
-                  `;
+                      UPDATE "Courses"
+                      SET system_prompt = ${prompt}
+                      WHERE course_id = ${course_id}
+                      RETURNING *;
+                    `;
 
             // Insert into User Engagement Log with old prompt in engagement_details
             await sqlConnection`
-                    INSERT INTO "User_Engagement_Log" (
-                      log_id,
-                      user_email,
-                      course_id,
-                      module_id,
-                      enrolment_id,
-                      timestamp,
-                      engagement_type,
-                      engagement_details
-                    )
-                    VALUES (
-                      uuid_generate_v4(),
-                      ${instructor_email},
-                      ${course_id},
-                      null,
-                      null,
-                      CURRENT_TIMESTAMP,
-                      'instructor_updated_prompt',
-                      ${oldPrompt}
-                    );
-                  `;
+                      INSERT INTO "User_Engagement_Log" (
+                        log_id,
+                        user_id,
+                        course_id,
+                        module_id,
+                        enrolment_id,
+                        timestamp,
+                        engagement_type,
+                        engagement_details
+                      )
+                      VALUES (
+                        uuid_generate_v4(),
+                        (SELECT user_id FROM "Users" WHERE user_email = ${instructor_email}),
+                        ${course_id},
+                        null,
+                        null,
+                        CURRENT_TIMESTAMP,
+                        'instructor_updated_prompt',
+                        ${oldPrompt}
+                      );
+                    `;
 
             response.body = JSON.stringify(updatedCourse[0]);
           } catch (err) {
@@ -648,11 +664,11 @@ exports.handler = async (event) => {
           try {
             // Query to get all students enrolled in the given course
             const enrolledStudents = await sqlConnection`
-                SELECT u.user_email, u.username, u.first_name, u.last_name
-                FROM "Enrolments" e
-                JOIN "Users" u ON e.user_email = u.user_email
-                WHERE e.course_id = ${course_id} AND e.enrolment_type = 'student';
-              `;
+                  SELECT u.user_email, u.username, u.first_name, u.last_name
+                  FROM "Enrolments" e
+                  JOIN "Users" u ON e.user_email = u.user_email
+                  WHERE e.course_id = ${course_id} AND e.enrolment_type = 'student';
+                `;
 
             response.statusCode = 200;
             response.body = JSON.stringify(enrolledStudents);
@@ -679,25 +695,28 @@ exports.handler = async (event) => {
 
             // Delete the student from the course enrolments
             const deleteResult = await sqlConnection`
-                  DELETE FROM "Enrolments"
-                  WHERE course_id = ${course_id}
-                    AND user_email = (
-                      SELECT user_email
-                      FROM "Users"
-                      WHERE user_email = ${user_email}
-                    )
-                    AND enrolment_type = 'student'
-                  RETURNING *;
-                `;
+                    DELETE FROM "Enrolments"
+                    WHERE course_id = ${course_id}
+                      AND user_email = ${user_email}
+                      AND enrolment_type = 'student'
+                    RETURNING *;
+                  `;
 
             if (deleteResult.length > 0) {
               response.body = JSON.stringify(deleteResult[0]);
 
-              // Insert into User Engagement Log
-              await sqlConnection`
-                  INSERT INTO "User_Engagement_Log" (log_id, user_email, course_id, module_id, enrolment_id, timestamp, engagement_type)
-                  VALUES (uuid_generate_v4(), ${instructor_email}, ${course_id}, null, null, CURRENT_TIMESTAMP, 'instructor_deleted_student')
-                `;
+              // Insert into User Engagement Log using user_id instead of user_email
+              const userResult = await sqlConnection`
+                    SELECT user_id FROM "Users" WHERE user_email = ${user_email};
+                  `;
+
+              if (userResult.length > 0) {
+                const userId = userResult[0].user_id;
+                await sqlConnection`
+                      INSERT INTO "User_Engagement_Log" (log_id, user_id, course_id, module_id, enrolment_id, timestamp, engagement_type)
+                      VALUES (uuid_generate_v4(), ${userId}, ${course_id}, null, null, CURRENT_TIMESTAMP, 'instructor_deleted_student')
+                    `;
+              }
             } else {
               response.statusCode = 404;
               response.body = JSON.stringify({

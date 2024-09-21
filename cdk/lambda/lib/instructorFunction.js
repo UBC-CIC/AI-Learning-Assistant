@@ -81,15 +81,31 @@ exports.handler = async (event) => {
           const instructorEmail = event.queryStringParameters.email;
 
           try {
+            // First, get the user ID using the email
+            const userIdResult = await sqlConnection`
+                SELECT user_id
+                FROM "Users"
+                WHERE user_email = ${instructorEmail}
+                LIMIT 1;
+              `;
+
+            const userId = userIdResult[0]?.user_id;
+
+            if (!userId) {
+              response.statusCode = 404;
+              response.body = JSON.stringify({ error: "Instructor not found" });
+              break;
+            }
+
             // Query to get all courses where the instructor is enrolled
             const data = await sqlConnection`
-            SELECT c.*
-            FROM "Enrolments" e
-            JOIN "Courses" c ON e.course_id = c.course_id
-            WHERE e.user_email = ${instructorEmail}
-            AND e.enrolment_type = 'instructor'
-            ORDER BY c.course_name, c.course_id;
-          `;
+                SELECT c.*
+                FROM "Enrolments" e
+                JOIN "Courses" c ON e.course_id = c.course_id
+                WHERE e.user_id = ${userId}
+                AND e.enrolment_type = 'instructor'
+                ORDER BY c.course_name, c.course_id;
+              `;
 
             response.statusCode = 200;
             response.body = JSON.stringify(data);
@@ -120,7 +136,7 @@ exports.handler = async (event) => {
                   LEFT JOIN "Sessions" s ON sm.student_module_id = s.student_module_id
                   LEFT JOIN "Messages" m ON s.session_id = m.session_id
                   LEFT JOIN "Enrolments" e ON sm.enrolment_id = e.enrolment_id
-                  LEFT JOIN "Users" u ON e.user_email = u.user_email
+                  LEFT JOIN "Users" u ON e.user_id = u.user_id
                   WHERE cc.course_id = ${courseId}
                   AND 'student' = ANY(u.roles)
                   GROUP BY cm.module_id, cm.module_name, cm.module_number, cc.concept_number
@@ -134,7 +150,7 @@ exports.handler = async (event) => {
                   JOIN "Course_Concepts" cc ON cm.concept_id = cc.concept_id
                   LEFT JOIN "User_Engagement_Log" uel ON cm.module_id = uel.module_id
                   LEFT JOIN "Enrolments" e ON uel.enrolment_id = e.enrolment_id
-                  LEFT JOIN "Users" u ON e.user_email = u.user_email
+                  LEFT JOIN "Users" u ON e.user_id = u.user_id
                   WHERE cc.course_id = ${courseId} 
                   AND uel.engagement_type = 'module access'
                   AND 'student' = ANY(u.roles)
@@ -148,7 +164,7 @@ exports.handler = async (event) => {
                   JOIN "Course_Concepts" cc ON cm.concept_id = cc.concept_id
                   LEFT JOIN "Student_Modules" sm ON cm.module_id = sm.course_module_id
                   LEFT JOIN "Enrolments" e ON sm.enrolment_id = e.enrolment_id
-                  LEFT JOIN "Users" u ON e.user_email = u.user_email
+                  LEFT JOIN "Users" u ON e.user_id = u.user_id
                   WHERE cc.course_id = ${courseId}
                   AND 'student' = ANY(u.roles)
                   GROUP BY cm.module_id;
@@ -165,7 +181,7 @@ exports.handler = async (event) => {
                   JOIN "Course_Concepts" cc ON cm.concept_id = cc.concept_id
                   LEFT JOIN "Student_Modules" sm ON cm.module_id = sm.course_module_id
                   LEFT JOIN "Enrolments" e ON sm.enrolment_id = e.enrolment_id
-                  LEFT JOIN "Users" u ON e.user_email = u.user_email
+                  LEFT JOIN "Users" u ON e.user_id = u.user_id
                   WHERE cc.course_id = ${courseId}
                   AND 'student' = ANY(u.roles)
                   GROUP BY cm.module_id;
@@ -664,11 +680,11 @@ exports.handler = async (event) => {
           try {
             // Query to get all students enrolled in the given course
             const enrolledStudents = await sqlConnection`
-                  SELECT u.user_email, u.username, u.first_name, u.last_name
-                  FROM "Enrolments" e
-                  JOIN "Users" u ON e.user_email = u.user_email
-                  WHERE e.course_id = ${course_id} AND e.enrolment_type = 'student';
-                `;
+                    SELECT u.user_email, u.username, u.first_name, u.last_name
+                    FROM "Enrolments" e
+                    JOIN "Users" u ON e.user_id = u.user_id  -- Change to use user_id
+                    WHERE e.course_id = ${course_id} AND e.enrolment_type = 'student';
+                  `;
 
             response.statusCode = 200;
             response.body = JSON.stringify(enrolledStudents);
@@ -689,34 +705,46 @@ exports.handler = async (event) => {
           event.queryStringParameters.instructor_email &&
           event.queryStringParameters.user_email
         ) {
-          try {
-            const { course_id, instructor_email, user_email } =
-              event.queryStringParameters;
+          const { course_id, instructor_email, user_email } =
+            event.queryStringParameters;
 
-            // Delete the student from the course enrolments
+          try {
+            // Step 1: Get the user ID from the user email
+            const userResult = await sqlConnection`
+                  SELECT user_id
+                  FROM "Users"
+                  WHERE user_email = ${user_email}
+                  LIMIT 1;
+              `;
+
+            const userId = userResult[0]?.user_id;
+
+            if (!userId) {
+              response.statusCode = 404;
+              response.body = JSON.stringify({
+                error: "User not found",
+              });
+              break;
+            }
+
+            // Step 2: Delete the student from the course enrolments
             const deleteResult = await sqlConnection`
-                    DELETE FROM "Enrolments"
-                    WHERE course_id = ${course_id}
-                      AND user_email = ${user_email}
-                      AND enrolment_type = 'student'
-                    RETURNING *;
-                  `;
+                  DELETE FROM "Enrolments"
+                  WHERE course_id = ${course_id}
+                    AND user_id = ${userId}  -- Use user_id instead of user_email
+                    AND enrolment_type = 'student'
+                  RETURNING *;
+              `;
 
             if (deleteResult.length > 0) {
+              response.statusCode = 200; // Set status to 200 on successful deletion
               response.body = JSON.stringify(deleteResult[0]);
 
-              // Insert into User Engagement Log using user_id instead of user_email
-              const userResult = await sqlConnection`
-                    SELECT user_id FROM "Users" WHERE user_email = ${user_email};
-                  `;
-
-              if (userResult.length > 0) {
-                const userId = userResult[0].user_id;
-                await sqlConnection`
-                      INSERT INTO "User_Engagement_Log" (log_id, user_id, course_id, module_id, enrolment_id, timestamp, engagement_type)
-                      VALUES (uuid_generate_v4(), ${userId}, ${course_id}, null, null, CURRENT_TIMESTAMP, 'instructor_deleted_student')
-                    `;
-              }
+              // Step 3: Insert into User Engagement Log
+              await sqlConnection`
+                    INSERT INTO "User_Engagement_Log" (log_id, user_id, course_id, module_id, enrolment_id, timestamp, engagement_type)
+                    VALUES (uuid_generate_v4(), ${userId}, ${course_id}, null, null, CURRENT_TIMESTAMP, 'instructor_deleted_student')
+                `;
             } else {
               response.statusCode = 404;
               response.body = JSON.stringify({
@@ -725,13 +753,14 @@ exports.handler = async (event) => {
             }
           } catch (err) {
             response.statusCode = 500;
-            console.log(err);
+            console.error(err);
             response.body = JSON.stringify({ error: "Internal server error" });
           }
         } else {
           response.statusCode = 400;
-          response.body =
-            "course_id, user_email, and instructor_email are required";
+          response.body = JSON.stringify({
+            error: "course_id, user_email, and instructor_email are required",
+          });
         }
         break;
       case "GET /instructor/view_modules":
@@ -889,17 +918,35 @@ exports.handler = async (event) => {
           const courseId = event.queryStringParameters.course_id;
 
           try {
-            // Query to get the student's messages for a specific course
+            // Step 1: Get the user ID from the user email
+            const userResult = await sqlConnection`
+                  SELECT user_id
+                  FROM "Users"
+                  WHERE user_email = ${studentEmail}
+                  LIMIT 1;
+              `;
+
+            const userId = userResult[0]?.user_id;
+
+            if (!userId) {
+              response.statusCode = 404;
+              response.body = JSON.stringify({
+                error: "User not found",
+              });
+              break;
+            }
+
+            // Step 2: Query to get the student's messages for a specific course
             const messages = await sqlConnection`
-              SELECT m.message_content, m.time_sent, m.student_sent
-              FROM "Messages" m
-              JOIN "Sessions" s ON m.session_id = s.session_id
-              JOIN "Student_Modules" sm ON s.student_module_id = sm.student_module_id
-              JOIN "Enrolments" e ON sm.enrolment_id = e.enrolment_id
-              WHERE e.user_email = ${studentEmail}
-              AND e.course_id = ${courseId}
-              ORDER BY m.time_sent;
-            `;
+                  SELECT m.message_content, m.time_sent, m.student_sent
+                  FROM "Messages" m
+                  JOIN "Sessions" s ON m.session_id = s.session_id
+                  JOIN "Student_Modules" sm ON s.student_module_id = sm.student_module_id
+                  JOIN "Enrolments" e ON sm.enrolment_id = e.enrolment_id
+                  WHERE e.user_id = ${userId}  -- Use user_id instead of user_email
+                  AND e.course_id = ${courseId}
+                  ORDER BY m.time_sent;
+              `;
 
             response.statusCode = 200;
             response.body = JSON.stringify(messages);

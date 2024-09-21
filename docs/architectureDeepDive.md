@@ -28,19 +28,19 @@
 
 | Column Name | Description                    |
 | ----------- | ------------------------------ |
-| uuid        | The uuid of the collection     |
-| name        | The name of the collection     |
-| cmetadata   | The metadata of the collection |
+| `uuid`      | The uuid of the collection     |
+| `name`      | The name of the collection     |
+| `cmetadata` | The metadata of the collection |
 
 ### `langchain_pg_embedding` table
 
-| Column Name   | Description                           |
-| ------------- | ------------------------------------- |
-| id            | The ID of the embeddings              |
-| collection_id | The uuid of the collection            |
-| embedding     | The vector embeddings of the document |
-| cmetadata     | The metadata of the collection        |
-| document      | The content of the document           |
+| Column Name     | Description                           |
+| --------------- | ------------------------------------- |
+| `id`            | The ID of the embeddings              |
+| `collection_id` | The uuid of the collection            |
+| `embedding`     | The vector embeddings of the document |
+| `cmetadata`     | The metadata of the collection        |
+| `document`      | The content of the document           |
 
 ### RDS PostgreSQL Tables
 
@@ -60,15 +60,15 @@
 
 ### `Courses` table
 
-| Column Name           | Description                                     |
-| --------------------- | ----------------------------------------------- |
-| course_id             | The ID of the course                            |
-| course_name           | The name of the course                          |
-| course_department     | The acronym of the course department            |
-| course_number         | The number of the course                        |
-| course_access_code    | The access code for students to join the course |
-| course_student_access | Whether or not student can access the course    |
-| system_prompt         | The system prompt for the course                |
+| Column Name             | Description                                     |
+| ----------------------- | ----------------------------------------------- |
+| `course_id`             | The ID of the course                            |
+| `course_name`           | The name of the course                          |
+| `course_department`     | The acronym of the course department            |
+| `course_number`         | The number of the course                        |
+| `course_access_code`    | The access code for students to join the course |
+| `course_student_access` | Whether or not student can access the course    |
+| `system_prompt`         | The system prompt for the course                |
 
 ### `Enrolments` table
 

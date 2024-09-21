@@ -1347,7 +1347,7 @@ paths:
       tags:
         - Instructor
       summary: Generate a presigned URL for uploading files
-      operationId: instructor_generate_presigned_url_GET
+      operationId: instructor_generate_presigned_url_GET_2
       parameters:
         - in: query
           name: course_id

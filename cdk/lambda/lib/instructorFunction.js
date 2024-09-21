@@ -19,8 +19,31 @@ exports.handler = async (event) => {
   const emailAttr = userAttributesResponse.UserAttributes.find(
     (attr) => attr.Name === "email"
   );
-  const email = emailAttr ? emailAttr.Value : null;
-  console.log(email);
+  const userEmailAttribute = emailAttr ? emailAttr.Value : null;
+  console.log(userEmailAttribute);
+
+  // Check for query string parameters
+
+  const queryStringParams = event.queryStringParameters || {};
+  const queryEmail = queryStringParams.email;
+  const instructorEmail = queryStringParams.instructor_email;
+
+  const isUnauthorized =
+    (queryEmail && queryEmail !== userEmailAttribute) ||
+    (instructorEmail && instructorEmail !== userEmailAttribute);
+
+  if (isUnauthorized) {
+    return {
+      statusCode: 401,
+      headers: {
+        "Access-Control-Allow-Headers":
+          "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token",
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "*",
+      },
+      body: JSON.stringify({ error: "Unauthorized" }),
+    };
+  }
 
   const response = {
     statusCode: 200,

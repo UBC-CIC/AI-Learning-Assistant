@@ -94,7 +94,7 @@ const InstructorModules = ({ courseName, course_id }) => {
     const fetchModules = async () => {
       try {
         const session = await fetchAuthSession();
-        var token = session.tokens.idToken.toString();
+        var token = session.tokens.idToken
         const response = await fetch(
           `${
             import.meta.env.VITE_API_ENDPOINT
@@ -135,7 +135,7 @@ const InstructorModules = ({ courseName, course_id }) => {
   const handleSaveChanges = async () => {
     try {
       const session = await fetchAuthSession();
-      const token = session.tokens.idToken.toString();
+      const token = session.tokens.idToken
       const { email } = await fetchUserAttributes();
 
       // Create an array of promises for updating modules

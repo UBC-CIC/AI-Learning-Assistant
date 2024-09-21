@@ -42,7 +42,7 @@ const fetchInstructors = async () => {
   try {
     const session = await fetchAuthSession();
     const userAtrributes = await fetchUserAttributes();
-    const token = session.tokens.idToken.toString();
+    const token = session.tokens.idToken
     const adminEmail = userAtrributes.email;
 
     const response = await fetch(
@@ -118,7 +118,7 @@ export const AdminInstructors = ({ setSelectedInstructor }) => {
     const fetchInstructors = async () => {
       try {
         const session = await fetchAuthSession();
-        var token = session.tokens.idToken.toString();
+        var token = session.tokens.idToken
         //replace if analytics for admin actions is needed
         const response = await fetch(
           `${
@@ -175,7 +175,7 @@ export const AdminInstructors = ({ setSelectedInstructor }) => {
     try {
       const session = await fetchAuthSession();
       const userAtrributes = await fetchUserAttributes();
-      const token = session.tokens.idToken.toString();
+      const token = session.tokens.idToken
       const adminEmail = userAtrributes.email;
       const existingInstructor = rows.find((row) => row.email === email);
       if (existingInstructor) {

@@ -294,7 +294,7 @@ export const Login = () => {
       if (user.isSignedIn) {
         // Send user data to backend
         const session = await fetchAuthSession();
-        const token = session.tokens.idToken.toString();
+        const token = session.tokens.idToken
 
         const response = await fetch(
           `${

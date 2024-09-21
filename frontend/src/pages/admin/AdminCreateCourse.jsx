@@ -69,7 +69,7 @@ export const AdminCreateCourse = ({ setSelectedComponent }) => {
     const fetchInstructors = async () => {
       try {
         const session = await fetchAuthSession();
-        var token = session.tokens.idToken.toString();
+        var token = session.tokens.idToken
         //replace if analytics for admin actions is needed
         const response = await fetch(
           `${
@@ -101,7 +101,7 @@ export const AdminCreateCourse = ({ setSelectedComponent }) => {
     // Handle the create course logic here
     try {
       const session = await fetchAuthSession();
-      const token = session.tokens.idToken.toString();
+      const token = session.tokens.idToken
       const numericCourseCode = Number(courseCode);
 
       if (isNaN(numericCourseCode)) {

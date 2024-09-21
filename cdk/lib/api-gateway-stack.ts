@@ -428,6 +428,31 @@ export class ApiGatewayStack extends cdk.Stack {
       })
     );
 
+    // Inline policy to allow AdminAddUserToGroup action
+    const adminAddUserToGroupPolicyLambda = new iam.Policy(
+      this,
+      "adminAddUserToGroupPolicyLambda",
+      {
+        statements: [
+          new iam.PolicyStatement({
+            effect: iam.Effect.ALLOW,
+            actions: [
+              "cognito-idp:AdminAddUserToGroup",
+              "cognito-idp:AdminRemoveUserFromGroup",
+              "cognito-idp:AdminGetUser",
+              "cognito-idp:AdminListGroupsForUser",
+            ],
+            resources: [
+              `arn:aws:cognito-idp:${this.region}:${this.account}:userpool/${this.userPool.userPoolId}`,
+            ],
+          }),
+        ],
+      }
+    );
+
+    // Attach the inline policy to the role
+    lambdaRole.attachInlinePolicy(adminAddUserToGroupPolicyLambda);
+
     // Attach roles to the identity pool
     new cognito.CfnIdentityPoolRoleAttachment(this, "IdentityPoolRoles", {
       identityPoolId: this.identityPool.ref,
@@ -446,6 +471,7 @@ export class ApiGatewayStack extends cdk.Stack {
       environment: {
         SM_DB_CREDENTIALS: db.secretPathUser.secretName,
         RDS_PROXY_ENDPOINT: db.rdsProxyEndpoint,
+        USER_POOL: this.userPool.userPoolId,
       },
       functionName: "studentFunction",
       memorySize: 512,
@@ -476,6 +502,7 @@ export class ApiGatewayStack extends cdk.Stack {
         environment: {
           SM_DB_CREDENTIALS: db.secretPathUser.secretName,
           RDS_PROXY_ENDPOINT: db.rdsProxyEndpoint,
+          USER_POOL: this.userPool.userPoolId,
         },
         functionName: "instructorFunction",
         memorySize: 512,

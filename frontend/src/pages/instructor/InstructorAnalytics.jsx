@@ -46,7 +46,7 @@ const InstructorAnalytics = ({ courseName, course_id }) => {
     const fetchAnalytics = async () => {
       try {
         const session = await fetchAuthSession();
-        const token = session.tokens.idToken.toString();
+        const token = session.tokens.idToken
         const response = await fetch(
           `${
             import.meta.env.VITE_API_ENDPOINT

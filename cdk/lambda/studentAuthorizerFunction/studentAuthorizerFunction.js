@@ -48,7 +48,7 @@ exports.handler = async (event) => {
         await initializeConnection();
     }
 
-    const accessToken = event.authorizationToken;
+    const accessToken = event.authorizationToken.toString();
     let payload;
 
     try {

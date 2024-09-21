@@ -92,7 +92,7 @@ const Session = ({
     // Return the fetchAuthSession promise
     return fetchAuthSession()
       .then((authSession) => {
-        const token = authSession.tokens.idToken.toString();
+        const token = authSession.tokens.idToken
         // Return the fetch promise
         return fetch(
           `${

@@ -47,7 +47,7 @@ export const AdminCourses = ({ setSelectedCourse }) => {
     const fetchCourses = async () => {
       try {
         const session = await fetchAuthSession();
-        var token = session.tokens.idToken.toString();
+        var token = session.tokens.idToken
         const response = await fetch(
           `${import.meta.env.VITE_API_ENDPOINT}admin/courses`,
           {

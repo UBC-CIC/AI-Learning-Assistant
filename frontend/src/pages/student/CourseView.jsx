@@ -121,7 +121,7 @@ export const CourseView = ({ course, setModule, setCourse }) => {
         const session = await fetchAuthSession();
         const { email } = await fetchUserAttributes();
 
-        const token = session.tokens.idToken.toString();
+        const token = session.tokens.idToken
         const response = await fetch(
           `${
             import.meta.env.VITE_API_ENDPOINT

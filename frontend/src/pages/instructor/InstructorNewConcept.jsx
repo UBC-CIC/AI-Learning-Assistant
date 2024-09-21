@@ -36,7 +36,7 @@ const InstructorNewConcept = () => {
     }
     try {
       const session = await fetchAuthSession();
-      const token = session.tokens.idToken.toString();
+      const token = session.tokens.idToken
       const { email } = await fetchUserAttributes();
       const response = await fetch(
         `${

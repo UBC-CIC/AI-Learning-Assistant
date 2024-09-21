@@ -54,7 +54,7 @@ const CourseDetails = ({ course, onBack }) => {
     const fetchActiveInstructors = async () => {
       try {
         const session = await fetchAuthSession();
-        var token = session.tokens.idToken.toString();
+        var token = session.tokens.idToken
         const response = await fetch(
           `${
             import.meta.env.VITE_API_ENDPOINT
@@ -80,7 +80,7 @@ const CourseDetails = ({ course, onBack }) => {
     const fetchInstructors = async () => {
       try {
         const session = await fetchAuthSession();
-        var token = session.tokens.idToken.toString();
+        var token = session.tokens.idToken
         //replace if analytics for admin actions is needed
         const response = await fetch(
           `${
@@ -138,7 +138,7 @@ const CourseDetails = ({ course, onBack }) => {
 
   const handleDelete = async () => {
     const session = await fetchAuthSession();
-    var token = session.tokens.idToken.toString();
+    var token = session.tokens.idToken
     const deleteResponse = await fetch(
       `${
         import.meta.env.VITE_API_ENDPOINT
@@ -185,7 +185,7 @@ const CourseDetails = ({ course, onBack }) => {
   const handleSave = async () => {
     try {
       const session = await fetchAuthSession();
-      const token = session.tokens.idToken.toString();
+      const token = session.tokens.idToken
 
       // Delete existing enrollments
       const deleteResponse = await fetch(

@@ -44,7 +44,7 @@ const InstructorEditConcept = () => {
     const fetchModules = async () => {
       try {
         const session = await fetchAuthSession();
-        var token = session.tokens.idToken.toString();
+        var token = session.tokens.idToken
         const response = await fetch(
           `${
             import.meta.env.VITE_API_ENDPOINT
@@ -91,7 +91,7 @@ const InstructorEditConcept = () => {
 
   const handleDelete = async () => {
     const session = await fetchAuthSession();
-    const authtoken = session.tokens.idToken.toString();
+    const authtoken = session.tokens.idToken
     const deletePromises = data.map((module) =>
       fetch(
         `${
@@ -115,7 +115,7 @@ const InstructorEditConcept = () => {
     await Promise.all(deletePromises);
     try {
       const session = await fetchAuthSession();
-      var token = session.tokens.idToken.toString();
+      var token = session.tokens.idToken
       const response = await fetch(
         `${
           import.meta.env.VITE_API_ENDPOINT
@@ -191,7 +191,7 @@ const InstructorEditConcept = () => {
     }
     try {
       const session = await fetchAuthSession();
-      var token = session.tokens.idToken.toString();
+      var token = session.tokens.idToken
       const response = await fetch(
         `${
           import.meta.env.VITE_API_ENDPOINT

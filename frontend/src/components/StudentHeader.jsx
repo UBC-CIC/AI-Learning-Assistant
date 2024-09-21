@@ -18,7 +18,7 @@ const StudentHeader = () => {
       fetchAuthSession()
         .then((session) => {
           return fetchUserAttributes().then((userAttributes) => {
-            const token = session.tokens.idToken.toString();
+            const token = session.tokens.idToken
             const email = userAttributes.email;
             return fetch(
               `${

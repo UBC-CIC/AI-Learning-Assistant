@@ -18,7 +18,7 @@ export async function retrieveUser(setUser) {
 export async function retrieveJwtToken(setJwtToken) {
   try {
     var session = await fetchAuthSession();
-    var idToken = await session.tokens.idToken.toString();
+    var idToken = await session.tokens.idToken
     console.log(idToken);
     var token = await session.tokens.accessToken.toString();
     setJwtToken(idToken);
@@ -32,7 +32,7 @@ export async function retrieveJwtToken(setJwtToken) {
     if (expirationTime - currentTime < 2700000) {
       // 45 minutes
       await fetchAuthSession();
-      idToken = await session.tokens.idToken.toString();
+      idToken = await session.tokens.idToken
       token = await session.tokens.accessToken.toString();
       setJwtToken(token);
     }

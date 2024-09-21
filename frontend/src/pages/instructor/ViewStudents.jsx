@@ -70,7 +70,7 @@ export const ViewStudents = ({ courseName, course_id }) => {
     const fetchCode = async () => {
       try {
         const session = await fetchAuthSession();
-        var token = session.tokens.idToken.toString();
+        var token = session.tokens.idToken
         const response = await fetch(
           `${
             import.meta.env.VITE_API_ENDPOINT
@@ -103,7 +103,7 @@ export const ViewStudents = ({ courseName, course_id }) => {
     const fetchStudents = async () => {
       try {
         const session = await fetchAuthSession();
-        var token = session.tokens.idToken.toString();
+        var token = session.tokens.idToken
         const response = await fetch(
           `${
             import.meta.env.VITE_API_ENDPOINT
@@ -141,7 +141,7 @@ export const ViewStudents = ({ courseName, course_id }) => {
   const handleGenerateAccessCode = async () => {
     try {
       const session = await fetchAuthSession();
-      var token = session.tokens.idToken.toString();
+      var token = session.tokens.idToken
       const response = await fetch(
         `${
           import.meta.env.VITE_API_ENDPOINT

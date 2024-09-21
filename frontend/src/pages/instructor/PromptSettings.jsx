@@ -67,7 +67,7 @@ const PromptSettings = ({ courseName, course_id }) => {
   const fetchPreviousPrompts = async () => {
     try {
       const session = await fetchAuthSession();
-      const token = session.tokens.idToken.toString();
+      const token = session.tokens.idToken
       const { email } = await fetchUserAttributes();
       const response = await fetch(
         `${
@@ -98,7 +98,7 @@ const PromptSettings = ({ courseName, course_id }) => {
     const fetchPrompt = async () => {
       try {
         const session = await fetchAuthSession();
-        const token = session.tokens.idToken.toString();
+        const token = session.tokens.idToken
         const response = await fetch(
           `${
             import.meta.env.VITE_API_ENDPOINT
@@ -129,7 +129,7 @@ const PromptSettings = ({ courseName, course_id }) => {
   const handleSave = async () => {
     try {
       const session = await fetchAuthSession();
-      const token = session.tokens.idToken.toString();
+      const token = session.tokens.idToken
       const { email } = await fetchUserAttributes();
 
       // Save current prompt and fetch previous prompts

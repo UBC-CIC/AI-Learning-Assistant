@@ -81,7 +81,7 @@ export const StudentHomepage = ({ setCourse }) => {
       const session = await fetchAuthSession();
       const { email } = await fetchUserAttributes();
 
-      var token = session.tokens.idToken.toString();
+      var token = session.tokens.idToken
       const response = await fetch(
         `${
           import.meta.env.VITE_API_ENDPOINT
@@ -151,7 +151,7 @@ export const StudentHomepage = ({ setCourse }) => {
       const session = await fetchAuthSession();
       const { email } = await fetchUserAttributes();
 
-      var token = session.tokens.idToken.toString();
+      var token = session.tokens.idToken
       let response;
       if (isInstructorAsStudent) {
         response = await fetch(

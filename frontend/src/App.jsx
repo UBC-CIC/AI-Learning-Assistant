@@ -37,20 +37,9 @@ Amplify.configure({
       userPoolClientId: import.meta.env.VITE_COGNITO_USER_POOL_CLIENT_ID,
       userPoolId: import.meta.env.VITE_COGNITO_USER_POOL_ID,
       allowGuestAccess: false,
-      cookieStorage: {
-        // Secure Cookie Configuration
-        domain: 'http://localhost:5173/', // Set your domain here
-        path: '/',
-        expires: 365, // Optional: Cookie expiration in days
-        secure: true, // Ensure cookie is sent only over HTTPS
-        sameSite: 'Strict', // Prevent CSRF attacks
-        httpOnly: true, // Prevent JavaScript from accessing the cookie
-      },
     },
   },
 });
-
-cognitoUserPoolsTokenProvider.setKeyValueStorage(new CookieStorage());
 
 function App() {
   const [user, setUser] = useState(null);

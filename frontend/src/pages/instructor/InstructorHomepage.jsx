@@ -126,7 +126,7 @@ const InstructorHomepage = () => {
     const fetchCourses = async () => {
       try {
         const session = await fetchAuthSession();
-        var token = session.tokens.idToken.toString();
+        var token = session.tokens.idToken
         const { email } = await fetchUserAttributes();
         const response = await fetch(
           `${

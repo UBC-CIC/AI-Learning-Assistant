@@ -22,7 +22,7 @@ const CourseDetails = () => {
     const fetchCourses = async () => {
       try {
         const session = await fetchAuthSession();
-        var token = session.tokens.idToken.toString();
+        var token = session.tokens.idToken
         const userAtrributes = await fetchUserAttributes();
         const email = userAtrributes.email;
         const response = await fetch(

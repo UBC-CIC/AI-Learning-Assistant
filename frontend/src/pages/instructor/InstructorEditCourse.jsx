@@ -168,7 +168,7 @@ const InstructorEditCourse = () => {
   const handleDelete = async () => {
     try {
       const session = await fetchAuthSession();
-      const token = session.tokens.idToken.toString();
+      const token = session.tokens.idToken
       const s3Response = await fetch(
         `${
           import.meta.env.VITE_API_ENDPOINT
@@ -465,7 +465,7 @@ const InstructorEditCourse = () => {
   };
   const getAuthSessionAndEmail = async () => {
     const session = await fetchAuthSession();
-    const token = session.tokens.idToken.toString();
+    const token = session.tokens.idToken
     const { email } = await fetchUserAttributes();
     return { token, email };
   };

@@ -1,10 +1,28 @@
 const { initializeConnection } = require("./lib.js");
-let { SM_DB_CREDENTIALS, RDS_PROXY_ENDPOINT } = process.env;
+let { SM_DB_CREDENTIALS, RDS_PROXY_ENDPOINT, USER_POOL } = process.env;
+const {
+  CognitoIdentityProviderClient,
+  AdminGetUserCommand,
+} = require("@aws-sdk/client-cognito-identity-provider");
 
 // SQL conneciton from global variable at lib.js
 let sqlConnection = global.sqlConnection;
 
 exports.handler = async (event) => {
+  const cognito_id = event.requestContext.authorizer.userId;
+  const client = new CognitoIdentityProviderClient();
+  const userAttributesCommand = new AdminGetUserCommand({
+    UserPoolId: USER_POOL,
+    Username: cognito_id,
+  });
+  const userAttributesResponse = await client.send(userAttributesCommand);
+
+  const emailAttr = userAttributesResponse.UserAttributes.find(
+    (attr) => attr.Name === "email"
+  );
+  const email = emailAttr ? emailAttr.Value : null;
+  console.log(email);
+
   const response = {
     statusCode: 200,
     headers: {

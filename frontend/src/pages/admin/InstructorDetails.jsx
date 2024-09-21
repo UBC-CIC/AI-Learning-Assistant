@@ -60,7 +60,7 @@ const InstructorDetails = ({ instructorData, onBack }) => {
     const fetchCourses = async () => {
       try {
         const session = await fetchAuthSession();
-        var token = session.tokens.idToken.toString();
+        var token = session.tokens.idToken
         const response = await fetch(
           `${import.meta.env.VITE_API_ENDPOINT}admin/courses`,
           {
@@ -86,7 +86,7 @@ const InstructorDetails = ({ instructorData, onBack }) => {
     const fetchActiveCourses = async () => {
       try {
         const session = await fetchAuthSession();
-        var token = session.tokens.idToken.toString();
+        var token = session.tokens.idToken
         const response = await fetch(
           `${
             import.meta.env.VITE_API_ENDPOINT
@@ -144,7 +144,7 @@ const InstructorDetails = ({ instructorData, onBack }) => {
   const handleDelete = async () => {
     try {
       const session = await fetchAuthSession();
-      var token = session.tokens.idToken.toString();
+      var token = session.tokens.idToken
       const response = await fetch(
         `${
           import.meta.env.VITE_API_ENDPOINT
@@ -185,7 +185,7 @@ const InstructorDetails = ({ instructorData, onBack }) => {
   const handleSave = async () => {
     try {
       const session = await fetchAuthSession();
-      const token = session.tokens.idToken.toString();
+      const token = session.tokens.idToken
       console.log(instructor);
       // Delete existing enrolments for the instructor
       const deleteResponse = await fetch(

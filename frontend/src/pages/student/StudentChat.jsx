@@ -5,7 +5,6 @@ import StudentMessage from "../../components/StudentMessage";
 import { fetchAuthSession } from "aws-amplify/auth";
 import { useNavigate } from "react-router-dom";
 import { fetchUserAttributes } from "aws-amplify/auth";
-
 const TypingIndicator = () => (
   <div className="flex items-center ml-28 mb-4">
     <div className="flex space-x-1">
@@ -89,7 +88,7 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
       try {
         const session = await fetchAuthSession();
         const { email } = await fetchUserAttributes();
-        const token = session.tokens.idToken.toString();
+        const token = session.tokens.idToken
         const response = await fetch(
           `${
             import.meta.env.VITE_API_ENDPOINT
@@ -142,7 +141,7 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
     try {
       const authSession = await fetchAuthSession();
       const { email } = await fetchUserAttributes();
-      const token = authSession.tokens.idToken.toString();
+      const token = authSession.tokens.idToken
       try {
         const response = await fetch(
           `${
@@ -210,7 +209,7 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
         return fetchAuthSession();
       })
       .then((authSession) => {
-        authToken = authSession.tokens.idToken.toString();
+        authToken = authSession.tokens.idToken
         return fetchUserAttributes();
       })
       .then(({ email }) => {
@@ -368,7 +367,7 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
     setIsAItyping(true);
     return fetchAuthSession()
       .then((session) => {
-        authToken = session.tokens.idToken.toString();
+        authToken = session.tokens.idToken
         return fetchUserAttributes();
       })
       .then(({ email }) => {
@@ -452,7 +451,7 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
     try {
       const authSession = await fetchAuthSession();
       const { email } = await fetchUserAttributes();
-      const token = authSession.tokens.idToken.toString();
+      const token = authSession.tokens.idToken
       const response = await fetch(
         `${
           import.meta.env.VITE_API_ENDPOINT
@@ -494,7 +493,7 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
     // remember to set is submitting true/false
     const authSession = await fetchAuthSession();
     const { email } = await fetchUserAttributes();
-    const token = authSession.tokens.idToken.toString();
+    const token = authSession.tokens.idToken
     try {
       const response = await fetch(
         `${
@@ -578,7 +577,7 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
     try {
       const authSession = await fetchAuthSession();
       const { email } = await fetchUserAttributes();
-      const token = authSession.tokens.idToken.toString();
+      const token = authSession.tokens.idToken
       const response = await fetch(
         `${
           import.meta.env.VITE_API_ENDPOINT

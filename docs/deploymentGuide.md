@@ -136,10 +136,7 @@ If you have trouble running the above command, try removing all the \ and run it
 7. For `Type` select `404 (Redirect)`
 8. Click `Save`
 
-
-### Step 3: Change CORS
-
-### Step 4: Visit Web App
+### Step 3: Visit Web App
 You can now navigate to the web app URL to see your application in action.
 
 ## Cleanup

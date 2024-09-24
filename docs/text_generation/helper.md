@@ -14,7 +14,7 @@ This script is designed to initialize and return a PGVector instance that intera
 ### Import Libraries <a name="import-libraries"></a>
 - **logging**: Used for logging script actions and errors.
 - **psycopg2**: For interacting with PostgreSQL databases.
-- **BedrockEmbeddings**: LangChain community embeddings instance for handling document embeddings.
+- **BedrockEmbeddings**: LangChain community embeddings instance for handling document embeddings. This project uses the Amazon Titan Text Embeddings V2 model to generate embeddings.
 - **PGVector**: PostgreSQL-based vector store for storing and retrieving vectorized documents.
 
 ### Helper Functions <a name="helper-functions"></a>

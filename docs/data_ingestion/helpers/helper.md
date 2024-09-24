@@ -18,7 +18,7 @@ This script is designed to interact with an AWS S3 bucket, process course-relate
 - **logging**: Used for logging script actions and errors.
 - **boto3**: AWS SDK for interacting with S3.
 - **psycopg2**: For interacting with PostgreSQL databases.
-- **BedrockEmbeddings**: LangChain community embeddings instance for handling document embeddings.
+- **BedrockEmbeddings**: LangChain community embeddings instance for handling document embeddings. This project uses the Amazon Titan Text Embeddings V2 model to generate embeddings.
 - **PGVector**: PostgreSQL-based vector store for storing and retrieving vectorized documents.
 - **SQLRecordManager**: For managing the document records in the database.
 - **process_documents**: A helper function from `processing.documents` to process documents and add them to the vector store.

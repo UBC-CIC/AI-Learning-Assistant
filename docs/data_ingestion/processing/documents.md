@@ -27,7 +27,7 @@ This script automates the process of extracting text from files stored in an AWS
 - **tqdm**: For progress bars during processing.
 - **langchain_postgres.PGVector**: Vector store for document storage.
 - **langchain_core.documents.Document**: Data structure for document objects.
-- **langchain_community.embeddings.BedrockEmbeddings**: Handles the embedding process for text data.
+- **langchain_community.embeddings.BedrockEmbeddings**: Handles the embedding process for text data. This project uses the Amazon Titan Text Embeddings V2 model to generate embeddings.
 - **langchain_experimental.text_splitter.SemanticChunker**: Splits text semantically.
 
 ### AWS Configuration and Setup <a name="aws-configuration-and-setup"></a>

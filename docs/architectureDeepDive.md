@@ -10,7 +10,7 @@
 2. Amplify integrates with the backend API Gateway.
 3. Instructors can upload course materials to the application, which are stored in an S3 bucket using a pre-signed upload URL.
 4. Adding a new course file to the S3 bucket triggers the data ingestion workflow, with a lambda function extracting the text from the file.
-5. The lambda function embeds the text into vectors using Amazon Bedrock.
+5. The lambda function embeds the text into vectors using Amazon Bedrock. This project uses the Amazon Titan Text Embeddings V2 model to generate embeddings.
 6. The lambda function stores the vectors in the PostgreSQL database.
 7. Users can perform course management/access actions by sending an API request which invokes a lambda function.
 8. This lambda function interacts with Amazon RDS.

@@ -8,7 +8,7 @@ Once you have deployed the solution, the following user guide will help you navi
 | Index    | Description |
 | -------- | ------- |
 | [Administrator View](#admin-view)  | How the Admnistrator views the project | 
-| [Intructor View](#intructor-view)  | How the Instructor views the project |
+| [Instructor View](#instructor-view)  | How the Instructor views the project |
 | [Student View](#student-view)  | How the Student views the project |
 
 ## Administrator View

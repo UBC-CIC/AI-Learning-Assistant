@@ -67,7 +67,7 @@ Clicking the "CREATE NEW MODULE" button leads to a page where the instructor can
 ![image](./images/instructor-create-module.png)
 
 Clicking the "EDIT" button beside a course leads to a page similar to creating a module. The module's name and concept can be changed here. The instructor can also remove previous files from the module while adding new ones. Each file in the module can be downloaded on the instructor's device. The "SAVE MODULE" button here saves the changes made to the module and the "DELETE MODULE" deletes the entire module:
-![image](./images/instructor-create-module.png)
+![image](./images/instructor-edit-module.png)
 
 Clicking the "Prompt Settings" tab leads to a page where the instructor can change the prompt applied to the LLM for this specific course. Upon applying a new prompt, the instructor can also scroll to previous prompts the course used:
 ![image](./images/instructor-prompt-settings.png)

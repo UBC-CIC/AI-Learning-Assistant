@@ -1183,7 +1183,59 @@ exports.handler = async (event) => {
           });
         }
         break;
+      case "GET /instructor/course_messages":
+        if (
+          event.queryStringParameters != null &&
+          event.queryStringParameters.instructor_email &&
+          event.queryStringParameters.course_id
+        ) {
+          const { instructor_email, course_id } = event.queryStringParameters;
 
+          try {
+            // Get the instructor user_id
+            const instructorResult = await sqlConnection`
+                SELECT user_id FROM "Users" WHERE user_email = ${instructor_email} LIMIT 1;
+              `;
+            const instructorId = instructorResult[0]?.user_id;
+            if (!instructorId) {
+              response.statusCode = 404;
+              response.body = JSON.stringify({ error: "Instructor not found" });
+              break;
+            }
+            // Query to fetch messages, session, and other related data
+            const data = await sqlConnection`
+              SELECT u.user_id, cm.module_name, s.session_id, m.message_content AS message, 
+                CASE 
+                  WHEN sm.module_score = 100 THEN 'complete' 
+                  ELSE 'incomplete' 
+                END AS competency_status,
+                m.time_sent AS timestamp
+              FROM "Messages" m
+              JOIN "Sessions" s ON m.session_id = s.session_id
+              JOIN "Student_Modules" sm ON s.student_module_id = sm.student_module_id
+              JOIN "Course_Modules" cm ON sm.course_module_id = cm.module_id
+              JOIN "Course_Concepts" cc ON cm.concept_id = cc.concept_id
+              JOIN "Enrolments" e ON sm.enrolment_id = e.enrolment_id
+              JOIN "Users" u ON e.user_id = u.user_id
+              WHERE cc.course_id = ${course_id}
+              ORDER BY u.user_id, cm.module_name, s.session_id, m.time_sent;
+            `;
+
+            response.statusCode = 200;
+            response.body = JSON.stringify(data);
+          } catch (err) {
+            response.statusCode = 500;
+            console.error(err);
+            response.body = JSON.stringify({ error: "Internal server error" });
+          }
+        } else {
+          response.statusCode = 400;
+          response.body = JSON.stringify({
+            error:
+              "instructor_email, student_email, and course_id are required",
+          });
+        }
+        break;
       default:
         throw new Error(`Unsupported route: "${pathData}"`);
     }

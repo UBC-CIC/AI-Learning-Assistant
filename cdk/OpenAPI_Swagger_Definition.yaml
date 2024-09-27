@@ -2499,6 +2499,82 @@ paths:
         passthroughBehavior: "when_no_match"
         httpMethod: "POST"
         type: "aws_proxy"
+  /instructor/student_modules_messages:
+    options:
+      summary: CORS support
+      description: |
+        Enable CORS by returning correct headers
+      responses:
+        200:
+          $ref: "#/components/responses/Success"
+      x-amazon-apigateway-integration:
+        type: mock
+        requestTemplates:
+          application/json: |
+            {
+              "statusCode" : 200
+            }
+        responses:
+          default:
+            statusCode: "200"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key'"
+              method.response.header.Access-Control-Allow-Methods: "'*'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+            responseTemplates:
+              application/json: |
+                {}
+    get:
+      tags:
+        - Instructor
+      summary: Retrieve all conversations for a student for a specific module in a course
+      operationId: instructor_student_modules_messages_GET
+      parameters:
+        - in: query
+          name: course_id
+          required: true
+          schema:
+            type: string
+          description: ID of the course
+        - in: query
+          name: student_email
+          required: true
+          schema:
+            type: string
+          description: Email of the student
+      responses:
+        "200":
+          description: Successfully retrieved student messages
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  messages:
+                    type: array
+                    description: A list of student messages for the specified module
+                    items:
+                      type: object
+                      properties:
+                        timestamp:
+                          type: string
+                          format: date-time
+                          description: Timestamp of the message
+                        message:
+                          type: string
+                          description: Content of the message
+        "400":
+          description: Bad Request - Missing query parameters
+        "500":
+          description: Internal Server Error
+      security:
+        - instructorAuthorizer: []
+      x-amazon-apigateway-integration:
+        uri:
+          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${instructorFunction.Arn}/invocations"
+        passthroughBehavior: "when_no_match"
+        httpMethod: "POST"
+        type: "aws_proxy"
   /instructor/prompt:
     options:
       summary: CORS support

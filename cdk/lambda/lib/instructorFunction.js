@@ -1092,6 +1092,97 @@ exports.handler = async (event) => {
             "course_id or instructor_email query parameter is required";
         }
         break;
+      case "GET /instructor/student_modules_messages":
+        if (
+          event.queryStringParameters != null &&
+          event.queryStringParameters.student_email &&
+          event.queryStringParameters.course_id
+        ) {
+          const studentEmail = event.queryStringParameters.student_email;
+          const courseId = event.queryStringParameters.course_id;
+
+          try {
+            // Step 1: Get the user ID from the student email
+            const userResult = await sqlConnection`
+                  SELECT user_id
+                  FROM "Users"
+                  WHERE user_email = ${studentEmail}
+                  LIMIT 1;
+              `;
+
+            const userId = userResult[0]?.user_id;
+
+            if (!userId) {
+              response.statusCode = 404;
+              response.body = JSON.stringify({
+                error: "Student not found",
+              });
+              break;
+            }
+
+            // Step 2: Get all the modules the student has taken for the given course_id, ordered by concept and module
+            const studentModules = await sqlConnection`
+              SELECT cm.module_id, cm.module_name, cc.concept_name, cc.concept_number, cm.module_number
+              FROM "Student_Modules" sm
+              JOIN "Course_Modules" cm ON sm.course_module_id = cm.module_id
+              JOIN "Course_Concepts" cc ON cm.concept_id = cc.concept_id
+              JOIN "Enrolments" e ON sm.enrolment_id = e.enrolment_id
+              WHERE e.user_id = ${userId} AND e.course_id = ${courseId}
+              ORDER BY cc.concept_number, cm.module_number;
+            `;
+
+            const result = {};
+
+            // Step 3: Iterate through the modules and get sessions for each module
+            for (const module of studentModules) {
+              const sessions = await sqlConnection`
+                SELECT s.session_id, s.session_name
+                FROM "Sessions" s
+                WHERE s.student_module_id IN (
+                  SELECT student_module_id 
+                  FROM "Student_Modules" 
+                  WHERE course_module_id = ${module.module_id} AND enrolment_id IN (
+                    SELECT enrolment_id FROM "Enrolments" WHERE user_id = ${userId} AND course_id = ${courseId}
+                  )
+                );
+              `;
+
+              result[module.module_name] = [];
+
+              // Step 4: For each session, retrieve the messages
+              for (const session of sessions) {
+                const messages = await sqlConnection`
+                  SELECT student_sent, message_content, time_sent
+                  FROM "Messages"
+                  WHERE session_id = ${session.session_id}
+                  ORDER BY time_sent ASC;
+                `;
+
+                result[module.module_name].push({
+                  sessionName: session.session_name,
+                  messages: messages.map((msg) => ({
+                    student_sent: msg.student_sent,
+                    message_content: msg.message_content,
+                    time_sent: msg.time_sent,
+                  })),
+                });
+              }
+            }
+
+            // Step 5: Return the response
+            response.body = JSON.stringify(result);
+          } catch (err) {
+            console.error(err);
+            response.statusCode = 500;
+            response.body = JSON.stringify({ error: "Internal server error" });
+          }
+        } else {
+          response.statusCode = 400;
+          response.body = JSON.stringify({
+            error: "student_email and course_id are required",
+          });
+        }
+        break;
 
       default:
         throw new Error(`Unsupported route: "${pathData}"`);

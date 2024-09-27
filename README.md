@@ -10,6 +10,7 @@ This prototype explores how Large Language Models (LLMs) can enhance education b
 | [User Guide](#user-guide)                           | The working solution                                    |
 | [Directories](#directories)                         | General project directory structure                     |
 | [RAG Documentation](#rag-documentation)             | Documentation on how the project uses RAG               |
+| [API Documentation](#api-documentation)             | Documentation on the API the project uses               |
 | [Changelog](#changelog)                             | Any changes post publish                                |
 | [Credits](#credits)                                 | Meet the team behind the solution                       |
 | [License](#license)                                 | License details                                         |
@@ -73,6 +74,10 @@ Please refer to the [Web App User Guide](./docs/userGuide.md) for instructions o
 ## RAG Documentation
 
 Here you can learn about how this project performs retrieval-augmented generation (RAG). For a deeper dive into how we use Large Language Models (LLMs) to generate text, please refer to the [Text Generation](./docs/text_generation) folder. For more knowledge on how data is consumed and interpreted for the LLM, please refer to the [Data Ingestion](./docs/data_ingestion) folder.
+
+## API Documentation
+
+Here you can learn about the API the project uses: [API Documentation](./docs/api-documentation.pdf).
 
 ## Optional Modifications
 

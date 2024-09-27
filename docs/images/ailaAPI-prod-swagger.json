@@ -410,13 +410,13 @@
             "examples": {
               "application/json": [
                 {
-                  "course_id": "course-1",
+                  "course_id": "1a2b3c4d-5e6f-7g8h-9i0j-k1l2m3n4o5p6",
                   "course_name": "Introduction to Computer Science",
                   "course_department": "CS",
                   "course_number": "101"
                 },
                 {
-                  "course_id": "course-2",
+                  "course_id": "1a2b3c4d-5e6f-7g8h-9i0j-k1l2m3n4o5p7",
                   "course_name": "Data Structures",
                   "course_department": "CS",
                   "course_number": "201"
@@ -752,7 +752,7 @@
             "examples": {
               "application/json": [
                 {
-                  "module_id": "abc123",
+                  "module_id": "1a2b3c4d-5e6f-7g8h-9i0j-k1l2m3n4o5p6",
                   "module_name": "Introduction to Programming",
                   "concept_number": 1,
                   "module_number": 1,
@@ -762,7 +762,7 @@
                   "perfect_score_percentage": 20.0
                 },
                 {
-                  "module_id": "def456",
+                  "module_id": "1222222-5e6f-7g8h-9i0j-k1l2m3n4o5p6",
                   "module_name": "Data Structures",
                   "concept_number": 2,
                   "module_number": 2,
@@ -898,14 +898,14 @@
             "examples": {
               "application/json": [
                 {
-                  "course_id": "c123",
+                  "course_id": "1a2b3c4d-5e6f-7g8h-9i0j-k1l2m3n4o5p6",
                   "course_name": "Introduction to Computer Science",
                   "course_description": "An introductory course on computer science principles.",
                   "course_start_date": "2024-01-15",
                   "course_end_date": "2024-05-15"
                 },
                 {
-                  "course_id": "c456",
+                  "course_id": "1a2b3c4d-5e6f-ssdf-7g8h-9i0j-k1l2m3n4o5p6",
                   "course_name": "Advanced Algorithms",
                   "course_description": "A course focused on advanced algorithmic techniques.",
                   "course_start_date": "2024-02-01",
@@ -1552,7 +1552,7 @@
             },
             "examples": {
               "application/json": {
-                "concept_id": "uuid-of-concept",
+                "concept_id": "1a2b3c4d-5e6f-7g8h-9i0j-k1l2m3n4o5p6",
                 "concept_name": "Updated Concept Name",
                 "concept_number": "2"
               }
@@ -2002,7 +2002,7 @@
             },
             "examples": {
               "application/json": {
-                "course_access_code": "ABC123"
+                "course_access_code": "1a2b3c4d-5e6f-7g8h-9i0j-k1l2m3n4o5p6"
               }
             }
           },
@@ -2401,7 +2401,7 @@
             },
             "examples": {
               "application/json": {
-                "course_id": "course123",
+                "course_id": "1a2b3c4d-5e6f-7g8h-9i0j-k1l2m3n4o5p6",
                 "system_prompt": "New system prompt for the course."
               }
             }
@@ -2689,11 +2689,11 @@
             "examples": {
               "application/json": [
                 {
-                  "course_id": "12345",
+                  "course_id": "1a2b3c4d-5e6f-7g8h-9i0j-k1l2m3n4o5p6",
                   "course_name": "Introduction to Programming",
                   "course_department": "Computer Science",
                   "course_number": 101,
-                  "course_access_code": "ABC123",
+                  "course_access_code": "1a2b3c4d-5e6f-7g8h-9i0j-k1l2m3n4o5p6",
                   "course_student_access": true,
                   "system_prompt": "This is an introductory course."
                 }
@@ -3325,12 +3325,12 @@
             "examples": {
               "application/json": [
                 {
-                  "course_id": "course-123",
+                  "course_id": "1a2b3c4d-5e6f-7g8h-9i0j-k1l2m3n4o5p6",
                   "course_name": "Introduction to Computer Science",
                   "course_student_access": true
                 },
                 {
-                  "course_id": "course-456",
+                  "course_id": "1a22344d-5e6f-7g8h-9i0j-k1l2m3n4o5p6",
                   "course_name": "Calculus I",
                   "course_student_access": true
                 }
@@ -3433,23 +3433,23 @@
             "examples": {
               "application/json": [
                 {
-                  "concept_id": "concept-001",
+                  "concept_id": "1a2b3c4d-5e6f-7g8h-9i0j-k1l2m3n4o5p6",
                   "concept_name": "Introduction to Programming",
-                  "module_id": "module-001",
+                  "module_id": "555555-5e6f-7g8h-9i0j-k1l2m3n4o5p6",
                   "module_name": "Getting Started",
                   "module_number": 1,
-                  "student_module_id": "student-module-001",
+                  "student_module_id": "122222d-5e6f-7g8h-9i0j-k1l2m3n4o5p6",
                   "module_score": 85,
                   "last_accessed": "2024-09-26T10:30:00Z",
                   "module_context_embedding": [0.5, 0.2, 0.8]
                 },
                 {
-                  "concept_id": "concept-001",
+                  "concept_id": "1a2b3214d-5e6f-7g8h-9i0j-k1l2m3n4o5p6",
                   "concept_name": "Introduction to Programming",
-                  "module_id": "module-002",
+                  "module_id": "44444444-5e6f-7g8h-9i0j-k1l2m3n4o5p6",
                   "module_name": "Control Structures",
                   "module_number": 2,
-                  "student_module_id": "student-module-002",
+                  "student_module_id": "1a2b3c4d-5222f-7g8h-9i0j-k1l2m3n4o5p6",
                   "module_score": null,
                   "last_accessed": null,
                   "module_context_embedding": [0.1, 0.3, 0.7]
@@ -3580,8 +3580,8 @@
             },
             "examples": {
               "application/json": {
-                "message_id": "message-001",
-                "session_id": "session-001",
+                "message_id": "1a2b3c4d-5e6f-7g8h-9i0j-k1l2m3n4o5p6",
+                "session_id": "1a2bdsfgd-5e6f-7g8h-9i0j-k1l2m3n4o5p6",
                 "student_sent": false,
                 "message_content": "This is a sample AI message.",
                 "time_sent": "2024-09-26T10:30:00Z"
@@ -3711,8 +3711,8 @@
             },
             "examples": {
               "application/json": {
-                "message_id": "message-002",
-                "session_id": "session-002",
+                "message_id": "1a2b3c4d-5e6f-7g8h-9i0j-k1l2m3n4o5p6",
+                "session_id": "1sdfsssd-5e6f-7g8h-9i0j-k1l2m3n4o5p6",
                 "student_sent": true,
                 "message_content": "This is a sample message.",
                 "time_sent": "2024-09-26T10:30:00Z"
@@ -3827,8 +3827,8 @@
             },
             "examples": {
               "application/json": {
-                "session_id": "session-001",
-                "student_module_id": "student-module-001",
+                "session_id": "1a2b3c4d-5e6f-7g8h-9i0j-k1l2m3n4o5p6",
+                "student_module_id": "1a2b6ddd-5e6f-7g8h-9i0j-k1l2m3n4o5p6",
                 "session_name": "Introduction to Programming",
                 "session_context_embeddings": [],
                 "last_accessed": "2024-09-26T10:30:00Z"
@@ -4243,15 +4243,15 @@
             "examples": {
               "application/json": [
                 {
-                  "message_id": "1",
-                  "session_id": "abc123",
+                  "message_id": "1a2b3c4d-5e6f-7g8h-9i0j-k1l2m3n4o5p6",
+                  "session_id": "112222-5e6f-7g8h-9i0j-k1l2m3n4o5p6",
                   "student_sent": true,
                   "message_content": "Hello, how can I help?",
                   "time_sent": "2024-09-26T10:00:00Z"
                 },
                 {
-                  "message_id": "2",
-                  "session_id": "abc123",
+                  "message_id": "5563333-5e6f-7g8h-9i0j-k1l2m3n4o5p6",
+                  "session_id": "1a2234234d-5e6f-7g8h-9i0j-k1l2m3n4o5p6",
                   "student_sent": false,
                   "message_content": "Please provide more details.",
                   "time_sent": "2024-09-26T10:01:00Z"

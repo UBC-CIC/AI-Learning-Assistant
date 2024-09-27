@@ -258,7 +258,6 @@ const StudentDetails = () => {
           sx={{
             width: "100%",
             overflow: "auto",
-            marginTop: 4,
             padding: 2,
             overflowY: "scroll",
           }}

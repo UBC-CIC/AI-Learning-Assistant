@@ -141,7 +141,6 @@ export const CourseView = ({ course, setModule, setCourse }) => {
           setData(data);
           setConcepts(getUniqueConceptNames(data));
           setLoading(false);
-          console.log(data);
         } else {
           console.error("Failed to fetch name:", response.statusText);
         }

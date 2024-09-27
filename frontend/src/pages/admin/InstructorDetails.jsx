@@ -186,8 +186,6 @@ const InstructorDetails = ({ instructorData, onBack }) => {
     try {
       const session = await fetchAuthSession();
       const token = session.tokens.idToken
-      console.log(instructor);
-      // Delete existing enrolments for the instructor
       const deleteResponse = await fetch(
         `${
           import.meta.env.VITE_API_ENDPOINT

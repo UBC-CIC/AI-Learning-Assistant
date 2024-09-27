@@ -163,7 +163,6 @@ const StudentDetails = () => {
         );
         if (response.ok) {
           const data = await response.json();
-          console.log("aman", data);
           setSessions(data);
           setTabs(Object.keys(data));
         } else {

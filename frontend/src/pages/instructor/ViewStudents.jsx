@@ -1,7 +1,6 @@
 import {
   Typography,
   Box,
-  AppBar,
   Toolbar,
   Table,
   TableBody,
@@ -14,7 +13,6 @@ import {
   Button,
   TableFooter,
   TablePagination,
-  OutlinedInput,
 } from "@mui/material";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";

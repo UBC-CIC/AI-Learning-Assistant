@@ -1,30 +1,44 @@
-import { useEffect, useState, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useLocation } from "react-router-dom";
 import { fetchAuthSession, fetchUserAttributes } from "aws-amplify/auth";
 import { toast, ToastContainer } from "react-toastify";
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import "react-toastify/dist/ReactToastify.css";
 import PageContainer from "../Container";
 import {
   Box,
   Typography,
   Divider,
-  Switch,
   TextField,
   Button,
   Paper,
-  IconButton
+  IconButton,
+  Tabs,
+  Tab,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
 } from "@mui/material";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 
 const handleBackClick = () => {
   window.history.back();
 };
 
 const formatMessages = (messages) => {
+  // Define the specific message to highlight
+  const masteryMessage =
+    "Congratulations! You have achieved mastery over this module! Please try other modules to continue your learning journey! :)";
+
   // Helper function to format date as YY/MM/DD
   const formatDate = (dateString) => {
     const date = new Date(dateString);
-    if (isNaN(date.getTime())) return "Invalid Date"; 
+    if (isNaN(date.getTime())) return "Invalid Date";
 
     return date
       .toLocaleDateString(undefined, {
@@ -51,7 +65,13 @@ const formatMessages = (messages) => {
       const messagesForDate = groupedMessages[date]
         .map((message) => {
           const speaker = message.student_sent ? "Student" : "LLM";
-          return `${speaker}: ${message.message_content.trim()}`;
+          const messageContent = message.message_content.trim();
+          // Check for the specific LLM message to highlight
+          const formattedMessage =
+            !message.student_sent && messageContent === masteryMessage
+              ? `STUDENT ACHIEVED COMPETENCY\n${speaker}: ${messageContent}`
+              : `${speaker}: ${messageContent}`;
+          return formattedMessage;
         })
         .join("\n");
 
@@ -66,19 +86,71 @@ const StudentDetails = () => {
   const { studentId } = useParams();
   const location = useLocation();
   const { course_id, student } = location.state;
-  const [unenroll, setUnenroll] = useState(false);
-  const [chatHistory, setChatHistory] = useState(`loading...`);
   const textFieldRef = useRef(null);
+  const [tabs, setTabs] = useState([]);
+  const [sessions, setSessions] = useState({
+    "Tab 1": [
+      {
+        sessionName: "Session 1",
+        messages: [
+          {
+            student_sent: true,
+            message_content: "Hello!",
+            time_sent: "2024-09-25T14:48:00.000Z",
+          },
+          {
+            student_sent: false,
+            message_content: "Hi there!",
+            time_sent: "2024-09-25T14:50:00.000Z",
+          },
+        ],
+      },
+      {
+        sessionName: "Session 2",
+        messages: [
+          {
+            student_sent: true,
+            message_content: "How are you?",
+            time_sent: "2024-09-26T10:30:00.000Z",
+          },
+          {
+            student_sent: false,
+            message_content: "Doing well, thanks!",
+            time_sent: "2024-09-26T10:32:00.000Z",
+          },
+        ],
+      },
+    ],
+    "Tab 2": [
+      {
+        sessionName: "Session 3",
+        messages: [
+          {
+            student_sent: true,
+            message_content: "What is the next task?",
+            time_sent: "2024-09-27T08:15:00.000Z",
+          },
+          {
+            student_sent: false,
+            message_content: "The next task is to complete module 3.",
+            time_sent: "2024-09-27T08:20:00.000Z",
+          },
+        ],
+      },
+    ],
+  });
+  const [activeTab, setActiveTab] = useState(0);
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   useEffect(() => {
     const fetchHistory = async () => {
       try {
         const session = await fetchAuthSession();
-        const token = session.tokens.idToken
+        const token = session.tokens.idToken;
         const response = await fetch(
           `${
             import.meta.env.VITE_API_ENDPOINT
-          }instructor/view_student_messages?course_id=${encodeURIComponent(
+          }instructor/student_modules_messages?course_id=${encodeURIComponent(
             course_id
           )}&student_email=${encodeURIComponent(student.email)}`,
           {
@@ -91,8 +163,8 @@ const StudentDetails = () => {
         );
         if (response.ok) {
           const data = await response.json();
-          const formattedMessages = formatMessages(data);
-          setChatHistory(formattedMessages);
+          setSessions(data);
+          setTabs(Object.keys(data));
         } else {
           console.error("Failed to fetch students:", response.statusText);
         }
@@ -102,39 +174,18 @@ const StudentDetails = () => {
     };
 
     fetchHistory();
-  }, [course_id, student.email]); 
+  }, [course_id, student.email]);
 
   useEffect(() => {
     if (textFieldRef.current) {
       textFieldRef.current.scrollTop = textFieldRef.current.scrollHeight;
     }
-  }, [chatHistory]); 
+  }, [sessions]);
 
-  const handleToggle = () => {
-    setUnenroll(!unenroll);
-  };
-
-  const handleUnenroll = () => {
-    if (unenroll) {
-      deleteStudent();
-    } else {
-      toast.success("Saved Successfully", {
-        position: "top-center",
-        autoClose: 1000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        theme: "colored",
-      });
-    }
-  };
-
-  const deleteStudent = async () => {
+  const handleUnenroll = async () => {
     try {
       const session = await fetchAuthSession();
-      const token = session.tokens.idToken
+      const token = session.tokens.idToken;
       const { email } = await fetchUserAttributes();
       const response = await fetch(
         `${
@@ -184,6 +235,14 @@ const StudentDetails = () => {
     }
   };
 
+  const handleDialogOpen = () => {
+    setDialogOpen(true);
+  };
+
+  const handleDialogClose = () => {
+    setDialogOpen(false);
+  };
+
   return (
     <>
       <PageContainer>
@@ -198,7 +257,6 @@ const StudentDetails = () => {
           sx={{
             width: "100%",
             overflow: "auto",
-            marginTop: 4,
             padding: 2,
             overflowY: "scroll",
           }}
@@ -206,48 +264,107 @@ const StudentDetails = () => {
           <Box mb={2} sx={{ flexGrow: 1, p: 3, textAlign: "left", mt: 6 }}>
             <Typography variant="h5">Student Name: {studentId}</Typography>
             <Divider sx={{ my: 2 }} />
-            <Typography variant="body1">Email: {student.email}</Typography>
-            <Box sx={{ display: "flex", alignItems: "center" }}>
-              <Typography variant="body1">Unenroll from Course:</Typography>
-              <Switch checked={unenroll} onChange={handleToggle} />
-            </Box>
-            <TextField
-              label="Chat History"
-              variant="outlined"
-              fullWidth
-              multiline
-              rows={10}
-              value={chatHistory}
-              InputProps={{
-                readOnly: true,
-              }}
-              sx={{ my: 2 }}
-              inputRef={textFieldRef} 
-            />
+            <Typography sx={{ mb: 4 }} variant="body1">
+              Email: {student.email}
+            </Typography>
+
+            {/* Unenroll Button */}
             <Button
-              onClick={() => {
-                handleUnenroll();
-              }}
+              onClick={handleDialogOpen} // Open dialog on button click
+              sx={{ marginBottom: 6 }}
               variant="contained"
               color="primary"
             >
-              Save
+              Unenroll Student
             </Button>
+
+            {/* Dialog Component */}
+            <Dialog
+              open={dialogOpen}
+              onClose={handleDialogClose}
+              aria-labelledby="confirm-unenroll-dialog"
+            >
+              <DialogTitle id="confirm-unenroll-dialog">
+                Confirm Unenroll
+              </DialogTitle>
+              <DialogContent>
+                <DialogContentText>
+                  Are you sure you want to unenroll the student from this
+                  course?
+                </DialogContentText>
+              </DialogContent>
+              <DialogActions>
+                <Button onClick={handleDialogClose} color="primary">
+                  Cancel
+                </Button>
+                <Button
+                  onClick={() => {
+                    handleDialogClose();
+                    handleUnenroll(); // Call unenroll function on confirm
+                  }}
+                  color="red"
+                >
+                  Confirm
+                </Button>
+              </DialogActions>
+            </Dialog>
+
+            <Typography variant="h5" sx={{ mb: 2 }}>
+              Chat History:
+            </Typography>
+
+            <Box
+              sx={{
+                borderBottom: 1,
+                borderColor: "divider",
+                overflowX: "auto",
+              }}
+            >
+              <Tabs
+                value={activeTab}
+                onChange={(_, newValue) => setActiveTab(newValue)}
+                variant="scrollable"
+                scrollButtons="auto"
+              >
+                {tabs.map((tabName, index) => (
+                  <Tab key={index} label={tabName} />
+                ))}
+              </Tabs>
+            </Box>
+
+            {/* Render accordion for each session */}
+            {sessions[tabs[activeTab]]?.length > 0 ? (
+              sessions[tabs[activeTab]].map((session, index) => (
+                <Accordion key={index}>
+                  <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                    <Typography>{session.sessionName}</Typography>
+                  </AccordionSummary>
+                  <AccordionDetails>
+                    <TextField
+                      label="Chat History"
+                      variant="outlined"
+                      fullWidth
+                      multiline
+                      rows={10}
+                      value={formatMessages(session.messages)}
+                      InputProps={{
+                        readOnly: true,
+                      }}
+                      sx={{ my: 2 }}
+                      inputRef={textFieldRef}
+                    />
+                  </AccordionDetails>
+                </Accordion>
+              ))
+            ) : (
+              <Typography sx={{ ml: 2, mt: 4 }} variant="body1">
+                Student has not entered the module yet.
+              </Typography>
+            )}
           </Box>
         </Paper>
-        <ToastContainer
-          position="top-center"
-          autoClose={5000}
-          hideProgressBar={false}
-          newestOnTop={false}
-          closeOnClick
-          rtl={false}
-          pauseOnFocusLoss
-          draggable
-          pauseOnHover
-          theme="colored"
-        />
       </PageContainer>
+      <ToastContainer />
     </>
   );
 };

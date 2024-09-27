@@ -24,6 +24,23 @@ import {
   Legend,
 } from "recharts";
 
+
+function courseTitleCase(str) {
+  if (typeof str !== 'string') {
+    return str;
+  }
+  const words = str.split(' ');
+  return words.map((word, index) => {
+    if (index === 0) {
+      return word.toUpperCase(); // First word entirely in uppercase
+    } else {
+      return word.charAt(0).toUpperCase() + word.slice(1); // Only capitalize first letter, keep the rest unchanged
+    }
+  }).join(' ');
+}
+
+
+
 function titleCase(str) {
   if (typeof str !== "string") {
     return str;
@@ -98,7 +115,7 @@ const InstructorAnalytics = ({ courseName, course_id }) => {
         variant="h6"
         gutterBottom
       >
-        {titleCase(courseName)}
+        {courseTitleCase(courseName)}
       </Typography>
       <Paper>
         <Box mb={4}>

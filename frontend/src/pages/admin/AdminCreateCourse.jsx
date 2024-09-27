@@ -145,7 +145,6 @@ export const AdminCreateCourse = ({ setSelectedComponent }) => {
       if (response.ok) {
         const data = await response.json();
         const { course_id } = data;   
-        console.log('selectedInstructors',selectedInstructors)     
         const enrollPromises = selectedInstructors.map((instructor) =>
           fetch(
             `${

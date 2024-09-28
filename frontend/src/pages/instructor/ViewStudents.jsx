@@ -267,7 +267,7 @@ export const ViewStudents = ({ courseName, course_id }) => {
               fetchCourseMessages();
             }}
           >
-            Download All Data
+            Download Classroom Chatlog
           </Button>
         </Box>
         <Paper sx={{ width: "170%", overflow: "hidden", marginTop: 2 }}>

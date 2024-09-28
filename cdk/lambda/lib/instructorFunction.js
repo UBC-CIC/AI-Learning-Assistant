@@ -1204,21 +1204,37 @@ exports.handler = async (event) => {
             }
             // Query to fetch messages, session, and other related data
             const data = await sqlConnection`
-              SELECT u.user_id, cm.module_name, s.session_id, m.message_content AS message, 
+              SELECT 
+                u.user_id, 
+                cm.module_name, 
+                cc.concept_name, -- Added concept name
+                s.session_id, 
+                m.message_content AS message, 
+                m.student_sent AS "sent by student", -- Renamed to "sent by student"
                 CASE 
                   WHEN sm.module_score = 100 THEN 'complete' 
                   ELSE 'incomplete' 
                 END AS competency_status,
                 m.time_sent AS timestamp
-              FROM "Messages" m
-              JOIN "Sessions" s ON m.session_id = s.session_id
-              JOIN "Student_Modules" sm ON s.student_module_id = sm.student_module_id
-              JOIN "Course_Modules" cm ON sm.course_module_id = cm.module_id
-              JOIN "Course_Concepts" cc ON cm.concept_id = cc.concept_id
-              JOIN "Enrolments" e ON sm.enrolment_id = e.enrolment_id
-              JOIN "Users" u ON e.user_id = u.user_id
-              WHERE cc.course_id = ${course_id}
-              ORDER BY u.user_id, cm.module_name, s.session_id, m.time_sent;
+              FROM 
+                "Messages" m
+              JOIN 
+                "Sessions" s ON m.session_id = s.session_id
+              JOIN 
+                "Student_Modules" sm ON s.student_module_id = sm.student_module_id
+              JOIN 
+                "Course_Modules" cm ON sm.course_module_id = cm.module_id
+              JOIN 
+                "Course_Concepts" cc ON cm.concept_id = cc.concept_id
+              JOIN 
+                "Enrolments" e ON sm.enrolment_id = e.enrolment_id
+              JOIN 
+                "Users" u ON e.user_id = u.user_id
+              WHERE 
+                cc.course_id = ${course_id}
+              ORDER BY 
+                u.user_id, cm.module_name, s.session_id, m.time_sent;
+
             `;
 
             response.statusCode = 200;

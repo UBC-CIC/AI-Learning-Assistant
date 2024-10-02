@@ -91,7 +91,7 @@ For example,
 ```
 aws secretsmanager create-secret \
     --name AILASecrets \
-    --secret-string "{\"DB_Username\":\"AILASecrets\"}"\
+    --secret-string '{\"DB_Username\":\"AILASecrets\"}'\
     --profile <your-profile-name>
 ```
 ### Step 3: CDK Deployment

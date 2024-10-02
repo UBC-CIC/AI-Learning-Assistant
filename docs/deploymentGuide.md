@@ -63,7 +63,7 @@ You would have to supply your GitHub personal access token you created eariler w
 ```
 aws secretsmanager create-secret \
     --name github-personal-access-token \
-    --secret-string "{\"my-github-token\":\"<YOUR-GITHUB-TOKEN>\"}"\
+    --secret-string '{\"my-github-token\":\"<YOUR-GITHUB-TOKEN>\"}'\
     --profile <YOUR-PROFILE-NAME>
 ```
 
@@ -82,7 +82,7 @@ You would have to supply a custom database username when deploying the solution 
 ```
 aws secretsmanager create-secret \
     --name AILASecrets \
-    --secret-string "{\"DB_Username\":\"<YOUR-DB-USERNAME>\"}"\
+    --secret-string '{\"DB_Username\":\"<YOUR-DB-USERNAME>\"}'\
     --profile <your-profile-name>
 ```
 

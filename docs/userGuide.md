@@ -75,6 +75,9 @@ Clicking the "Prompt Settings" tab leads to a page where the instructor can chan
 Clicking the "View Students" tab leads to a page where the instructor can view all the students in this course. The "Access Code" of the course is a special code that allows students to join the course. The instructor will have to send this code to them. The instructor can also generate a new code on this page:
 ![image](./images/instructor-view-students.png)
 
+The instructor can also see each student's chat log organized by module and session name by clicking on the student's row in the table
+
+
 ## Student View
 Upon logging in as an student, they see the following home page:
 ![image](./images/student-home-page.png)

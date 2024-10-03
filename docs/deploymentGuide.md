@@ -13,8 +13,7 @@
   - [Post-Deployment](#post-deployment)
     - [Step 1: Build AWS Amplify App](#step-1-build-aws-amplify-app)
     - [Step 2: Change Redirects](#step-2-change-redirects)
-    - [Step 3: Change CORS](#step-3-change-cors)
-    - [Step 4: Visit Web App](#step-4-visit-web-app)
+    - [Step 3: Visit Web App](#step-3-visit-web-app)
   - [Cleanup](#cleanup)
     - [Taking down the deployed stack](#taking-down-the-deployed-stack)
 

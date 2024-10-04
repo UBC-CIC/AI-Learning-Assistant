@@ -13,8 +13,7 @@
   - [Post-Deployment](#post-deployment)
     - [Step 1: Build AWS Amplify App](#step-1-build-aws-amplify-app)
     - [Step 2: Change Redirects](#step-2-change-redirects)
-    - [Step 3: Change CORS](#step-3-change-cors)
-    - [Step 4: Visit Web App](#step-4-visit-web-app)
+    - [Step 3: Visit Web App](#step-3-visit-web-app)
   - [Cleanup](#cleanup)
     - [Taking down the deployed stack](#taking-down-the-deployed-stack)
 
@@ -63,7 +62,7 @@ You would have to supply your GitHub personal access token you created eariler w
 ```
 aws secretsmanager create-secret \
     --name github-personal-access-token \
-    --secret-string "{\"my-github-token\":\"<YOUR-GITHUB-TOKEN>\"}"\
+    --secret-string '{\"my-github-token\":\"<YOUR-GITHUB-TOKEN>\"}'\
     --profile <YOUR-PROFILE-NAME>
 ```
 
@@ -82,7 +81,7 @@ You would have to supply a custom database username when deploying the solution 
 ```
 aws secretsmanager create-secret \
     --name AILASecrets \
-    --secret-string "{\"DB_Username\":\"<YOUR-DB-USERNAME>\"}"\
+    --secret-string '{\"DB_Username\":\"<YOUR-DB-USERNAME>\"}'\
     --profile <your-profile-name>
 ```
 
@@ -91,7 +90,7 @@ For example,
 ```
 aws secretsmanager create-secret \
     --name AILASecrets \
-    --secret-string "{\"DB_Username\":\"AILASecrets\"}"\
+    --secret-string '{\"DB_Username\":\"AILASecrets\"}'\
     --profile <your-profile-name>
 ```
 ### Step 3: CDK Deployment

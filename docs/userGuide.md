@@ -72,8 +72,11 @@ Clicking the "EDIT" button beside a course leads to a page similar to creating a
 Clicking the "Prompt Settings" tab leads to a page where the instructor can change the prompt applied to the LLM for this specific course. Upon applying a new prompt, the instructor can also scroll to previous prompts the course used:
 ![image](./images/instructor-prompt-settings.png)
 
-Clicking the "View Students" tab leads to a page where the instructor can view all the students in this course. The "Access Code" of the course is a special code that allows students to join the course. The instructor will have to send this code to them. The instructor can also generate a new code on this page:
+Clicking the "View Students" tab leads to a page where the instructor can view all the students in this course. The "Access Code" of the course is a special code that allows students to join the course. The instructor will have to send this code to them. The instructor can also generate a new course code on this page:
 ![image](./images/instructor-view-students.png)
+
+The instructor can then click on a student which takes them to that student's chat logs for every module in the course. Each tab represents a different module. Different conversations with the LLM are rendered as different drop downs:
+![image](./images/instructor-view-student-logs.png)
 
 ## Student View
 Upon logging in as an student, they see the following home page:

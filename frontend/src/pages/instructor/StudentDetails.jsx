@@ -33,7 +33,7 @@ const handleBackClick = () => {
 const formatMessages = (messages) => {
   // Define the specific message to highlight
   const masteryMessage =
-    "Congratulations! You have achieved mastery over this module! Please try other modules to continue your learning journey! :)";
+    "Congratulations! You have achieved competency over this module! Please try other modules to continue your learning journey! :)";
 
   // Helper function to format date as YY/MM/DD
   const formatDate = (dateString) => {

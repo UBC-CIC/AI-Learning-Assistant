@@ -9,20 +9,23 @@ logger.setLevel(logging.INFO)
 
 dynamodb_client = boto3.client('dynamodb')
 
-TABLE_NAME = "API-Gateway-Test-Table-Name"
 DB_SECRET_NAME = os.environ["SM_DB_CREDENTIALS"]
 RDS_PROXY_ENDPOINT = os.environ["RDS_PROXY_ENDPOINT"]
 
-def get_secret():
+def get_secret(secret_name):
     # secretsmanager client to get db credentials
     sm_client = boto3.client("secretsmanager")
-    response = sm_client.get_secret_value(SecretId=DB_SECRET_NAME)["SecretString"]
+    response = sm_client.get_secret_value(SecretId=secret_name)["SecretString"]
     secret = json.loads(response)
     return secret
 
+
+## GET SECRET VALUES FOR CONSTANTS
+TABLE_NAME = get_secret(os.environ["TABLE_NAME_SECRET"])
+
 def connect_to_db():
     try:
-        db_secret = get_secret()
+        db_secret = get_secret(DB_SECRET_NAME)
         connection_params = {
             'dbname': db_secret["dbname"],
             'user': db_secret["username"],

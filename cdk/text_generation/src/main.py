@@ -13,20 +13,21 @@ from helpers.chat import get_bedrock_llm, get_initial_student_query, get_student
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger()
 
-BEDROCK_LLM_ID = "meta.llama3-70b-instruct-v1:0"
-EMBEDDING_MODEL_ID = "amazon.titan-embed-text-v2:0"
-TABLE_NAME = "API-Gateway-Test-Table-Name"
-
 
 DB_SECRET_NAME = os.environ["SM_DB_CREDENTIALS"]
 REGION = os.environ["REGION"]
 
-def get_secret():
+def get_secret(secret_name):
     # secretsmanager client to get db credentials
     sm_client = boto3.client("secretsmanager")
-    response = sm_client.get_secret_value(SecretId=DB_SECRET_NAME)["SecretString"]
+    response = sm_client.get_secret_value(SecretId=secret_name)["SecretString"]
     secret = json.loads(response)
     return secret
+
+## GET SECRET VALUES FOR CONSTANTS
+BEDROCK_LLM_ID = get_secret(os.environ["BEDROCK_LLM_SECRET"])
+EMBEDDING_MODEL_ID = get_secret(os.environ["EMBEDDING_MODEL_SECRET"])
+TABLE_NAME = get_secret(os.environ["TABLE_NAME_SECRET"])
 
 ## GETTING AMAZON TITAN EMBEDDINGS MODEL
 bedrock_runtime = boto3.client(
@@ -47,7 +48,7 @@ def get_module_name(module_id):
     cur = None
     try:
         logger.info(f"Fetching module name for module_id: {module_id}")
-        db_secret = get_secret()
+        db_secret = get_secret(DB_SECRET_NAME)
 
         connection_params = {
             'dbname': db_secret["dbname"],
@@ -100,7 +101,7 @@ def get_system_prompt(course_id):
     cur = None
     try:
         logger.info(f"Fetching system prompt for course_id: {course_id}")
-        db_secret = get_secret()
+        db_secret = get_secret(DB_SECRET_NAME)
 
         connection_params = {
             'dbname': db_secret["dbname"],
@@ -249,7 +250,7 @@ def handler(event, context):
     
     try:
         logger.info("Retrieving vectorstore config.")
-        db_secret = get_secret()
+        db_secret = get_secret(DB_SECRET_NAME)
         vectorstore_config_dict = {
             'collection_name': course_id,
             'dbname': db_secret["dbname"],

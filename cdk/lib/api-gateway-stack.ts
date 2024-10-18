@@ -803,6 +803,25 @@ export class ApiGatewayStack extends cdk.Stack {
       "instructorLambdaAuthorizer"
     );
 
+    // Create secrets for Bedrock LLM ID, Embedding Model ID, and Table Name
+    const bedrockLLMSecret = new secretsmanager.Secret(this, "BedrockLLMSecret", {
+      secretName: "BedrockLLMSecret",
+      description: "Secret containing the Bedrock LLM ID",
+      secretStringValue: cdk.SecretValue.unsafePlainText("meta.llama3-70b-instruct-v1:0"),
+    });
+
+    const embeddingModelSecret = new secretsmanager.Secret(this, "EmbeddingModelSecret", {
+      secretName: "EmbeddingModelSecret",
+      description: "Secret containing the Embedding Model ID",
+      secretStringValue: cdk.SecretValue.unsafePlainText("amazon.titan-embed-text-v2:0"),
+    });
+
+    const tableNameSecret = new secretsmanager.Secret(this, "TableNameSecret", {
+      secretName: "TableNameSecret",
+      description: "Secret containing the DynamoDB table name",
+      secretStringValue: cdk.SecretValue.unsafePlainText("DynamoDB-Conversation-Table"),
+    });
+
     /**
      *
      * Create Lambda with container image for text generation workflow in RAG pipeline
@@ -820,6 +839,9 @@ export class ApiGatewayStack extends cdk.Stack {
           SM_DB_CREDENTIALS: db.secretPathUser.secretName,
           RDS_PROXY_ENDPOINT: db.rdsProxyEndpoint,
           REGION: this.region,
+          BEDROCK_LLM_SECRET: bedrockLLMSecret.secretName,
+          EMBEDDING_MODEL_SECRET: embeddingModelSecret.secretName,
+          TABLE_NAME_SECRET: tableNameSecret.secretName,
         },
       }
     );
@@ -1152,7 +1174,7 @@ export class ApiGatewayStack extends cdk.Stack {
       environment: {
         SM_DB_CREDENTIALS: db.secretPathUser.secretName,
         RDS_PROXY_ENDPOINT: db.rdsProxyEndpoint,
-        TABLE_NAME: "API-Gateway-Test-Table-Name",
+        TABLE_NAME_SECRET: tableNameSecret.secretName,
         REGION: this.region,
       },
       functionName: "DeleteLastMessage",

@@ -219,7 +219,7 @@ def get_llm_output(response: str) -> dict:
     flag indicating whether competency has been achieved.
     """
 
-    competion_sentence = " Congratulations! You have achieved mastery over this module! Please try other modules to continue your learning journey! :)"
+    competion_sentence = " Congratulations! You have achieved competency over this module! Please try other modules to continue your learning journey! :)"
     
     if "COMPETENCY ACHIEVED" not in response:
         return dict(

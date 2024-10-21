@@ -58,7 +58,7 @@ export class ApiGatewayStack extends cdk.Stack {
       description: "The name of the embedding storage bucket",
     }).valueAsString;
 
-    const embeddingStorageBucket = new s3.Bucket(this, embeddingStorageBucketName, {
+    const embeddingStorageBucket = new s3.Bucket(this, "embeddingStorageBucket", {
       bucketName: embeddingStorageBucketName,
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
       cors: [
@@ -1026,6 +1026,16 @@ export class ApiGatewayStack extends cdk.Stack {
       .defaultChild as lambda.CfnFunction;
     cfnDataIngestLambdaDockerFunc.overrideLogicalId(
       "DataIngestLambdaDockerFunc"
+    );
+
+    dataIngestLambdaDockerFunc.addEventSource(
+      new lambdaEventSources.S3EventSource(embeddingStorageBucket, {
+        events: [
+          s3.EventType.OBJECT_CREATED,
+          s3.EventType.OBJECT_REMOVED,
+          s3.EventType.OBJECT_RESTORE_COMPLETED,
+        ],
+      })
     );
 
     // Attach the custom Bedrock policy to Lambda function

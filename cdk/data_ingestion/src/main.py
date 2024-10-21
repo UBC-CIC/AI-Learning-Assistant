@@ -14,7 +14,7 @@ logger = logging.getLogger()
 
 DB_SECRET_NAME = os.environ["SM_DB_CREDENTIALS"]
 REGION = os.environ["REGION"]
-
+EMBEDDING_BUCKET_NAME = os.environ["EMBEDDING_BUCKET_NAME"]
 def get_secret():
     # secretsmanager client to get db credentials
     sm_client = boto3.client("secretsmanager")

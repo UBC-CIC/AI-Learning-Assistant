@@ -51,6 +51,34 @@ export class ApiGatewayStack extends cdk.Stack {
 
     this.layerList = {};
 
+
+    // Define the embedding storage bucket name as a parameter
+    const embeddingStorageBucketName = new cdk.CfnParameter(this, "embeddingStorageBucketName", {
+      type: "String",
+      description: "The name of the embedding storage bucket",
+    }).valueAsString;
+
+    const embeddingStorageBucket = new s3.Bucket(this, embeddingStorageBucketName, {
+      bucketName: embeddingStorageBucketName,
+      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
+      cors: [
+        {
+          allowedHeaders: ["*"],
+          allowedMethods: [
+            s3.HttpMethods.GET,
+            s3.HttpMethods.PUT,
+            s3.HttpMethods.HEAD,
+            s3.HttpMethods.POST,
+            s3.HttpMethods.DELETE,
+          ],
+          allowedOrigins: ["*"],
+        },
+      ],
+      // When deleting the stack, need to empty the Bucket and delete it manually
+      removalPolicy: cdk.RemovalPolicy.RETAIN,
+      enforceSSL: true,
+    });
+
     /**
      *
      * Create Integration Lambda layer for aws-jwt-verify
@@ -988,6 +1016,7 @@ export class ApiGatewayStack extends cdk.Stack {
           RDS_PROXY_ENDPOINT: db.rdsProxyEndpoint,
           BUCKET: dataIngestionBucket.bucketName,
           REGION: this.region,
+          EMBEDDING_BUCKET_NAME: embeddingStorageBucketName,
         },
       }
     );

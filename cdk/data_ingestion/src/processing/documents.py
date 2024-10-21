@@ -16,6 +16,9 @@ logger = logging.getLogger(__name__)
 # Initialize the S3 client
 s3 = boto3.client('s3')
 
+EMBEDDING_BUCKET_NAME = os.environ["EMBEDDING_BUCKET_NAME"]
+
+
 def extract_txt(
     bucket: str, 
     file_key: str
@@ -88,7 +91,7 @@ def add_document(
     filename: str, 
     vectorstore: PGVector, 
     embeddings: BedrockEmbeddings,
-    output_bucket: str = 'temp-extracted-data'
+    output_bucket: str = EMBEDDING_BUCKET_NAME
 ) -> List[Document]:
     """
     Add a document to the vectorstore.

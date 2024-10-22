@@ -14,6 +14,7 @@ logger = logging.getLogger()
 
 DB_SECRET_NAME = os.environ["SM_DB_CREDENTIALS"]
 REGION = os.environ["REGION"]
+AILA_DATA_INGESTION_BUCKET = os.environ["BUCKET"]
 EMBEDDING_BUCKET_NAME = os.environ["EMBEDDING_BUCKET_NAME"]
 def get_secret():
     # secretsmanager client to get db credentials
@@ -178,6 +179,12 @@ def handler(event, context):
     for record in records:
         if record['eventName'].startswith('ObjectCreated:'):
             bucket_name = record['s3']['bucket']['name']
+
+            # Only process files from the AILA_DATA_INGESTION_BUCKET
+            if bucket_name != AILA_DATA_INGESTION_BUCKET:
+                print(f"Ignoring event from non-target bucket: {bucket_name}")
+                continue  # Ignore this event and move to the next one
+
             file_key = record['s3']['object']['key']
 
             # Parse the file path

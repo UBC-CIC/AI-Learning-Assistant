@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 s3 = boto3.client('s3')
 
 EMBEDDING_BUCKET_NAME = os.environ["EMBEDDING_BUCKET_NAME"]
-
+print('EMBEDDING_BUCKET_NAME',EMBEDDING_BUCKET_NAME)
 
 def extract_txt(
     bucket: str, 
@@ -108,6 +108,8 @@ def add_document(
     Returns:
     List[Document]: A list of all document chunks for this document that were added to the vectorstore.
     """
+    
+    print("output_bucket", output_bucket)
     output_filenames = store_doc_texts(
         bucket=bucket,
         course=course,
@@ -222,6 +224,8 @@ def process_documents(
             cleanup="incremental",
             source_id_key="source"
         )
+        print(f"Indexing updates: \n {idx}")
         logger.info(f"Indexing updates: \n {idx}")
     else:
         logger.info("No documents found for indexing.")
+        print("No documents found for indexing.")

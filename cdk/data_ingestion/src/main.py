@@ -165,7 +165,7 @@ def update_vectorstore_from_s3(bucket, course_id):
             embeddings=embeddings
         )
     except Exception as e:
-        logger.error(f"Error updating vectorstore for course {course_id}: {e}")
+        logger.error(f"3Error updating vectorstore for course {course_id}: {e}")
         raise
 
 def handler(event, context):

@@ -1063,19 +1063,25 @@ export class ApiGatewayStack extends cdk.Stack {
     dataIngestLambdaDockerFunc.addToRolePolicy(
       new iam.PolicyStatement({
         effect: iam.Effect.ALLOW,
-        actions: ["s3:PutObject"],
-        resources: [
-          `arn:aws:s3:::${embeddingStorageBucketName}/*`,  // Grant access to all objects within this bucket
-        ],
+        actions: ["s3:ListBucket"],
+        resources: [embeddingStorageBucket.bucketArn], // Access to the specific bucket
       })
     );
 
-    dataIngestLambdaDockerFunc.addEventSource(
-      new lambdaEventSources.S3EventSource(embeddingStorageBucket, {
-        events: [
-          s3.EventType.OBJECT_CREATED,
-          s3.EventType.OBJECT_REMOVED,
-          s3.EventType.OBJECT_RESTORE_COMPLETED,
+    dataIngestLambdaDockerFunc.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: ["s3:ListBucket"],
+        resources: [embeddingStorageBucket.bucketArn], // Access to the specific bucket
+      })
+    );
+
+    dataIngestLambdaDockerFunc.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: ["s3:PutObject", "s3:GetObject", "s3:DeleteObject", "s3:HeadObject"],
+        resources: [
+          `arn:aws:s3:::${embeddingStorageBucketName}/*`,  // Grant access to all objects within this bucket
         ],
       })
     );

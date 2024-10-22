@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 import logging
 
 from helpers.vectorstore import update_vectorstore
-from langchain_community.embeddings import BedrockEmbeddings
+from langchain_aws import BedrockEmbeddings
 
 # Set up basic logging
 logging.basicConfig(level=logging.INFO)
@@ -16,6 +16,7 @@ DB_SECRET_NAME = os.environ["SM_DB_CREDENTIALS"]
 REGION = os.environ["REGION"]
 AILA_DATA_INGESTION_BUCKET = os.environ["BUCKET"]
 EMBEDDING_BUCKET_NAME = os.environ["EMBEDDING_BUCKET_NAME"]
+
 def get_secret():
     # secretsmanager client to get db credentials
     sm_client = boto3.client("secretsmanager")
@@ -57,6 +58,9 @@ def parse_s3_file_path(file_key):
                     "statusCode": 400,
                     "body": json.dumps("Error parsing S3 file path.")
                 }
+
+# def log_file_deletion(file_key):
+#     print(f"File deleted: {file_key}")
 
 def insert_file_into_db(module_id, file_name, file_type, file_path, bucket_name):    
     connection = connect_to_db()
@@ -133,19 +137,50 @@ def insert_file_into_db(module_id, file_name, file_type, file_path, bucket_name)
         logger.error(f"Error inserting file {file_name}.{file_type} into database: {e}")
         raise
 
+# def delete_course_from_db(course_id):
+#     """Deletes the course from the database and cascades the delete."""
+#     connection = connect_to_db()
+#     if connection is None:
+#         logger.error("No database connection available for deleting course.")
+#         return False
+    
+#     try:
+#         cur = connection.cursor()
+        
+#         # Delete from langchain_pg_collection with cascade
+#         delete_query = """
+#         DELETE FROM langchain_pg_collection
+#         WHERE name = %s;
+#         """
+#         cur.execute(delete_query, (course_id,))
+#         connection.commit()
+#         logger.info(f"Successfully deleted course {course_id} collection from embeddings.")
+        
+#         cur.close()
+#         connection.close()
+#         return True
+#     except Exception as e:
+#         if cur:
+#             cur.close()
+#         if connection:
+#             connection.rollback()
+#             connection.close()
+#         logger.error(f"Error deleting course {course_id} collection from embeddings: {e}")
+#         return False
+
 def update_vectorstore_from_s3(bucket, course_id):
     
     bedrock_runtime = boto3.client(
         service_name="bedrock-runtime",
         region_name=REGION
     )
-    
+
     embeddings = BedrockEmbeddings(
         model_id='amazon.titan-embed-text-v2:0', 
         client=bedrock_runtime,
         region_name=REGION
     )
-    
+
     db_secret = get_secret()
 
     vectorstore_config_dict = {
@@ -165,7 +200,7 @@ def update_vectorstore_from_s3(bucket, course_id):
             embeddings=embeddings
         )
     except Exception as e:
-        logger.error(f"3Error updating vectorstore for course {course_id}: {e}")
+        logger.error(f"Error updating vectorstore for course {course_id}: {e}")
         raise
 
 def handler(event, context):
@@ -177,61 +212,61 @@ def handler(event, context):
         }
 
     for record in records:
-        if record['eventName'].startswith('ObjectCreated:'):
-            bucket_name = record['s3']['bucket']['name']
+        event_name = record['eventName']
+        bucket_name = record['s3']['bucket']['name']
 
-            # Only process files from the AILA_DATA_INGESTION_BUCKET
-            if bucket_name != AILA_DATA_INGESTION_BUCKET:
-                print(f"Ignoring event from non-target bucket: {bucket_name}")
-                continue  # Ignore this event and move to the next one
+        # Only process files from the AILA_DATA_INGESTION_BUCKET
+        if bucket_name != AILA_DATA_INGESTION_BUCKET:
+            print(f"Ignoring event from non-target bucket: {bucket_name}")
+            continue  # Ignore this event and move to the next one
+        file_key = record['s3']['object']['key']
 
-            file_key = record['s3']['object']['key']
-
-            # Parse the file path
-            course_id, module_id, file_category, file_name, file_type = parse_s3_file_path(file_key)
-            if not course_id or not module_id or not file_name or not file_type:
-                return {
-                    "statusCode": 400,
-                    "body": json.dumps("Error parsing S3 file path.")
-                }
-
-            # Insert the file into the PostgreSQL database
-            try:
-                insert_file_into_db(
-                    module_id=module_id,
-                    file_name=file_name,
-                    file_type=file_type,
-                    file_path=file_key,
-                    bucket_name=bucket_name
-                )
-                logger.info(f"File {file_name}.{file_type} inserted successfully.")
-            except Exception as e:
-                logger.error(f"Error inserting file {file_name}.{file_type} into database: {e}")
-                return {
-                    "statusCode": 500,
-                    "body": json.dumps(f"Error inserting file {file_name}.{file_type}: {e}")
-                }
-            
-            # Update embeddings for course after the file is successfully inserted into the database
-            try:
-                update_vectorstore_from_s3(bucket_name, course_id)
-                logger.info(f"Vectorstore updated successfully for course {course_id}.")
-            except Exception as e:
-                logger.error(f"Error updating vectorstore for course {course_id}: {e}")
-                return {
-                    "statusCode": 500,
-                    "body": json.dumps(f"File inserted, but error updating vectorstore: {e}")
-                }
-
+        # if event_name.startswith('ObjectCreated:'):
+        # Parse the file path
+        course_id, module_id, file_category, file_name, file_type = parse_s3_file_path(file_key)
+        if not course_id or not module_id or not file_name or not file_type:
             return {
-                "statusCode": 200,
-                "body": json.dumps({
-                    "message": "New file inserted into database.",
-                    "location": f"s3://{bucket_name}/{file_key}"
-                })
+                "statusCode": 400,
+                "body": json.dumps("Error parsing S3 file path.")
             }
+
+        # Insert the file into the PostgreSQL database
+        try:
+            insert_file_into_db(
+                module_id=module_id,
+                file_name=file_name,
+                file_type=file_type,
+                file_path=file_key,
+                bucket_name=bucket_name
+            )
+            logger.info(f"File {file_name}.{file_type} inserted successfully.")
+        except Exception as e:
+            logger.error(f"Error inserting file {file_name}.{file_type} into database: {e}")
+            return {
+                "statusCode": 500,
+                "body": json.dumps(f"Error inserting file {file_name}.{file_type}: {e}")
+            }
+        
+        # Update embeddings for course after the file is successfully inserted into the database
+        try:
+            update_vectorstore_from_s3(bucket_name, course_id)
+            logger.info(f"Vectorstore updated successfully for course {course_id}.")
+        except Exception as e:
+            logger.error(f"Error updating vectorstore for course {course_id}: {e}")
+            return {
+                "statusCode": 500,
+                "body": json.dumps(f"File inserted, but error updating vectorstore: {e}")
+            }
+
+        return {
+            "statusCode": 200,
+            "body": json.dumps({
+                "message": "New file inserted into database.",
+                "location": f"s3://{bucket_name}/{file_key}"
+            })
+        }
 
     return {
         "statusCode": 400,
-        "body": json.dumps("No new file upload event found.")
+        "body": json.dumps("No new file upload or deletion event found.")
     }

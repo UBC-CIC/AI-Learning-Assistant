@@ -45,6 +45,7 @@ def connect_to_db():
 
 def parse_s3_file_path(file_key):
     # Assuming the file path is of the format: {course_id}/{module_id}/{documents}/{file_name}.{file_type}
+    print(f"file_key: {file_key}")
     try:
         course_id, module_id, file_category, filename_with_ext = file_key.split('/')
         file_name, file_type = filename_with_ext.split('.')

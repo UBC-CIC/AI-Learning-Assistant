@@ -51,33 +51,40 @@ export class ApiGatewayStack extends cdk.Stack {
 
     this.layerList = {};
 
-
     // Define the embedding storage bucket name as a parameter
-    const embeddingStorageBucketName = new cdk.CfnParameter(this, "embeddingStorageBucketName", {
-      type: "String",
-      description: "The name of the embedding storage bucket",
-    }).valueAsString;
+    const embeddingStorageBucketName = new cdk.CfnParameter(
+      this,
+      "embeddingStorageBucketName",
+      {
+        type: "String",
+        description: "The name of the embedding storage bucket",
+      }
+    ).valueAsString;
 
-    const embeddingStorageBucket = new s3.Bucket(this, "embeddingStorageBucket", {
-      bucketName: embeddingStorageBucketName,
-      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
-      cors: [
-        {
-          allowedHeaders: ["*"],
-          allowedMethods: [
-            s3.HttpMethods.GET,
-            s3.HttpMethods.PUT,
-            s3.HttpMethods.HEAD,
-            s3.HttpMethods.POST,
-            s3.HttpMethods.DELETE,
-          ],
-          allowedOrigins: ["*"],
-        },
-      ],
-      // When deleting the stack, need to empty the Bucket and delete it manually
-      removalPolicy: cdk.RemovalPolicy.RETAIN,
-      enforceSSL: true,
-    });
+    const embeddingStorageBucket = new s3.Bucket(
+      this,
+      "embeddingStorageBucket",
+      {
+        bucketName: embeddingStorageBucketName,
+        blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
+        cors: [
+          {
+            allowedHeaders: ["*"],
+            allowedMethods: [
+              s3.HttpMethods.GET,
+              s3.HttpMethods.PUT,
+              s3.HttpMethods.HEAD,
+              s3.HttpMethods.POST,
+              s3.HttpMethods.DELETE,
+            ],
+            allowedOrigins: ["*"],
+          },
+        ],
+        // When deleting the stack, need to empty the Bucket and delete it manually
+        removalPolicy: cdk.RemovalPolicy.RETAIN,
+        enforceSSL: true,
+      }
+    );
 
     /**
      *
@@ -832,22 +839,36 @@ export class ApiGatewayStack extends cdk.Stack {
     );
 
     // Create secrets for Bedrock LLM ID, Embedding Model ID, and Table Name
-    const bedrockLLMSecret = new secretsmanager.Secret(this, "BedrockLLMSecret", {
-      secretName: "BedrockLLMSecret",
-      description: "Secret containing the Bedrock LLM ID",
-      secretStringValue: cdk.SecretValue.unsafePlainText("meta.llama3-70b-instruct-v1:0"),
-    });
+    const bedrockLLMSecret = new secretsmanager.Secret(
+      this,
+      "BedrockLLMSecret",
+      {
+        secretName: "BedrockLLMSecret",
+        description: "Secret containing the Bedrock LLM ID",
+        secretStringValue: cdk.SecretValue.unsafePlainText(
+          "meta.llama3-70b-instruct-v1:0"
+        ),
+      }
+    );
 
-    const embeddingModelSecret = new secretsmanager.Secret(this, "EmbeddingModelSecret", {
-      secretName: "EmbeddingModelSecret",
-      description: "Secret containing the Embedding Model ID",
-      secretStringValue: cdk.SecretValue.unsafePlainText("amazon.titan-embed-text-v2:0"),
-    });
+    const embeddingModelSecret = new secretsmanager.Secret(
+      this,
+      "EmbeddingModelSecret",
+      {
+        secretName: "EmbeddingModelSecret",
+        description: "Secret containing the Embedding Model ID",
+        secretStringValue: cdk.SecretValue.unsafePlainText(
+          "amazon.titan-embed-text-v2:0"
+        ),
+      }
+    );
 
     const tableNameSecret = new secretsmanager.Secret(this, "TableNameSecret", {
       secretName: "TableNameSecret",
       description: "Secret containing the DynamoDB table name",
-      secretStringValue: cdk.SecretValue.unsafePlainText("DynamoDB-Conversation-Table"),
+      secretStringValue: cdk.SecretValue.unsafePlainText(
+        "DynamoDB-Conversation-Table"
+      ),
     });
 
     /**
@@ -1026,6 +1047,27 @@ export class ApiGatewayStack extends cdk.Stack {
       .defaultChild as lambda.CfnFunction;
     cfnDataIngestLambdaDockerFunc.overrideLogicalId(
       "DataIngestLambdaDockerFunc"
+    );
+
+    dataIngestionBucket.grantRead(dataIngestLambdaDockerFunc);
+
+    // Add ListBucket permission explicitly
+    dataIngestLambdaDockerFunc.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: ["s3:ListBucket"],
+        resources: [dataIngestionBucket.bucketArn], // Access to the specific bucket
+      })
+    );
+
+    dataIngestLambdaDockerFunc.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: ["s3:PutObject"],
+        resources: [
+          `arn:aws:s3:::${embeddingStorageBucketName}/*`,  // Grant access to all objects within this bucket
+        ],
+      })
     );
 
     dataIngestLambdaDockerFunc.addEventSource(

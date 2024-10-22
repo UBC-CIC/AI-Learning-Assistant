@@ -108,11 +108,10 @@ cdk bootstrap aws://<YOUR_AWS_ACCOUNT_ID>/<YOUR_ACCOUNT_REGION> --profile <your-
 ```
 
 **Deploy CDK stack**
-You may run the following command to deploy the stacks all at once. Again, replace `<your-profile-name>` with the appropriate AWS profile used earlier.
+You may run the following command to deploy the stacks all at once. Again, replace `<your-profile-name>` with the appropriate AWS profile used earlier. Also replace `<your-s3-embedding-bucket-name>` with a globally unique s3 bucket name.
 ```
-cdk deploy --all --parameters AmplifyStack:githubRepoName=AI-LEARNING-ASSISTANT --profile <your-profile-name>
+cdk deploy --all --parameters AmplifyStack:githubRepoName=AI-LEARNING-ASSISTANT --parameters <your-s3-embedding-bucket-name> --profile <your-profile-name>
 ```
-
 If you have trouble running the above command, try removing all the \ and run it in one line.
 
 ## Post-Deployment

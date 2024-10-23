@@ -23,6 +23,7 @@ import { Asset } from "aws-cdk-lib/aws-s3-assets";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import * as bedrock from "aws-cdk-lib/aws-bedrock";
 import * as secretsmanager from "aws-cdk-lib/aws-secretsmanager";
+import * as ssm from "aws-cdk-lib/aws-ssm";
 
 export class ApiGatewayStack extends cdk.Stack {
   private readonly api: apigateway.SpecRestApi;
@@ -60,6 +61,12 @@ export class ApiGatewayStack extends cdk.Stack {
         description: "The name of the embedding storage bucket",
       }
     ).valueAsString;
+
+    new ssm.StringParameter(this, "embeddingStorageBucketNameParameter", {
+      parameterName: "embeddingStorageBucketName",
+      description: "The name of the embedding storage bucket",
+      stringValue: embeddingStorageBucketName,
+    });
 
     const embeddingStorageBucket = new s3.Bucket(
       this,
@@ -953,9 +960,25 @@ export class ApiGatewayStack extends cdk.Stack {
       })
     );
 
+    // Define the embedding storage bucket name as a parameter
+    const dataIngestionBucketName = new cdk.CfnParameter(
+      this,
+      "dataIngestionBucketName",
+      {
+        type: "String",
+        description: "The name of the data ingestion bucket that contains all the files for each module in each course",
+      }
+    ).valueAsString;
+
+    new ssm.StringParameter(this, "dataIngestionBucketNameParameter", {
+      parameterName: "dataIngestionBucketName",
+      description: "The name of the data ingestion bucket that contains all the files for each module in each course",
+      stringValue: dataIngestionBucketName,
+    });
+
     // Create S3 Bucket to handle documents for each course
     const dataIngestionBucket = new s3.Bucket(this, "AILADataIngestionBucket", {
-      bucketName: "aila-data-ingestion-bucket",
+      bucketName: dataIngestionBucketName,
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
       cors: [
         {

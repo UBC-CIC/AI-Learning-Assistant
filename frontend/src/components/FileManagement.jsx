@@ -43,6 +43,7 @@ const FileManagement = ({
   };
 
   const handleDownloadClick = (url) => {
+    console.log(url.url)
     window.open(url.url, "_blank");
   };
 

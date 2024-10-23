@@ -52,27 +52,10 @@ export class ApiGatewayStack extends cdk.Stack {
 
     this.layerList = {};
 
-    // Define the embedding storage bucket name as a parameter
-    const embeddingStorageBucketName = new cdk.CfnParameter(
-      this,
-      "embeddingStorageBucketName",
-      {
-        type: "String",
-        description: "The name of the embedding storage bucket",
-      }
-    ).valueAsString;
-
-    new ssm.StringParameter(this, "embeddingStorageBucketNameParameter", {
-      parameterName: "embeddingStorageBucketName",
-      description: "The name of the embedding storage bucket",
-      stringValue: embeddingStorageBucketName,
-    });
-
     const embeddingStorageBucket = new s3.Bucket(
       this,
       "embeddingStorageBucket",
       {
-        bucketName: embeddingStorageBucketName,
         blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
         cors: [
           {
@@ -92,6 +75,12 @@ export class ApiGatewayStack extends cdk.Stack {
         enforceSSL: true,
       }
     );
+
+    new ssm.StringParameter(this, "embeddingStorageBucketNameParameter", {
+      parameterName: "embeddingStorageBucketName",
+      description: "The name of the embedding storage bucket",
+      stringValue: embeddingStorageBucket.bucketName,
+    });
 
     /**
      *
@@ -960,25 +949,9 @@ export class ApiGatewayStack extends cdk.Stack {
       })
     );
 
-    // Define the embedding storage bucket name as a parameter
-    const dataIngestionBucketName = new cdk.CfnParameter(
-      this,
-      "dataIngestionBucketName",
-      {
-        type: "String",
-        description: "The name of the data ingestion bucket that contains all the files for each module in each course",
-      }
-    ).valueAsString;
-
-    new ssm.StringParameter(this, "dataIngestionBucketNameParameter", {
-      parameterName: "dataIngestionBucketName",
-      description: "The name of the data ingestion bucket that contains all the files for each module in each course",
-      stringValue: dataIngestionBucketName,
-    });
 
     // Create S3 Bucket to handle documents for each course
     const dataIngestionBucket = new s3.Bucket(this, "AILADataIngestionBucket", {
-      bucketName: dataIngestionBucketName,
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
       cors: [
         {
@@ -996,6 +969,12 @@ export class ApiGatewayStack extends cdk.Stack {
       // When deleting the stack, need to empty the Bucket and delete it manually
       removalPolicy: cdk.RemovalPolicy.RETAIN,
       enforceSSL: true,
+    });
+
+    new ssm.StringParameter(this, "dataIngestionBucketNameParameter", {
+      parameterName: "dataIngestionBucketName",
+      description: "The name of the data ingestion bucket that contains all the files for each module in each course",
+      stringValue: dataIngestionBucket.bucketName,
     });
 
     // Create the Lambda function for generating presigned URLs
@@ -1060,7 +1039,7 @@ export class ApiGatewayStack extends cdk.Stack {
           RDS_PROXY_ENDPOINT: db.rdsProxyEndpoint,
           BUCKET: dataIngestionBucket.bucketName,
           REGION: this.region,
-          EMBEDDING_BUCKET_NAME: embeddingStorageBucketName,
+          EMBEDDING_BUCKET_NAME: embeddingStorageBucket.bucketName,
         },
       }
     );
@@ -1096,7 +1075,7 @@ export class ApiGatewayStack extends cdk.Stack {
         effect: iam.Effect.ALLOW,
         actions: ["s3:PutObject", "s3:GetObject", "s3:DeleteObject", "s3:HeadObject"],
         resources: [
-          `arn:aws:s3:::${embeddingStorageBucketName}/*`,  // Grant access to all objects within this bucket
+          `arn:aws:s3:::${embeddingStorageBucket.bucketName}/*`,  // Grant access to all objects within this bucket
         ],
       })
     );

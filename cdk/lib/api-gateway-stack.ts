@@ -23,7 +23,6 @@ import { Asset } from "aws-cdk-lib/aws-s3-assets";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import * as bedrock from "aws-cdk-lib/aws-bedrock";
 import * as secretsmanager from "aws-cdk-lib/aws-secretsmanager";
-import * as ssm from "aws-cdk-lib/aws-ssm";
 
 export class ApiGatewayStack extends cdk.Stack {
   private readonly api: apigateway.SpecRestApi;
@@ -75,12 +74,6 @@ export class ApiGatewayStack extends cdk.Stack {
         enforceSSL: true,
       }
     );
-
-    new ssm.StringParameter(this, "embeddingStorageBucketNameParameter", {
-      parameterName: "embeddingStorageBucketName",
-      description: "The name of the embedding storage bucket",
-      stringValue: embeddingStorageBucket.bucketName,
-    });
 
     /**
      *
@@ -969,12 +962,6 @@ export class ApiGatewayStack extends cdk.Stack {
       // When deleting the stack, need to empty the Bucket and delete it manually
       removalPolicy: cdk.RemovalPolicy.RETAIN,
       enforceSSL: true,
-    });
-
-    new ssm.StringParameter(this, "dataIngestionBucketNameParameter", {
-      parameterName: "dataIngestionBucketName",
-      description: "The name of the data ingestion bucket that contains all the files for each module in each course",
-      stringValue: dataIngestionBucket.bucketName,
     });
 
     // Create the Lambda function for generating presigned URLs

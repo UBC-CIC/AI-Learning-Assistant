@@ -5,7 +5,7 @@ import boto3, pymupdf
 
 from langchain_postgres import PGVector
 from langchain_core.documents import Document
-from langchain_community.embeddings import BedrockEmbeddings
+from langchain_aws import BedrockEmbeddings
 from langchain_experimental.text_splitter import SemanticChunker
 from langchain.indexes import SQLRecordManager, index
 
@@ -164,13 +164,12 @@ def store_doc_chunks(
             if doc_chunk:
                 doc_chunk.metadata["source"] = f"s3://{bucket}/{true_filename}"
                 doc_chunk.metadata["doc_id"] = this_uuid
-                    
-                vectorstore.add_documents(
-                    documents=[doc_chunk]
-                )
                 
             else:
                 logger.warning(f"Empty chunk for {filename}")
+        
+        s3.delete_object(Bucket=bucket, Key=filename)
+        print(f"Deleting {filename} from {bucket}")
         
         this_doc_chunks.extend(doc_chunks)
        
@@ -221,11 +220,18 @@ def process_documents(
             all_doc_chunks, 
             record_manager, 
             vectorstore, 
-            cleanup="incremental",
+            cleanup="full",
             source_id_key="source"
         )
         print(f"Indexing updates: \n {idx}")
         logger.info(f"Indexing updates: \n {idx}")
     else:
+        idx = index(
+            [],
+            record_manager, 
+            vectorstore, 
+            cleanup="full",
+            source_id_key="source"
+        )
         logger.info("No documents found for indexing.")
         print("No documents found for indexing.")

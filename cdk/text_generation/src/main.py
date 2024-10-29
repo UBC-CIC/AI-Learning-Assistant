@@ -4,7 +4,7 @@ import boto3
 import logging
 import psycopg2
 import boto3
-from langchain_community.embeddings import BedrockEmbeddings
+from langchain_aws import BedrockEmbeddings
 
 from helpers.vectorstore import get_vectorstore_retriever
 from helpers.chat import get_bedrock_llm, get_initial_student_query, get_student_query, create_dynamodb_history_table, get_response, update_session_name
@@ -17,17 +17,29 @@ logger = logging.getLogger()
 DB_SECRET_NAME = os.environ["SM_DB_CREDENTIALS"]
 REGION = os.environ["REGION"]
 
-def get_secret(secret_name):
-    # secretsmanager client to get db credentials
-    sm_client = boto3.client("secretsmanager")
-    response = sm_client.get_secret_value(SecretId=secret_name)["SecretString"]
-    secret = json.loads(response)
-    return secret
+def get_secret(secret_name, expect_json=True):
+    try:
+        # secretsmanager client to get db credentials
+        sm_client = boto3.client("secretsmanager")
+        response = sm_client.get_secret_value(SecretId=secret_name)["SecretString"]
+        
+        if expect_json:
+            return json.loads(response)
+        else:
+            print(response)
+            return response
+
+    except json.JSONDecodeError as e:
+        logger.error(f"Failed to decode JSON for secret {secret_name}: {e}")
+        raise ValueError(f"Secret {secret_name} is not properly formatted as JSON.")
+    except Exception as e:
+        logger.error(f"Error fetching secret {secret_name}: {e}")
+        raise
 
 ## GET SECRET VALUES FOR CONSTANTS
-BEDROCK_LLM_ID = get_secret(os.environ["BEDROCK_LLM_SECRET"])
-EMBEDDING_MODEL_ID = get_secret(os.environ["EMBEDDING_MODEL_SECRET"])
-TABLE_NAME = get_secret(os.environ["TABLE_NAME_SECRET"])
+BEDROCK_LLM_ID = get_secret(os.environ["BEDROCK_LLM_SECRET"], expect_json=False)
+EMBEDDING_MODEL_ID = get_secret(os.environ["EMBEDDING_MODEL_SECRET"], expect_json=False)
+TABLE_NAME = get_secret(os.environ["TABLE_NAME_SECRET"], expect_json=False)
 
 ## GETTING AMAZON TITAN EMBEDDINGS MODEL
 bedrock_runtime = boto3.client(

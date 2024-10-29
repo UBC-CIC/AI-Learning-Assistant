@@ -51,21 +51,10 @@ export class ApiGatewayStack extends cdk.Stack {
 
     this.layerList = {};
 
-    // Define the embedding storage bucket name as a parameter
-    const embeddingStorageBucketName = new cdk.CfnParameter(
-      this,
-      "embeddingStorageBucketName",
-      {
-        type: "String",
-        description: "The name of the embedding storage bucket",
-      }
-    ).valueAsString;
-
     const embeddingStorageBucket = new s3.Bucket(
       this,
       "embeddingStorageBucket",
       {
-        bucketName: embeddingStorageBucketName,
         blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
         cors: [
           {
@@ -953,9 +942,9 @@ export class ApiGatewayStack extends cdk.Stack {
       })
     );
 
+
     // Create S3 Bucket to handle documents for each course
     const dataIngestionBucket = new s3.Bucket(this, "AILADataIngestionBucket", {
-      bucketName: "aila-data-ingestion-bucket",
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
       cors: [
         {
@@ -1037,7 +1026,7 @@ export class ApiGatewayStack extends cdk.Stack {
           RDS_PROXY_ENDPOINT: db.rdsProxyEndpoint,
           BUCKET: dataIngestionBucket.bucketName,
           REGION: this.region,
-          EMBEDDING_BUCKET_NAME: embeddingStorageBucketName,
+          EMBEDDING_BUCKET_NAME: embeddingStorageBucket.bucketName,
         },
       }
     );
@@ -1071,17 +1060,9 @@ export class ApiGatewayStack extends cdk.Stack {
     dataIngestLambdaDockerFunc.addToRolePolicy(
       new iam.PolicyStatement({
         effect: iam.Effect.ALLOW,
-        actions: ["s3:ListBucket"],
-        resources: [embeddingStorageBucket.bucketArn], // Access to the specific bucket
-      })
-    );
-
-    dataIngestLambdaDockerFunc.addToRolePolicy(
-      new iam.PolicyStatement({
-        effect: iam.Effect.ALLOW,
         actions: ["s3:PutObject", "s3:GetObject", "s3:DeleteObject", "s3:HeadObject"],
         resources: [
-          `arn:aws:s3:::${embeddingStorageBucketName}/*`,  // Grant access to all objects within this bucket
+          `arn:aws:s3:::${embeddingStorageBucket.bucketName}/*`,  // Grant access to all objects within this bucket
         ],
       })
     );

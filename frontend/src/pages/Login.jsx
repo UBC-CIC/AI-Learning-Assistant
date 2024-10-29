@@ -95,11 +95,6 @@ export const Login = () => {
         username: username,
         password: password,
       });
-      console.log(
-        "USER SUCCESSFULLY LOGGED IN:",
-        user.isSignedIn,
-        user.nextStep.signInStep
-      );
       if (!user.isSignedIn) {
         if (
           user.nextStep.signInStep ===
@@ -184,7 +179,6 @@ export const Login = () => {
     setPasswordError("");
     try {
       setLoading(true);
-      console.log("signing up");
       const { isSignUpComplete, userId, nextStep } = await signUp({
         username: username,
         password: password,
@@ -192,9 +186,7 @@ export const Login = () => {
           email: username,
         },
       });
-      console.log("signed up");
       setNewSignUp(false);
-      console.log("User signed up:", isSignUpComplete, userId, nextStep);
       if (!isSignUpComplete) {
         if (nextStep.signUpStep === "CONFIRM_SIGN_UP") {
           setSignUpConfirmation(true);
@@ -241,7 +233,6 @@ export const Login = () => {
     setPasswordError("");
     try {
       setLoading(true);
-      console.log("Setting new password for user:", username);
       const attributes = {};
       const user = await confirmSignIn({
         challengeResponse: newPassword,
@@ -249,7 +240,6 @@ export const Login = () => {
           userAttributes: attributes,
         },
       });
-      console.log("User logged in:", user.isSignedIn, user.nextStep.signInStep);
       if (user.isSignedIn) {
         window.location.reload();
       }
@@ -280,17 +270,11 @@ export const Login = () => {
         username: username,
         confirmationCode: confirmationCode,
       });
-
-      console.log("code", confirmationCode);
-
       // Automatically log in the user
       const user = await signIn({
         username: username,
         password: password,
       });
-
-      console.log("handle auto sign in", user.isSignedIn);
-
       if (user.isSignedIn) {
         // Send user data to backend
         const session = await fetchAuthSession();
@@ -317,8 +301,6 @@ export const Login = () => {
           }
         );
         const data = await response.json();
-        console.log("Response from backend:", data);
-
         setLoading(false);
         setNewSignUp(false);
         window.location.reload();
@@ -391,9 +373,6 @@ export const Login = () => {
       case "CONFIRM_RESET_PASSWORD_WITH_CODE":
         // eslint-disable-next-line no-case-declarations
         const codeDeliveryDetails = nextStep.codeDeliveryDetails;
-        console.log(
-          `Confirmation code was sent to ${codeDeliveryDetails.deliveryMedium}`
-        );
         setMessage(
           `Confirmation code was sent to ${codeDeliveryDetails.deliveryMedium}`
         );
@@ -402,7 +381,6 @@ export const Login = () => {
       case "DONE":
         setMessage("Successfully reset password.");
         setStep("done");
-        console.log("Successfully reset password.");
         break;
     }
   }
@@ -415,7 +393,6 @@ export const Login = () => {
         confirmationCode,
         newPassword,
       });
-      console.log("username", username);
       setMessage("Password successfully reset.");
       setStep("done");
       setError("");
@@ -430,9 +407,6 @@ export const Login = () => {
         progress: undefined,
         theme: "colored",
       });
-      console.log(error);
-      console.log(username);
-      console.log(confirmationCode);
       setError(error.message);
     }
   }

@@ -230,22 +230,25 @@ def handler(event, context):
                 "body": json.dumps("Error parsing S3 file path.")
             }
 
-        # Insert the file into the PostgreSQL database
-        try:
-            insert_file_into_db(
-                module_id=module_id,
-                file_name=file_name,
-                file_type=file_type,
-                file_path=file_key,
-                bucket_name=bucket_name
-            )
-            logger.info(f"File {file_name}.{file_type} inserted successfully.")
-        except Exception as e:
-            logger.error(f"Error inserting file {file_name}.{file_type} into database: {e}")
-            return {
-                "statusCode": 500,
-                "body": json.dumps(f"Error inserting file {file_name}.{file_type}: {e}")
-            }
+        if event_name.startswith('ObjectCreated:'):
+            # Insert the file into the PostgreSQL database
+            try:
+                insert_file_into_db(
+                    module_id=module_id,
+                    file_name=file_name,
+                    file_type=file_type,
+                    file_path=file_key,
+                    bucket_name=bucket_name
+                )
+                logger.info(f"File {file_name}.{file_type} inserted successfully.")
+            except Exception as e:
+                logger.error(f"Error inserting file {file_name}.{file_type} into database: {e}")
+                return {
+                    "statusCode": 500,
+                    "body": json.dumps(f"Error inserting file {file_name}.{file_type}: {e}")
+                }
+        else:
+            logger.info(f"File {file_name}.{file_type} is being deleted. Deleting files from database does not occur here.")
         
         # Update embeddings for course after the file is successfully inserted into the database
         try:

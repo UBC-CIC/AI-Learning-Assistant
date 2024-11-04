@@ -23,6 +23,7 @@ import { Asset } from "aws-cdk-lib/aws-s3-assets";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import * as bedrock from "aws-cdk-lib/aws-bedrock";
 import * as secretsmanager from "aws-cdk-lib/aws-secretsmanager";
+import * as ssm from "aws-cdk-lib/aws-ssm";
 
 export class ApiGatewayStack extends cdk.Stack {
   private readonly api: apigateway.SpecRestApi;
@@ -827,37 +828,23 @@ export class ApiGatewayStack extends cdk.Stack {
       "instructorLambdaAuthorizer"
     );
 
-    // Create secrets for Bedrock LLM ID, Embedding Model ID, and Table Name
-    const bedrockLLMSecret = new secretsmanager.Secret(
-      this,
-      "BedrockLLMSecret",
-      {
-        secretName: "BedrockLLMSecret",
-        description: "Secret containing the Bedrock LLM ID",
-        secretStringValue: cdk.SecretValue.unsafePlainText(
-          "meta.llama3-70b-instruct-v1:0"
-        ),
-      }
-    );
+    // Create parameters for Bedrock LLM ID, Embedding Model ID, and Table Name in Parameter Store
+    const bedrockLLMParameter = new ssm.StringParameter(this, "BedrockLLMParameter", {
+      parameterName: "/AILA/BedrockLLMId",
+      description: "Parameter containing the Bedrock LLM ID",
+      stringValue: "meta.llama3-70b-instruct-v1:0",
+    });
 
-    const embeddingModelSecret = new secretsmanager.Secret(
-      this,
-      "EmbeddingModelSecret",
-      {
-        secretName: "EmbeddingModelSecret",
-        description: "Secret containing the Embedding Model ID",
-        secretStringValue: cdk.SecretValue.unsafePlainText(
-          "amazon.titan-embed-text-v2:0"
-        ),
-      }
-    );
+    const embeddingModelParameter = new ssm.StringParameter(this, "EmbeddingModelParameter", {
+      parameterName: "/AILA/EmbeddingModelId",
+      description: "Parameter containing the Embedding Model ID",
+      stringValue: "amazon.titan-embed-text-v2:0",
+    });
 
-    const tableNameSecret = new secretsmanager.Secret(this, "TableNameSecret", {
-      secretName: "TableNameSecret",
-      description: "Secret containing the DynamoDB table name",
-      secretStringValue: cdk.SecretValue.unsafePlainText(
-        "DynamoDB-Conversation-Table"
-      ),
+    const tableNameParameter = new ssm.StringParameter(this, "TableNameParameter", {
+      parameterName: "/AILA/TableName",
+      description: "Parameter containing the DynamoDB table name",
+      stringValue: "DynamoDB-Conversation-Table",
     });
 
     /**
@@ -877,9 +864,9 @@ export class ApiGatewayStack extends cdk.Stack {
           SM_DB_CREDENTIALS: db.secretPathUser.secretName,
           RDS_PROXY_ENDPOINT: db.rdsProxyEndpoint,
           REGION: this.region,
-          BEDROCK_LLM_SECRET: bedrockLLMSecret.secretName,
-          EMBEDDING_MODEL_SECRET: embeddingModelSecret.secretName,
-          TABLE_NAME_SECRET: tableNameSecret.secretName,
+          BEDROCK_LLM_PARAM: bedrockLLMParameter.parameterName,
+          EMBEDDING_MODEL_PARAM: embeddingModelParameter.parameterName,
+          TABLE_NAME_PARAM: tableNameParameter.parameterName,
         },
       }
     );
@@ -942,6 +929,18 @@ export class ApiGatewayStack extends cdk.Stack {
       })
     );
 
+    // Grant access to SSM Parameter Store for specific parameters
+    textGenLambdaDockerFunc.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: ["ssm:GetParameter"],
+        resources: [
+          bedrockLLMParameter.parameterArn,
+          embeddingModelParameter.parameterArn,
+          tableNameParameter.parameterArn,
+        ],
+      })
+    );
 
     // Create S3 Bucket to handle documents for each course
     const dataIngestionBucket = new s3.Bucket(this, "AILADataIngestionBucket", {
@@ -1027,6 +1026,7 @@ export class ApiGatewayStack extends cdk.Stack {
           BUCKET: dataIngestionBucket.bucketName,
           REGION: this.region,
           EMBEDDING_BUCKET_NAME: embeddingStorageBucket.bucketName,
+          EMBEDDING_MODEL_PARAM: embeddingModelParameter.parameterName,
         },
       }
     );
@@ -1091,6 +1091,17 @@ export class ApiGatewayStack extends cdk.Stack {
         ],
         resources: [
           `arn:aws:secretsmanager:${this.region}:${this.account}:secret:*`,
+        ],
+      })
+    );  
+
+    // Grant access to SSM Parameter Store for specific parameters
+    dataIngestLambdaDockerFunc.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: ["ssm:GetParameter"],
+        resources: [
+          embeddingModelParameter.parameterArn,
         ],
       })
     );
@@ -1242,7 +1253,7 @@ export class ApiGatewayStack extends cdk.Stack {
       environment: {
         SM_DB_CREDENTIALS: db.secretPathUser.secretName,
         RDS_PROXY_ENDPOINT: db.rdsProxyEndpoint,
-        TABLE_NAME_SECRET: tableNameSecret.secretName,
+        TABLE_NAME_PARAM: tableNameParameter.parameterName,
         REGION: this.region,
       },
       functionName: "DeleteLastMessage",
@@ -1283,5 +1294,16 @@ export class ApiGatewayStack extends cdk.Stack {
       action: "lambda:InvokeFunction",
       sourceArn: `arn:aws:execute-api:${this.region}:${this.account}:${this.api.restApiId}/*/*/student*`,
     });
+
+    // Grant access to SSM Parameter Store for specific parameters
+    deleteLastMessage.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: ["ssm:GetParameter"],
+        resources: [
+          tableNameParameter.parameterArn,
+        ],
+      })
+    );
   }
 }

@@ -52,7 +52,7 @@ export class VpcStack extends Stack {
     const publicSubnet = new ec2.Subnet(this, `PublicSubnet`, {
         vpcId: this.vpc.vpcId,
         availabilityZone: this.vpc.availabilityZones[0],
-        cidrBlock: "10.0.0.0/16",
+        cidrBlock: "172.31.96.0/20",
         mapPublicIpOnLaunch: true,
     });
 

@@ -6,6 +6,7 @@
   - [Requirements](#requirements)
   - [Pre-Deployment](#pre-deployment)
     - [Create GitHub Personal Access Token](#create-github-personal-access-token)
+    - [Enable Models in Bedrock](#enable-models-in-bedrock)
   - [Deployment](#deployment)
     - [Step 1: Fork \& Clone The Repository](#step-1-fork--clone-the-repository)
     - [Step 2: Upload Secrets](#step-2-upload-secrets)
@@ -39,6 +40,19 @@ To deploy this solution, you will need to generate a GitHub personal access toke
 **Once you create a token, please note down its value as you will use it later in the deployment process.**
 
 Docker must also be running for the deployment to work.
+
+### Enable Models in Bedrock
+
+First, navigate to Amazon Bedrock in the AWS Console. From the home page, click on model access under Bedrock configurations:
+![](./images/bedrockhome.png)
+
+Then click on "Modify model access":
+![](./images/modifymodels.png)
+
+Finally, enable the relevant models, click next and on the next page click submit. Amazon Titan Embeddings V2 and Meta Llama 3 70B Instruct are required for this project.
+![](./images/enablemodels.png)
+
+The relevant models are now enabled in Bedrock.
 ## Deployment
 ### Step 1: Fork & Clone The Repository
 First, you need to fork the repository. To create a fork, navigate to the [main branch](https://github.com/UBC-CIC/AI-Learning-Assistant) of this repository. Then, in the top-right corner, click `Fork`.

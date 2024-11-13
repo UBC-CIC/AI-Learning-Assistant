@@ -31,8 +31,20 @@ def get_secret(secret_name, expect_json=True):
         logger.error(f"Error fetching secret {secret_name}: {e}")
         raise
 
-## GET SECRET VALUES FOR CONSTANTS
-TABLE_NAME = get_secret(os.environ["TABLE_NAME_SECRET"], expect_json=False)
+def get_parameter(param_name):
+    """
+    Fetch a parameter value from Systems Manager Parameter Store.
+    """
+    try:
+        ssm_client = boto3.client("ssm")
+        response = ssm_client.get_parameter(Name=param_name, WithDecryption=True)
+        return response["Parameter"]["Value"]
+    except Exception as e:
+        logger.error(f"Error fetching parameter {param_name}: {e}")
+        raise
+
+## GET PARAMETER VALUES FOR CONSTANTS
+TABLE_NAME = get_parameter(os.environ["TABLE_NAME_PARAM"])
 
 def connect_to_db():
     try:

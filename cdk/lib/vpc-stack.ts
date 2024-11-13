@@ -19,9 +19,10 @@ export class VpcStack extends Stack {
       
       
       const AWSControlTowerStackSet = ""; //CHANGE TO YOUR CONTROL TOWER STACK SET
+      const ailaPrefix = "AI-LEARNING-ASSISTANT-production";
 
       // VPC for application
-      this.vpc = ec2.Vpc.fromVpcAttributes(this, "VPC", {
+      this.vpc = ec2.Vpc.fromVpcAttributes(this, 'aila-Vpc', {
         vpcId: existingVpcId,
         availabilityZones: ["ca-central-1a", "ca-central-1b", "ca-central-1d"],
         privateSubnetIds: [
@@ -45,65 +46,86 @@ export class VpcStack extends Stack {
             Fn.importValue(`${AWSControlTowerStackSet}-PrivateSubnet3ARouteTable`)
         ],
         vpcCidrBlock: Fn.importValue(`${AWSControlTowerStackSet}-VPCCIDR`),
-    }) as ec2.Vpc;     
+    }) as ec2.Vpc;
 
     // Create a public subnet
-    const publicSubnet = new ec2.Subnet(this, 'PublicSubnet', {
+    const publicSubnet = new ec2.Subnet(this, `PublicSubnet`, {
         vpcId: this.vpc.vpcId,
         availabilityZone: this.vpc.availabilityZones[0],
-        cidrBlock: "172.31.96.0/20",
+        cidrBlock: "10.0.0.0/16",
         mapPublicIpOnLaunch: true,
     });
 
     // Create an Internet Gateway and attach it to the VPC
-    const internetGateway = new ec2.CfnInternetGateway(this, 'InternetGateway', {});
+    const internetGateway = new ec2.CfnInternetGateway(this, `InternetGateway`, {});
     new ec2.CfnVPCGatewayAttachment(this, 'VPCGatewayAttachment', {
         vpcId: this.vpc.vpcId,
         internetGatewayId: internetGateway.ref,
     });
 
     // Create a route table for the public subnet
-    const publicRouteTable = new ec2.CfnRouteTable(this, 'PublicRouteTable', {
+    const publicRouteTable = new ec2.CfnRouteTable(this, `PublicRouteTable`, {
         vpcId: this.vpc.vpcId,
     });
 
     // Associate the public subnet with the new route table
-    new ec2.CfnSubnetRouteTableAssociation(this, 'PublicSubnetAssociation', {
+    new ec2.CfnSubnetRouteTableAssociation(this, `PublicSubnetAssociation`, {
         subnetId: publicSubnet.subnetId,
         routeTableId: publicRouteTable.ref,
     });
 
     // Add a NAT Gateway in the public subnet
-    const natGateway = new ec2.CfnNatGateway(this, 'NatGateway', {
+    const natGateway = new ec2.CfnNatGateway(this, `NatGateway`, {
         subnetId: publicSubnet.subnetId,
         allocationId: new ec2.CfnEIP(this, 'EIP', {}).attrAllocationId,
     });
 
     // Create a route to the Internet Gateway
-    new ec2.CfnRoute(this, 'PublicRoute', {
+    new ec2.CfnRoute(this, `PublicRoute`, {
         routeTableId: publicRouteTable.ref,
         destinationCidrBlock: '0.0.0.0/0',
         gatewayId: internetGateway.ref,
     });
 
     // Update route table for private subnets
-    new ec2.CfnRoute(this, `PrivateSubnetRoute1`, {
+    new ec2.CfnRoute(this, `${ailaPrefix}PrivateSubnetRoute1`, {
         routeTableId: this.vpc.privateSubnets[0].routeTable.routeTableId,
         destinationCidrBlock: '0.0.0.0/0',
         natGatewayId: natGateway.ref,
     });
 
-    new ec2.CfnRoute(this, `PrivateSubnetRoute2`, {
+    new ec2.CfnRoute(this, `${ailaPrefix}PrivateSubnetRoute2`, {
         routeTableId: this.vpc.privateSubnets[1].routeTable.routeTableId,
         destinationCidrBlock: '0.0.0.0/0',
         natGatewayId: natGateway.ref,
     });
 
-    new ec2.CfnRoute(this, `PrivateSubnetRoute3`, {
+    new ec2.CfnRoute(this, `${ailaPrefix}PrivateSubnetRoute3`, {
         routeTableId: this.vpc.privateSubnets[2].routeTable.routeTableId,
         destinationCidrBlock: '0.0.0.0/0',
         natGatewayId: natGateway.ref,
     });
+
+     // Add interface endpoints for private isolated subnets
+     this.vpc.addInterfaceEndpoint('SSM Endpoint', {
+      service: ec2.InterfaceVpcEndpointAwsService.SSM,
+      subnets: { subnetType: ec2.SubnetType.PRIVATE_ISOLATED },
+  });
+
+  this.vpc.addInterfaceEndpoint('Secrets Manager Endpoint', {
+      service: ec2.InterfaceVpcEndpointAwsService.SECRETS_MANAGER,
+      subnets: { subnetType: ec2.SubnetType.PRIVATE_ISOLATED },
+  });
+
+  this.vpc.addInterfaceEndpoint('RDS Endpoint', {
+      service: ec2.InterfaceVpcEndpointAwsService.RDS,
+      subnets: { subnetType: ec2.SubnetType.PRIVATE_ISOLATED },
+  });
+
+  this.vpc.addInterfaceEndpoint('Glue Endpoint', {
+      service: ec2.InterfaceVpcEndpointAwsService.GLUE,
+      subnets: { subnetType: ec2.SubnetType.PRIVATE_ISOLATED },
+  });
 
     this.vpc.addFlowLog("aila-vpcFlowLog");
 
@@ -113,18 +135,6 @@ export class VpcStack extends Stack {
       id,
       this.vpc.vpcDefaultSecurityGroup
     );
-
-    // Add secrets manager endpoint to VPC
-    this.vpc.addInterfaceEndpoint("Secrets Manager Endpoint", {
-      service: ec2.InterfaceVpcEndpointAwsService.SECRETS_MANAGER,
-      subnets: { subnetType: ec2.SubnetType.PRIVATE_ISOLATED },
-    });
-
-    // Add RDS endpoint to VPC
-    this.vpc.addInterfaceEndpoint("RDS Endpoint", {
-      service: ec2.InterfaceVpcEndpointAwsService.RDS,
-      subnets: { subnetType: ec2.SubnetType.PRIVATE_ISOLATED },
-    });
 
     } else {
 

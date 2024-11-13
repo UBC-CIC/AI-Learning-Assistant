@@ -13,8 +13,8 @@ const env = {
   region: process.env.CDK_DEFAULT_REGION 
 };
 
-const vpcStack = new VpcStack(app, 'VpcStack', { env });
-const dbStack = new DatabaseStack(app, 'DatabaseStack2', vpcStack, { env });
-const apiStack = new ApiGatewayStack(app, 'ApiGatewayStack', dbStack, vpcStack,  { env });
-const dbFlowStack = new DBFlowStack(app, 'DBFlowStack', vpcStack, dbStack, apiStack, { env });
-const amplifyStack = new AmplifyStack(app, 'AmplifyStack',apiStack, { env });
+const vpcStack = new VpcStack(app, 'aila-VpcStack', { env });
+const dbStack = new DatabaseStack(app, 'aila-DatabaseStack', vpcStack, { env });
+const apiStack = new ApiGatewayStack(app, 'aila-ApiGatewayStack', dbStack, vpcStack,  { env });
+const dbFlowStack = new DBFlowStack(app, 'aila-DBFlowStack', vpcStack, dbStack, apiStack, { env });
+const amplifyStack = new AmplifyStack(app, 'aila-AmplifyStack',apiStack, { env });

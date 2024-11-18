@@ -6,6 +6,7 @@ import { Fn } from 'aws-cdk-lib';
 
 export class VpcStack extends Stack {
   public readonly vpc: ec2.Vpc;
+  public readonly vpcCidrString: string;
   constructor(scope: Construct, id: string, props?: StackProps) {
     super(scope, id, props);
 
@@ -20,6 +21,8 @@ export class VpcStack extends Stack {
       
       const AWSControlTowerStackSet = ""; //CHANGE TO YOUR CONTROL TOWER STACK SET
       const ailaPrefix = "AI-LEARNING-ASSISTANT-production";
+
+      this.vpcCidrString = "172.31.96.0/20";
 
       // VPC for application
       this.vpc = ec2.Vpc.fromVpcAttributes(this, 'aila-Vpc', {
@@ -52,7 +55,7 @@ export class VpcStack extends Stack {
     const publicSubnet = new ec2.Subnet(this, `PublicSubnet`, {
         vpcId: this.vpc.vpcId,
         availabilityZone: this.vpc.availabilityZones[0],
-        cidrBlock: "172.31.96.0/20",
+        cidrBlock: this.vpcCidrString,
         mapPublicIpOnLaunch: true,
     });
 
@@ -138,12 +141,14 @@ export class VpcStack extends Stack {
 
     } else {
 
+      this.vpcCidrString = '10.0.0.0/16';
+
       const natGatewayProvider = ec2.NatProvider.gateway();
 
       // VPC for application
       this.vpc = new ec2.Vpc(this, "aila-Vpc", {
         //cidr: "10.0.0.0/16",
-        ipAddresses: ec2.IpAddresses.cidr('10.0.0.0/16'),
+        ipAddresses: ec2.IpAddresses.cidr(this.vpcCidrString),
         natGatewayProvider: natGatewayProvider,
         natGateways: 1,
         maxAzs: 2,

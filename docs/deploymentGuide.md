@@ -164,7 +164,7 @@ You can proceed with the rest of the deployment instructions and the Vpc Stack w
 ### Step 3: CDK Deployment
 It's time to set up everything that goes on behind the scenes! For more information on how the backend works, feel free to refer to the Architecture Deep Dive, but an understanding of the backend is not necessary for deployment.
 
-Open a terminal in the `/backend` directory.
+Open a terminal in the `/cdk` directory.
 
 **Download Requirements**: Install requirements with npm by running `npm install` command.
 

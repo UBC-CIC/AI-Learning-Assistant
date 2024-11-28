@@ -110,6 +110,26 @@ aws secretsmanager create-secret \
     --profile <your-profile-name>
 ```
 
+Finally, in order to restrict user sign up to specific email domains, you will need to upload a comma separated list of allowed email domains to Amazon SSM Parameter Store. You can do so by running the following command. Make sure you replace `<YOUR-ALLOWED-EMAIL-DOMAIN-LIST>` and `<YOUR-PROFILE-NAME>` with your actual list and the appropriate AWS profile name.
+
+```
+aws ssm put-parameter \
+    --name "/AILA/AllowedEmailDomains" \
+    --value "<YOUR-ALLOWED-EMAIL-DOMAIN-LIST>" \
+    --type SecureString \
+    --profile <YOUR-PROFILE-NAME>
+```
+
+For example,
+
+```
+aws ssm put-parameter \
+    --name "/AILA/AllowedEmailDomains" \
+    --value "gmail.com,ubc.ca" \
+    --type SecureString \
+    --profile <YOUR-PROFILE-NAME>
+```
+
 #### CDK Deployment in Hybrid Cloud Environment
 
 The following set of instructions are only if you want to deploy this application in a **hybrid cloud environment**. If you do not want to do this you can skip this section.

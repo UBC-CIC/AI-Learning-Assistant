@@ -673,6 +673,25 @@ export class ApiGatewayStack extends cdk.Stack {
       })
     );
 
+    const preSignupLambda = new lambda.Function(this, "preSignupLambda", {
+      runtime: lambda.Runtime.NODEJS_20_X,
+      code: lambda.Code.fromAsset("lambda/lib"),
+      handler: "preSignup.handler",
+      timeout: Duration.seconds(300),
+      environment: {
+        ALLOWED_EMAIL_DOMAINS: "/AILA/AllowedEmailDomains",
+      },
+      vpc: vpcStack.vpc,
+      functionName: `aila-preSignupLambda`,
+      memorySize: 128,
+      role: coglambdaRole,
+    });
+
+    this.userPool.addTrigger(
+      cognito.UserPoolOperation.PRE_SIGN_UP,
+      preSignupLambda
+    );
+
     const AutoSignupLambda = new lambda.Function(this, "addStudentOnSignUp", {
       runtime: lambda.Runtime.NODEJS_20_X,
       code: lambda.Code.fromAsset("lambda/lib"),

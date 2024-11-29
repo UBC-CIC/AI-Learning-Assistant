@@ -819,11 +819,6 @@ export class ApiGatewayStack extends cdk.Stack {
       "studentLambdaAuthorizer"
     );
 
-    const bedrockLLMID = new cdk.CfnParameter(this, "bedrockLLMID", {
-      type: "String",
-      description: "The name of the GitHub repository",
-    }).valueAsString;
-
     /**
      *
      * Create Lambda for User Authorization endpoints
@@ -866,7 +861,7 @@ export class ApiGatewayStack extends cdk.Stack {
       {
         parameterName: "/AILA/BedrockLLMId",
         description: "Parameter containing the Bedrock LLM ID",
-        stringValue: bedrockLLMID,
+        stringValue: "meta.llama3-70b-instruct-v1:0",
       }
     );
 
@@ -937,7 +932,6 @@ export class ApiGatewayStack extends cdk.Stack {
         "arn:aws:bedrock:" +
           this.region +
           "::foundation-model/amazon.titan-embed-text-v2:0",
-        "arn:aws:bedrock:" + this.region + `::foundation-model/${bedrockLLMID}`,
       ],
     });
 

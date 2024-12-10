@@ -1279,34 +1279,39 @@ paths:
             responseTemplates:
               application/json: |
                 {}
-    get:
-      summary: Retrieve course messages and competency status for a specific student
-      description: |
-        This endpoint returns all messages for a specific student in a course. It includes user_id, module_name, session, message content, competency status (complete/incomplete), and message timestamp, ordered by user_id, module_name, session, and timestamp.
-      parameters:
-        - name: instructor_email
-          in: query
-          required: true
-          schema:
-            type: string
-          description: The email of the instructor.
-        - name: course_id
-          in: query
-          required: true
-          schema:
-            type: string
-          description: The course ID.
+    post:
+      tags:
+        - Instructor
+      summary: Submit course message retrieval job
+      operationId: instructor_course_messages_POST
+      description: Submit a job to retrieve course messages via SQS.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                instructor_email:
+                  type: string
+                  description: The instructor's email.
+                course_id:
+                  type: string
+                  description: The course ID.
+              required:
+                - instructor_email
+                - course_id
       responses:
         "200":
-          description: Presigned URL generated successfully
+          description: Job submitted successfully.
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  presignedurl:
+                  message:
                     type: string
-                    description: Presigned URL to upload document file to S3 Bucket
+                    description: A success message.
         "400":
           description: Bad Request
         "401":
@@ -1319,7 +1324,7 @@ paths:
         - instructorAuthorizer: []
       x-amazon-apigateway-integration:
         uri:
-          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${instructorFunction.Arn}/invocations"
+          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${sqsFunction.Arn}/invocations"
         passthroughBehavior: "when_no_match"
         httpMethod: "POST"
         type: "aws_proxy"

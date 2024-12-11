@@ -1382,5 +1382,23 @@ export class ApiGatewayStack extends cdk.Stack {
         batchSize: 1, // Process messages one at a time
       })
     );
+
+    // Presigned URL Lambda
+    const presignedUrlLambda = new lambda.Function(this, "PresignedUrlLambda", {
+      runtime: lambda.Runtime.PYTHON_3_9,
+      handler: "index.lambda_handler",
+      code: lambda.Code.fromAsset("lambda/getPresignedURL"),
+      environment: {
+        BUCKET_NAME: dataIngestionBucket.bucketName,
+      },
+    });
+
+    // Grant read access to the S3 bucket
+    dataIngestionBucket.grantRead(presignedUrlLambda);
+
+    // API Gateway Integration
+    const presignedUrlResource = this.api.root.addResource("presigned-url");
+    presignedUrlResource.addMethod("GET", new apigateway.LambdaIntegration(presignedUrlLambda));
+
   }
 }

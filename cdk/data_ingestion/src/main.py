@@ -75,9 +75,6 @@ def parse_s3_file_path(file_key):
                     "body": json.dumps("Error parsing S3 file path.")
                 }
 
-# def log_file_deletion(file_key):
-#     print(f"File deleted: {file_key}")
-
 def insert_file_into_db(module_id, file_name, file_type, file_path, bucket_name):    
     connection = connect_to_db()
     if connection is None:
@@ -152,37 +149,6 @@ def insert_file_into_db(module_id, file_name, file_type, file_path, bucket_name)
             connection.close()
         logger.error(f"Error inserting file {file_name}.{file_type} into database: {e}")
         raise
-
-# def delete_course_from_db(course_id):
-#     """Deletes the course from the database and cascades the delete."""
-#     connection = connect_to_db()
-#     if connection is None:
-#         logger.error("No database connection available for deleting course.")
-#         return False
-    
-#     try:
-#         cur = connection.cursor()
-        
-#         # Delete from langchain_pg_collection with cascade
-#         delete_query = """
-#         DELETE FROM langchain_pg_collection
-#         WHERE name = %s;
-#         """
-#         cur.execute(delete_query, (course_id,))
-#         connection.commit()
-#         logger.info(f"Successfully deleted course {course_id} collection from embeddings.")
-        
-#         cur.close()
-#         connection.close()
-#         return True
-#     except Exception as e:
-#         if cur:
-#             cur.close()
-#         if connection:
-#             connection.rollback()
-#             connection.close()
-#         logger.error(f"Error deleting course {course_id} collection from embeddings: {e}")
-#         return False
 
 def update_vectorstore_from_s3(bucket, course_id):
     

@@ -33,8 +33,8 @@ export class DatabaseStack extends Stack {
          * Create Empty Secret Manager
          * Secrets will be populate at initalization of data
          */
-        this.secretPathAdminName = "AILA/credentials/rdsDbCredential"; // Name in the Secret Manager to store DB credentials        
-        const secretPathUserName = "AILA/userCredentials/rdsDbCredential";
+        this.secretPathAdminName = `${id}-AILA/credentials/rdsDbCredential`; // Name in the Secret Manager to store DB credentials        
+        const secretPathUserName = `${id}-AILA/userCredentials/rdsDbCredential`;
         this.secretPathUser = new secretsmanager.Secret(this, secretPathUserName, {
             secretName: secretPathUserName,
             description: "Secrets for clients to connect to RDS",
@@ -45,7 +45,7 @@ export class DatabaseStack extends Stack {
             }
         })
 
-        const secretPathTableCreator = "AILA/userCredentials/TableCreator";
+        const secretPathTableCreator = `${id}-AILA/userCredentials/TableCreator`;
         this.secretPathTableCreator= new secretsmanager.Secret(this, secretPathTableCreator, {
             secretName: secretPathTableCreator,
             description: "Secrets for TableCreator to connect to RDS",
@@ -55,7 +55,7 @@ export class DatabaseStack extends Stack {
                 password: SecretValue.unsafePlainText("applicationPassword")    // in the initializer
             }
         })
-        const parameterGroup = new rds.ParameterGroup(this, "rdsParameterGroup2", {
+        const parameterGroup = new rds.ParameterGroup(this, `${id}rdsParameterGroup`, {
             engine: rds.DatabaseInstanceEngine.postgres({
               version: rds.PostgresEngineVersion.VER_16_3,
             }),
@@ -69,7 +69,7 @@ export class DatabaseStack extends Stack {
          * 
          * Create an RDS with Postgres database in an isolated subnet
          */
-        this.dbInstance = new rds.DatabaseInstance(this, "AILA2", {
+        this.dbInstance = new rds.DatabaseInstance(this, `${id}-database`, {
             vpc: vpcStack.vpc,
             vpcSubnets: {
                 subnetType: ec2.SubnetType.PRIVATE_ISOLATED,
@@ -110,7 +110,7 @@ export class DatabaseStack extends Stack {
         });
          
 
-        const rdsProxyRole = new iam.Role(this, "DBProxyRole", {
+        const rdsProxyRole = new iam.Role(this, `${id}-DBProxyRole`, {
             assumedBy: new iam.ServicePrincipal('rds.amazonaws.com')
         });
 

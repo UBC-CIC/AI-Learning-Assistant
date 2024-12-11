@@ -28,7 +28,7 @@ Before you deploy, you must have the following installed on your device:
 - [AWS CLI](https://aws.amazon.com/cli/)
 - [AWS CDK](https://docs.aws.amazon.com/cdk/v2/guide/cli.html) *(v2.122.0 > required)*
 - [npm](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm)
-- [node](https://nodejs.org/en/learn/getting-started/how-to-install-nodejs) *(v20.0.0 > required)*
+- [node](https://nodejs.org/en/ln/getting-started/how-to-install-nodejs) *(v20.0.0 > required)*
 - [docker](https://www.docker.com/products/docker-desktop/)
 
 ## Pre-Deployment
@@ -176,11 +176,21 @@ cdk bootstrap aws://<YOUR_AWS_ACCOUNT_ID>/<YOUR_ACCOUNT_REGION> --profile <your-
 ```
 
 **Deploy CDK stack**
-You may run the following command to deploy the stacks all at once. Again, replace `<your-profile-name>` with the appropriate AWS profile used earlier.
+ You may run the following command to deploy the stacks all at once. Again, replace `<your-profile-name>` with the appropriate AWS profile used earlier. Also replace `<your-stack-prefix>` with the appropriate stack prefix.
+The stack prefix will be prefixed onto the physical names of the resources created during deployment.
 ```
-cdk deploy --all --parameters aila-AmplifyStack:githubRepoName=AI-LEARNING-ASSISTANT --profile <your-profile-name> 
+cdk deploy --all \
+ --parameters <your-stack-prefix>-Amplify:githubRepoName=Digital-Strategy-Assistant \
+ --context StackPrefix=<your-stack-prefix> \
+ --profile <your-profile-name>
 ```
-If you have trouble running the above command, try removing all the \ and run it in one line.
+
+For example:
+```
+cdk deploy --all --parameters AILA-Amplify:githubRepoName=Digital-Strategy-Assistant --context StackPrefix=AILA --profile <your-profile-name>
+```
+
+If you have trouble running the commands, try removing all the \ and run it in one line.
 
 ## Post-Deployment
 ### Step 1: Build AWS Amplify App

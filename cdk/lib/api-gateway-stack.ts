@@ -1021,8 +1021,8 @@ export class ApiGatewayStack extends cdk.Stack {
         vpc: vpcStack.vpc, // Pass the VPC
         functionName: "DataIngestLambdaDockerFunc",
         environment: {
-          SM_DB_CREDENTIALS: db.secretPathUser.secretName,
-          RDS_PROXY_ENDPOINT: db.rdsProxyEndpoint,
+          SM_DB_CREDENTIALS: db.secretPathAdminName,
+          RDS_PROXY_ENDPOINT: db.rdsProxyEndpointAdmin,
           BUCKET: dataIngestionBucket.bucketName,
           REGION: this.region,
           EMBEDDING_BUCKET_NAME: embeddingStorageBucket.bucketName,

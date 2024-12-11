@@ -24,6 +24,7 @@ import * as s3 from "aws-cdk-lib/aws-s3";
 import * as bedrock from "aws-cdk-lib/aws-bedrock";
 import * as secretsmanager from "aws-cdk-lib/aws-secretsmanager";
 import * as ssm from "aws-cdk-lib/aws-ssm";
+import * as sqs from "aws-cdk-lib/aws-sqs";
 
 export class ApiGatewayStack extends cdk.Stack {
   private readonly api: apigateway.SpecRestApi;
@@ -116,6 +117,22 @@ export class ApiGatewayStack extends cdk.Stack {
     this.layerList["psycopg2"] = psycopgLayer;
     this.layerList["postgres"] = postgres;
     this.layerList["jwt"] = jwt;
+
+    // Create FIFO SQS Queue for jobs that get classroom chatlogs for a course
+    const messagesQueue = new sqs.Queue(this, `${id}-MessagesQueue`, {
+      queueName: `${id}-messages-queue.fifo`,
+      fifo: true,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+      visibilityTimeout: Duration.seconds(300),
+    });
+    
+    messagesQueue.addToResourcePolicy(
+      new iam.PolicyStatement({
+        actions: ["sqs:SendMessage"],
+        principals: [new iam.ServicePrincipal("lambda.amazonaws.com")],
+        resources: [messagesQueue.queueArn],
+      })
+    );
 
     // Create Cognito user pool
 
@@ -1344,5 +1361,83 @@ export class ApiGatewayStack extends cdk.Stack {
         resources: [tableNameParameter.parameterArn],
       })
     );
+
+    /**
+     *
+     * Create a Lambda function that populates SQS with parameters to start new job
+     */
+    const sqsFunction = new lambda.Function(this, `${id}-sqsFunction`, {
+      runtime: lambda.Runtime.NODEJS_20_X,
+      code: lambda.Code.fromAsset("lambda/sqsFunction"),
+      handler: "sqsFunction.handler",
+      timeout: Duration.seconds(300),
+      environment: {
+        SQS_QUEUE_URL: messagesQueue.queueUrl,
+      },
+      functionName: `${id}-sqsFunction`,
+      memorySize: 128,
+    });
+    
+    messagesQueue.grantSendMessages(sqsFunction);
+    
+    sqsFunction.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ["sqs:SendMessage"],
+        resources: [messagesQueue.queueArn],
+        effect: iam.Effect.ALLOW,
+      })
+    );
+
+    // Override the Logical ID of the Lambda Function to get ARN in OpenAPI
+    const cfnSqsFunction = sqsFunction.node
+      .defaultChild as lambda.CfnFunction;
+      cfnSqsFunction.overrideLogicalId("sqsFunction");
+
+    // Add the permission to the Lambda function's policy to allow API Gateway access
+    sqsFunction.addPermission("AllowApiGatewayInvoke", {
+      principal: new iam.ServicePrincipal("apigateway.amazonaws.com"),
+      action: "lambda:InvokeFunction",
+      sourceArn: `arn:aws:execute-api:${this.region}:${this.account}:${this.api.restApiId}/*/*/instructor*`,
+    });
+
+    /**
+     *
+     * Create a Lambda function that gets triggered when SQS has new parameters
+     */
+    const sqsTrigger = new lambda.Function(this, `${id}-SQSTrigger`, {
+      runtime: lambda.Runtime.NODEJS_20_X,
+      code: lambda.Code.fromAsset("lambda/sqsTrigger"),
+      handler: "sqsTrigger.handler",
+      timeout: Duration.seconds(300),
+      environment: {
+        BUCKET: dataIngestionBucket.bucketName,
+      },
+      functionName: `${id}-SQSTrigger`,
+      memorySize: 128,
+    });
+    
+    sqsTrigger.addEventSource(
+      new lambdaEventSources.SqsEventSource(messagesQueue, {
+        batchSize: 1, // Process messages one at a time
+      })
+    );
+
+    // Presigned URL Lambda
+    const presignedUrlLambda = new lambda.Function(this, "PresignedUrlLambda", {
+      runtime: lambda.Runtime.PYTHON_3_9,
+      handler: "index.lambda_handler",
+      code: lambda.Code.fromAsset("lambda/getPresignedURL"),
+      environment: {
+        BUCKET_NAME: dataIngestionBucket.bucketName,
+      },
+    });
+
+    // Grant read access to the S3 bucket
+    dataIngestionBucket.grantRead(presignedUrlLambda);
+
+    // API Gateway Integration
+    const presignedUrlResource = this.api.root.addResource("presigned-url");
+    presignedUrlResource.addMethod("GET", new apigateway.LambdaIntegration(presignedUrlLambda));
+
   }
 }

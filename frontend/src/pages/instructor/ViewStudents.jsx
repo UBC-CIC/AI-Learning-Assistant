@@ -142,29 +142,30 @@ export const ViewStudents = ({ courseName, course_id }) => {
       const session = await fetchAuthSession();
       const token = session.tokens.idToken;
       const { email } = await fetchUserAttributes();
+  
       const response = await fetch(
-        `${
-          import.meta.env.VITE_API_ENDPOINT
-        }instructor/course_messages?course_id=${encodeURIComponent(
-          course_id
-        )}&instructor_email=${encodeURIComponent(email)}`,
+        `${import.meta.env.VITE_API_ENDPOINT}instructor/course_messages`,
         {
-          method: "GET",
+          method: "POST",
           headers: {
             Authorization: token,
             "Content-Type": "application/json",
           },
+          body: JSON.stringify({
+            course_id: course_id, // Include course_id in the body
+            instructor_email: email, // Include instructor_email in the body
+          }),
         }
       );
+  
       if (response.ok) {
         const data = await response.json();
-        setAllMessageData(data);
-        downloadCSV(data);
+        console.log("Job submitted successfully:", data);
       } else {
-        console.error("Failed to fetch messages:", response.statusText);
+        console.error("Failed to submit job:", response.statusText);
       }
     } catch (error) {
-      console.error("Error fetching data:", error);
+      console.error("Error submitting job:", error);
     }
   };
 

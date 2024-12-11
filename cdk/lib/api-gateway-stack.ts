@@ -673,6 +673,32 @@ export class ApiGatewayStack extends cdk.Stack {
       })
     );
 
+    coglambdaRole.addToPolicy(
+      new iam.PolicyStatement({
+        actions: ["ssm:GetParameter"],
+        resources: [`arn:aws:ssm:${this.region}:${this.account}:parameter/*`],
+      })
+    );
+
+    const preSignupLambda = new lambda.Function(this, "preSignupLambda", {
+      runtime: lambda.Runtime.NODEJS_20_X,
+      code: lambda.Code.fromAsset("lambda/lib"),
+      handler: "preSignup.handler",
+      timeout: Duration.seconds(300),
+      environment: {
+        ALLOWED_EMAIL_DOMAINS: "/AILA/AllowedEmailDomains",
+      },
+      vpc: vpcStack.vpc,
+      functionName: `aila-preSignupLambda`,
+      memorySize: 128,
+      role: coglambdaRole,
+    });
+
+    this.userPool.addTrigger(
+      cognito.UserPoolOperation.PRE_SIGN_UP,
+      preSignupLambda
+    );
+
     const AutoSignupLambda = new lambda.Function(this, "addStudentOnSignUp", {
       runtime: lambda.Runtime.NODEJS_20_X,
       code: lambda.Code.fromAsset("lambda/lib"),
@@ -829,23 +855,35 @@ export class ApiGatewayStack extends cdk.Stack {
     );
 
     // Create parameters for Bedrock LLM ID, Embedding Model ID, and Table Name in Parameter Store
-    const bedrockLLMParameter = new ssm.StringParameter(this, "BedrockLLMParameter", {
-      parameterName: "/AILA/BedrockLLMId",
-      description: "Parameter containing the Bedrock LLM ID",
-      stringValue: "meta.llama3-70b-instruct-v1:0",
-    });
+    const bedrockLLMParameter = new ssm.StringParameter(
+      this,
+      "BedrockLLMParameter",
+      {
+        parameterName: "/AILA/BedrockLLMId",
+        description: "Parameter containing the Bedrock LLM ID",
+        stringValue: "meta.llama3-70b-instruct-v1:0",
+      }
+    );
 
-    const embeddingModelParameter = new ssm.StringParameter(this, "EmbeddingModelParameter", {
-      parameterName: "/AILA/EmbeddingModelId",
-      description: "Parameter containing the Embedding Model ID",
-      stringValue: "amazon.titan-embed-text-v2:0",
-    });
+    const embeddingModelParameter = new ssm.StringParameter(
+      this,
+      "EmbeddingModelParameter",
+      {
+        parameterName: "/AILA/EmbeddingModelId",
+        description: "Parameter containing the Embedding Model ID",
+        stringValue: "amazon.titan-embed-text-v2:0",
+      }
+    );
 
-    const tableNameParameter = new ssm.StringParameter(this, "TableNameParameter", {
-      parameterName: "/AILA/TableName",
-      description: "Parameter containing the DynamoDB table name",
-      stringValue: "DynamoDB-Conversation-Table",
-    });
+    const tableNameParameter = new ssm.StringParameter(
+      this,
+      "TableNameParameter",
+      {
+        parameterName: "/AILA/TableName",
+        description: "Parameter containing the DynamoDB table name",
+        stringValue: "DynamoDB-Conversation-Table",
+      }
+    );
 
     /**
      *
@@ -1060,9 +1098,14 @@ export class ApiGatewayStack extends cdk.Stack {
     dataIngestLambdaDockerFunc.addToRolePolicy(
       new iam.PolicyStatement({
         effect: iam.Effect.ALLOW,
-        actions: ["s3:PutObject", "s3:GetObject", "s3:DeleteObject", "s3:HeadObject"],
+        actions: [
+          "s3:PutObject",
+          "s3:GetObject",
+          "s3:DeleteObject",
+          "s3:HeadObject",
+        ],
         resources: [
-          `arn:aws:s3:::${embeddingStorageBucket.bucketName}/*`,  // Grant access to all objects within this bucket
+          `arn:aws:s3:::${embeddingStorageBucket.bucketName}/*`, // Grant access to all objects within this bucket
         ],
       })
     );
@@ -1093,16 +1136,14 @@ export class ApiGatewayStack extends cdk.Stack {
           `arn:aws:secretsmanager:${this.region}:${this.account}:secret:*`,
         ],
       })
-    );  
+    );
 
     // Grant access to SSM Parameter Store for specific parameters
     dataIngestLambdaDockerFunc.addToRolePolicy(
       new iam.PolicyStatement({
         effect: iam.Effect.ALLOW,
         actions: ["ssm:GetParameter"],
-        resources: [
-          embeddingModelParameter.parameterArn,
-        ],
+        resources: [embeddingModelParameter.parameterArn],
       })
     );
 
@@ -1300,9 +1341,7 @@ export class ApiGatewayStack extends cdk.Stack {
       new iam.PolicyStatement({
         effect: iam.Effect.ALLOW,
         actions: ["ssm:GetParameter"],
-        resources: [
-          tableNameParameter.parameterArn,
-        ],
+        resources: [tableNameParameter.parameterArn],
       })
     );
   }

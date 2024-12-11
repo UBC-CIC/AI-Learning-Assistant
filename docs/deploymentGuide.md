@@ -74,7 +74,7 @@ cd AI-Learning-Assistant
 ```
 
 ### Step 2: Upload Secrets
-You would have to supply your GitHub personal access token you created eariler when dpeloying the solution. Run the following command and ensure you replace `<YOUR-GITHUB-TOKEN>` and `<YOUR-PROFILE-NAME>` with your actual GitHub token and the appropriate AWS profile name.
+You would have to supply your GitHub personal access token you created earlier when deploying the solution. Run the following command and ensure you replace `<YOUR-GITHUB-TOKEN>` and `<YOUR-PROFILE-NAME>` with your actual GitHub token and the appropriate AWS profile name.
 ```
 aws secretsmanager create-secret \
     --name github-personal-access-token \
@@ -108,6 +108,26 @@ aws secretsmanager create-secret \
     --name AILASecrets \
     --secret-string '{\"DB_Username\":\"AILASecrets\"}'\
     --profile <your-profile-name>
+```
+
+Finally, in order to restrict user sign up to specific email domains, you will need to upload a comma separated list of allowed email domains to Amazon SSM Parameter Store. You can do so by running the following command. Make sure you replace `<YOUR-ALLOWED-EMAIL-DOMAIN-LIST>` and `<YOUR-PROFILE-NAME>` with your actual list and the appropriate AWS profile name.
+
+```
+aws ssm put-parameter \
+    --name "/AILA/AllowedEmailDomains" \
+    --value "<YOUR-ALLOWED-EMAIL-DOMAIN-LIST>" \
+    --type SecureString \
+    --profile <YOUR-PROFILE-NAME>
+```
+
+For example,
+
+```
+aws ssm put-parameter \
+    --name "/AILA/AllowedEmailDomains" \
+    --value "gmail.com,ubc.ca" \
+    --type SecureString \
+    --profile <YOUR-PROFILE-NAME>
 ```
 
 #### CDK Deployment in Hybrid Cloud Environment
@@ -144,7 +164,7 @@ You can proceed with the rest of the deployment instructions and the Vpc Stack w
 ### Step 3: CDK Deployment
 It's time to set up everything that goes on behind the scenes! For more information on how the backend works, feel free to refer to the Architecture Deep Dive, but an understanding of the backend is not necessary for deployment.
 
-Open a terminal in the `/backend` directory.
+Open a terminal in the `/cdk` directory.
 
 **Download Requirements**: Install requirements with npm by running `npm install` command.
 
@@ -158,7 +178,7 @@ cdk bootstrap aws://<YOUR_AWS_ACCOUNT_ID>/<YOUR_ACCOUNT_REGION> --profile <your-
 **Deploy CDK stack**
 You may run the following command to deploy the stacks all at once. Again, replace `<your-profile-name>` with the appropriate AWS profile used earlier.
 ```
-cdk deploy --all --parameters AmplifyStack:githubRepoName=AI-LEARNING-ASSISTANT --context prefix=AI-LEARNING-ASSISTANT-production --profile <your-profile-name> 
+cdk deploy --all --parameters aila-AmplifyStack:githubRepoName=AI-LEARNING-ASSISTANT --profile <your-profile-name> 
 ```
 If you have trouble running the above command, try removing all the \ and run it in one line.
 

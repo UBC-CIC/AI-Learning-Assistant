@@ -25,7 +25,7 @@ export class VpcStack extends Stack {
       this.vpcCidrString = "172.31.96.0/20";
 
       // VPC for application
-      this.vpc = ec2.Vpc.fromVpcAttributes(this, 'aila-Vpc', {
+      this.vpc = ec2.Vpc.fromVpcAttributes(this, `${id}-Vpc`, {
         vpcId: existingVpcId,
         availabilityZones: ["ca-central-1a", "ca-central-1b", "ca-central-1d"],
         privateSubnetIds: [
@@ -130,7 +130,7 @@ export class VpcStack extends Stack {
       subnets: { subnetType: ec2.SubnetType.PRIVATE_ISOLATED },
   });
 
-    this.vpc.addFlowLog("aila-vpcFlowLog");
+    this.vpc.addFlowLog(`${id}-vpcFlowLog`);
 
     // Get default security group for VPC
     const defaultSecurityGroup = ec2.SecurityGroup.fromSecurityGroupId(
@@ -178,13 +178,13 @@ export class VpcStack extends Stack {
       );
 
       // Add secrets manager endpoint to VPC
-      this.vpc.addInterfaceEndpoint("Secrets Manager Endpoint", {
+      this.vpc.addInterfaceEndpoint(`${id}-Secrets Manager Endpoint`, {
         service: ec2.InterfaceVpcEndpointAwsService.SECRETS_MANAGER,
         subnets: { subnetType: ec2.SubnetType.PRIVATE_ISOLATED },
       });
 
       // Add RDS endpoint to VPC
-      this.vpc.addInterfaceEndpoint("RDS Endpoint", {
+      this.vpc.addInterfaceEndpoint(`${id}-RDS Endpoint`, {
         service: ec2.InterfaceVpcEndpointAwsService.RDS,
         subnets: { subnetType: ec2.SubnetType.PRIVATE_ISOLATED },
       });

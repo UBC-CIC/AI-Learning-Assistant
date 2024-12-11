@@ -13,10 +13,11 @@ const env = {
   account: process.env.CDK_DEFAULT_ACCOUNT, 
   region: process.env.CDK_DEFAULT_REGION 
 };
+const StackPrefix = app.node.tryGetContext("StackPrefix")
 
-const vpcStack = new VpcStack(app, 'aila-VpcStack', { env });
-const dbStack = new DatabaseStack(app, 'aila-DatabaseStack', vpcStack, { env });
-const apiStack = new ApiGatewayStack(app, 'aila-ApiGatewayStack', dbStack, vpcStack,  { env });
-const dbFlowStack = new DBFlowStack(app, 'aila-DBFlowStack', vpcStack, dbStack, apiStack, { env });
-const amplifyStack = new AmplifyStack(app, 'aila-AmplifyStack',apiStack, { env });
+const vpcStack = new VpcStack(app, `${StackPrefix}-VpcStack`, { env });
+const dbStack = new DatabaseStack(app, `${StackPrefix}-DatabaseStack`, vpcStack, { env });
+const apiStack = new ApiGatewayStack(app, `${StackPrefix}-ApiGatewayStack`, dbStack, vpcStack,  { env });
+const dbFlowStack = new DBFlowStack(app, `${StackPrefix}-DBFlowStack`, vpcStack, dbStack, apiStack, { env });
+const amplifyStack = new AmplifyStack(app, `${StackPrefix}-AmplifyStack`,apiStack, { env });
 Tags.of(app).add("app", "AI-Learning-Assistant");

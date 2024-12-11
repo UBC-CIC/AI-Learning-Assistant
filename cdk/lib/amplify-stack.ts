@@ -55,8 +55,8 @@ export class AmplifyStack extends cdk.Stack {
       "aila-owner-name"
     );
 
-    const amplifyApp = new App(this, "amplifyApp", {
-      appName: "aila-amplify",
+    const amplifyApp = new App(this, `${id}-amplifyApp`, {
+      appName: `${id}-amplify`,
       sourceCodeProvider: new GitHubSourceCodeProvider({
         owner: username,
         repository: githubRepoName,

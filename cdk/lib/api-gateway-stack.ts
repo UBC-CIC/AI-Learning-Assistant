@@ -55,7 +55,7 @@ export class ApiGatewayStack extends cdk.Stack {
 
     const embeddingStorageBucket = new s3.Bucket(
       this,
-      "embeddingStorageBucket",
+      `${id}-embeddingStorageBucket`,
       {
         blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
         cors: [
@@ -110,7 +110,7 @@ export class ApiGatewayStack extends cdk.Stack {
     // powertoolsLayer does not follow the format of layerList
     const powertoolsLayer = lambda.LayerVersion.fromLayerVersionArn(
       this,
-      "PowertoolsLayer",
+      `${id}-PowertoolsLayer`,
       `arn:aws:lambda:${this.region}:017000801446:layer:AWSLambdaPowertoolsPythonV2:78`
     );
 
@@ -142,8 +142,8 @@ export class ApiGatewayStack extends cdk.Stack {
      * Using verification code
      * Inspiration from http://buraktas.com/create-cognito-user-pool-aws-cdk/
      */
-    const userPoolName = "ailaUserPool";
-    this.userPool = new cognito.UserPool(this, "aila-pool", {
+    const userPoolName = `${id}-UserPool`;
+    this.userPool = new cognito.UserPool(this, `${id}-pool`, {
       userPoolName: userPoolName,
       signInAliases: {
         email: true,
@@ -170,7 +170,7 @@ export class ApiGatewayStack extends cdk.Stack {
     });
 
     // Create app client
-    this.appClient = this.userPool.addClient("aila-pool", {
+    this.appClient = this.userPool.addClient(`${id}-pool`, {
       userPoolClientName: userPoolName,
       authFlows: {
         userPassword: true,
@@ -181,10 +181,10 @@ export class ApiGatewayStack extends cdk.Stack {
 
     this.identityPool = new cognito.CfnIdentityPool(
       this,
-      "aila-identity-pool",
+      `${id}-identity-pool`,
       {
         allowUnauthenticatedIdentities: true,
-        identityPoolName: "ailaIdentityPool",
+        identityPoolName: `${id}-IdentityPool`,
         cognitoIdentityProviders: [
           {
             clientId: this.appClient.userPoolClientId,
@@ -194,7 +194,7 @@ export class ApiGatewayStack extends cdk.Stack {
       }
     );
 
-    const secretsName = "AILA_Cognito_Secrets";
+    const secretsName = `${id}-AILA_Cognito_Secrets`;
 
     this.secret = new secretsmanager.Secret(this, secretsName, {
       secretName: secretsName,
@@ -236,10 +236,10 @@ export class ApiGatewayStack extends cdk.Stack {
     const data = Fn.transform("AWS::Include", { Location: asset.s3ObjectUrl });
 
     // Create the API Gateway REST API
-    this.api = new apigateway.SpecRestApi(this, "APIGateway", {
+    this.api = new apigateway.SpecRestApi(this, `${id}-APIGateway`, {
       apiDefinition: apigateway.AssetApiDefinition.fromInline(data),
       endpointTypes: [apigateway.EndpointType.REGIONAL],
-      restApiName: "ailaAPI",
+      restApiName: `${id}-API`,
       deploy: true,
       cloudWatchRole: true,
       deployOptions: {
@@ -259,7 +259,7 @@ export class ApiGatewayStack extends cdk.Stack {
     this.stageARN_APIGW = this.api.deploymentStage.stageArn;
     this.apiGW_basedURL = this.api.urlForPath();
 
-    const studentRole = new iam.Role(this, "StudentRole", {
+    const studentRole = new iam.Role(this, `${id}-StudentRole`, {
       assumedBy: new iam.FederatedPrincipal(
         "cognito-identity.amazonaws.com",
         {
@@ -275,7 +275,7 @@ export class ApiGatewayStack extends cdk.Stack {
     });
 
     studentRole.attachInlinePolicy(
-      new iam.Policy(this, "StudentPolicy", {
+      new iam.Policy(this, `${id}-StudentPolicy`, {
         statements: [
           createPolicyStatement(
             ["execute-api:Invoke"],
@@ -287,7 +287,7 @@ export class ApiGatewayStack extends cdk.Stack {
       })
     );
 
-    const instructorRole = new iam.Role(this, "InstructorRole", {
+    const instructorRole = new iam.Role(this, `${id}-InstructorRole`, {
       assumedBy: new iam.FederatedPrincipal(
         "cognito-identity.amazonaws.com",
         {
@@ -303,7 +303,7 @@ export class ApiGatewayStack extends cdk.Stack {
     });
 
     instructorRole.attachInlinePolicy(
-      new iam.Policy(this, "InstructorPolicy", {
+      new iam.Policy(this, `${id}-InstructorPolicy`, {
         statements: [
           createPolicyStatement(
             ["execute-api:Invoke"],
@@ -315,7 +315,7 @@ export class ApiGatewayStack extends cdk.Stack {
       })
     );
 
-    const adminRole = new iam.Role(this, "AdminRole", {
+    const adminRole = new iam.Role(this, `${id}-AdminRole`, {
       assumedBy: new iam.FederatedPrincipal(
         "cognito-identity.amazonaws.com",
         {
@@ -331,7 +331,7 @@ export class ApiGatewayStack extends cdk.Stack {
     });
 
     adminRole.attachInlinePolicy(
-      new iam.Policy(this, "AdminPolicy", {
+      new iam.Policy(this, `${id}-AdminPolicy`, {
         statements: [
           createPolicyStatement(
             ["execute-api:Invoke"],
@@ -345,7 +345,7 @@ export class ApiGatewayStack extends cdk.Stack {
       })
     );
 
-    const techAdminRole = new iam.Role(this, "TechAdminRole", {
+    const techAdminRole = new iam.Role(this, `${id}-TechAdminRole`, {
       assumedBy: new iam.FederatedPrincipal(
         "cognito-identity.amazonaws.com",
         {
@@ -361,7 +361,7 @@ export class ApiGatewayStack extends cdk.Stack {
     });
 
     techAdminRole.attachInlinePolicy(
-      new iam.Policy(this, "TechAdminPolicy", {
+      new iam.Policy(this, `${id}-TechAdminPolicy`, {
         statements: [
           createPolicyStatement(
             ["execute-api:Invoke"],
@@ -374,7 +374,7 @@ export class ApiGatewayStack extends cdk.Stack {
     );
 
     // Create Cognito user pool groups
-    const studentGroup = new cognito.CfnUserPoolGroup(this, "StudentGroup", {
+    const studentGroup = new cognito.CfnUserPoolGroup(this, `${id}-StudentGroup`, {
       groupName: "student",
       userPoolId: this.userPool.userPoolId,
       roleArn: studentRole.roleArn,
@@ -382,7 +382,7 @@ export class ApiGatewayStack extends cdk.Stack {
 
     const instructorGroup = new cognito.CfnUserPoolGroup(
       this,
-      "InstructorGroup",
+      `${id}-InstructorGroup`,
       {
         groupName: "instructor",
         userPoolId: this.userPool.userPoolId,
@@ -390,7 +390,7 @@ export class ApiGatewayStack extends cdk.Stack {
       }
     );
 
-    const adminGroup = new cognito.CfnUserPoolGroup(this, "AdminGroup", {
+    const adminGroup = new cognito.CfnUserPoolGroup(this, `${id}-AdminGroup`, {
       groupName: "admin",
       userPoolId: this.userPool.userPoolId,
       roleArn: adminRole.roleArn,
@@ -398,7 +398,7 @@ export class ApiGatewayStack extends cdk.Stack {
 
     const techAdminGroup = new cognito.CfnUserPoolGroup(
       this,
-      "TechAdminGroup",
+      `${id}-TechAdminGroup`,
       {
         groupName: "techadmin",
         userPoolId: this.userPool.userPoolId,
@@ -407,7 +407,7 @@ export class ApiGatewayStack extends cdk.Stack {
     );
 
     // Create unauthenticated role with no permissions
-    const unauthenticatedRole = new iam.Role(this, "UnauthenticatedRole", {
+    const unauthenticatedRole = new iam.Role(this, `${id}-UnauthenticatedRole`, {
       assumedBy: new iam.FederatedPrincipal(
         "cognito-identity.amazonaws.com",
         {
@@ -422,8 +422,8 @@ export class ApiGatewayStack extends cdk.Stack {
       ),
     });
 
-    const lambdaRole = new iam.Role(this, "postgresLambdaRole", {
-      roleName: "postgresLambdaRole",
+    const lambdaRole = new iam.Role(this, `${id}-postgresLambdaRole`, {
+      roleName: `${id}-postgresLambdaRole`,
       assumedBy: new iam.ServicePrincipal("lambda.amazonaws.com"),
     });
 
@@ -473,7 +473,7 @@ export class ApiGatewayStack extends cdk.Stack {
     // Inline policy to allow AdminAddUserToGroup action
     const adminAddUserToGroupPolicyLambda = new iam.Policy(
       this,
-      "adminAddUserToGroupPolicyLambda",
+      `${id}-adminAddUserToGroupPolicyLambda`,
       {
         statements: [
           new iam.PolicyStatement({
@@ -496,7 +496,7 @@ export class ApiGatewayStack extends cdk.Stack {
     lambdaRole.attachInlinePolicy(adminAddUserToGroupPolicyLambda);
 
     // Attach roles to the identity pool
-    new cognito.CfnIdentityPoolRoleAttachment(this, "IdentityPoolRoles", {
+    new cognito.CfnIdentityPoolRoleAttachment(this, `${id}-IdentityPoolRoles`, {
       identityPoolId: this.identityPool.ref,
       roles: {
         authenticated: studentRole.roleArn,
@@ -504,7 +504,7 @@ export class ApiGatewayStack extends cdk.Stack {
       },
     });
 
-    const lambdaStudentFunction = new lambda.Function(this, "studentFunction", {
+    const lambdaStudentFunction = new lambda.Function(this, `${id}-studentFunction`, {
       runtime: lambda.Runtime.NODEJS_20_X,
       code: lambda.Code.fromAsset("lambda/lib"),
       handler: "studentFunction.handler",
@@ -515,7 +515,7 @@ export class ApiGatewayStack extends cdk.Stack {
         RDS_PROXY_ENDPOINT: db.rdsProxyEndpoint,
         USER_POOL: this.userPool.userPoolId,
       },
-      functionName: "studentFunction",
+      functionName: `${id}-studentFunction`,
       memorySize: 512,
       layers: [postgres],
       role: lambdaRole,
@@ -534,7 +534,7 @@ export class ApiGatewayStack extends cdk.Stack {
 
     const lambdaInstructorFunction = new lambda.Function(
       this,
-      "instructorFunction",
+      `${id}-instructorFunction`,
       {
         runtime: lambda.Runtime.NODEJS_20_X,
         code: lambda.Code.fromAsset("lambda/lib"),
@@ -546,7 +546,7 @@ export class ApiGatewayStack extends cdk.Stack {
           RDS_PROXY_ENDPOINT: db.rdsProxyEndpoint,
           USER_POOL: this.userPool.userPoolId,
         },
-        functionName: "instructorFunction",
+        functionName: `${id}-instructorFunction`,
         memorySize: 512,
         layers: [postgres],
         role: lambdaRole,
@@ -564,7 +564,7 @@ export class ApiGatewayStack extends cdk.Stack {
       .defaultChild as lambda.CfnFunction;
     cfnLambda_Instructor.overrideLogicalId("instructorFunction");
 
-    const lambdaAdminFunction = new lambda.Function(this, "adminFunction", {
+    const lambdaAdminFunction = new lambda.Function(this, `${id}-adminFunction`, {
       runtime: lambda.Runtime.NODEJS_20_X,
       code: lambda.Code.fromAsset("lambda/adminFunction"),
       handler: "adminFunction.handler",
@@ -574,7 +574,7 @@ export class ApiGatewayStack extends cdk.Stack {
         SM_DB_CREDENTIALS: db.secretPathTableCreator.secretName,
         RDS_PROXY_ENDPOINT: db.rdsProxyEndpointTableCreator,
       },
-      functionName: "adminFunction",
+      functionName: `${id}-adminFunction`,
       memorySize: 512,
       layers: [postgres],
       role: lambdaRole,
@@ -591,8 +591,8 @@ export class ApiGatewayStack extends cdk.Stack {
       .defaultChild as lambda.CfnFunction;
     cfnLambda_Admin.overrideLogicalId("adminFunction");
 
-    const coglambdaRole = new iam.Role(this, "cognitoLambdaRole", {
-      roleName: "cognitoLambdaRole",
+    const coglambdaRole = new iam.Role(this, `${id}-cognitoLambdaRole`, {
+      roleName: `${id}-cognitoLambdaRole`,
       assumedBy: new iam.ServicePrincipal("lambda.amazonaws.com"),
     });
 
@@ -654,7 +654,7 @@ export class ApiGatewayStack extends cdk.Stack {
     // Inline policy to allow AdminAddUserToGroup action
     const adminAddUserToGroupPolicy = new iam.Policy(
       this,
-      "AdminAddUserToGroupPolicy",
+      `${id}-AdminAddUserToGroupPolicy`,
       {
         statements: [
           new iam.PolicyStatement({
@@ -690,7 +690,33 @@ export class ApiGatewayStack extends cdk.Stack {
       })
     );
 
-    const AutoSignupLambda = new lambda.Function(this, "addStudentOnSignUp", {
+    coglambdaRole.addToPolicy(
+      new iam.PolicyStatement({
+        actions: ["ssm:GetParameter"],
+        resources: [`arn:aws:ssm:${this.region}:${this.account}:parameter/*`],
+      })
+    );
+
+    const preSignupLambda = new lambda.Function(this, `${id}-preSignupLambda`, {
+      runtime: lambda.Runtime.NODEJS_20_X,
+      code: lambda.Code.fromAsset("lambda/lib"),
+      handler: "preSignup.handler",
+      timeout: Duration.seconds(300),
+      environment: {
+        ALLOWED_EMAIL_DOMAINS: "/AILA/AllowedEmailDomains",
+      },
+      vpc: vpcStack.vpc,
+      functionName: `${id}-preSignupLambda`,
+      memorySize: 128,
+      role: coglambdaRole,
+    });
+
+    this.userPool.addTrigger(
+      cognito.UserPoolOperation.PRE_SIGN_UP,
+      preSignupLambda
+    );
+
+    const AutoSignupLambda = new lambda.Function(this, `${id}-addStudentOnSignUp`, {
       runtime: lambda.Runtime.NODEJS_20_X,
       code: lambda.Code.fromAsset("lambda/lib"),
       handler: "addStudentOnSignUp.handler",
@@ -700,13 +726,13 @@ export class ApiGatewayStack extends cdk.Stack {
         RDS_PROXY_ENDPOINT: db.rdsProxyEndpointTableCreator,
       },
       vpc: vpcStack.vpc,
-      functionName: "addStudentOnSignUp",
+      functionName: `${id}-addStudentOnSignUp`,
       memorySize: 128,
       layers: [postgres],
       role: coglambdaRole,
     });
 
-    const adjustUserRoles = new lambda.Function(this, "adjustUserRoles", {
+    const adjustUserRoles = new lambda.Function(this, `${id}-adjustUserRoles`, {
       runtime: lambda.Runtime.NODEJS_20_X,
       code: lambda.Code.fromAsset("lambda/lib"),
       handler: "adjustUserRoles.handler",
@@ -716,7 +742,7 @@ export class ApiGatewayStack extends cdk.Stack {
         RDS_PROXY_ENDPOINT: db.rdsProxyEndpointTableCreator,
       },
       vpc: db.dbInstance.vpc,
-      functionName: "adjustUserRoles",
+      functionName: `${id}-adjustUserRoles`,
       memorySize: 512,
       layers: [postgres],
       role: coglambdaRole,
@@ -737,7 +763,7 @@ export class ApiGatewayStack extends cdk.Stack {
     // const authorizer = new apigateway.CognitoUserPoolsAuthorizer(this, 'ailaAuthorizer', {
     //   cognitoUserPools: [this.userPool],
     // });
-    new cdk.CfnOutput(this, "UserPoolIdOutput", {
+    new cdk.CfnOutput(this, `${id}-UserPoolIdOutput`, {
       value: this.userPool.userPoolId,
       description: "The ID of the Cognito User Pool",
     });
@@ -748,7 +774,7 @@ export class ApiGatewayStack extends cdk.Stack {
     //  */
     const authorizationFunction = new lambda.Function(
       this,
-      "admin-authorization-api-gateway",
+      `${id}-admin-authorization-api-gateway`,
       {
         runtime: lambda.Runtime.NODEJS_20_X,
         code: lambda.Code.fromAsset("lambda/adminAuthorizerFunction"),
@@ -758,7 +784,7 @@ export class ApiGatewayStack extends cdk.Stack {
         environment: {
           SM_COGNITO_CREDENTIALS: this.secret.secretName,
         },
-        functionName: "adminLambdaAuthorizer",
+        functionName: `${id}-adminLambdaAuthorizer`,
         memorySize: 512,
         layers: [jwt],
         role: lambdaRole,
@@ -781,7 +807,7 @@ export class ApiGatewayStack extends cdk.Stack {
      */
     const authorizationFunction_student = new lambda.Function(
       this,
-      "student-authorization-api-gateway",
+      `${id}-student-authorization-api-gateway`,
       {
         runtime: lambda.Runtime.NODEJS_20_X,
         code: lambda.Code.fromAsset("lambda/studentAuthorizerFunction"),
@@ -791,7 +817,7 @@ export class ApiGatewayStack extends cdk.Stack {
         environment: {
           SM_COGNITO_CREDENTIALS: this.secret.secretName,
         },
-        functionName: "studentLambdaAuthorizer",
+        functionName: `${id}-studentLambdaAuthorizer`,
         memorySize: 512,
         layers: [jwt],
         role: lambdaRole,
@@ -816,7 +842,7 @@ export class ApiGatewayStack extends cdk.Stack {
      */
     const authorizationFunction_instructor = new lambda.Function(
       this,
-      "instructor-authorization-api-gateway",
+      `${id}-instructor-authorization-api-gateway`,
       {
         runtime: lambda.Runtime.NODEJS_20_X,
         code: lambda.Code.fromAsset("lambda/instructorAuthorizerFunction"),
@@ -826,7 +852,7 @@ export class ApiGatewayStack extends cdk.Stack {
         environment: {
           SM_COGNITO_CREDENTIALS: this.secret.secretName,
         },
-        functionName: "instructorLambdaAuthorizer",
+        functionName: `${id}-instructorLambdaAuthorizer`,
         memorySize: 512,
         layers: [jwt],
         role: lambdaRole,
@@ -846,23 +872,35 @@ export class ApiGatewayStack extends cdk.Stack {
     );
 
     // Create parameters for Bedrock LLM ID, Embedding Model ID, and Table Name in Parameter Store
-    const bedrockLLMParameter = new ssm.StringParameter(this, "BedrockLLMParameter", {
-      parameterName: "/AILA/BedrockLLMId",
-      description: "Parameter containing the Bedrock LLM ID",
-      stringValue: "meta.llama3-70b-instruct-v1:0",
-    });
+    const bedrockLLMParameter = new ssm.StringParameter(
+      this,
+      "BedrockLLMParameter",
+      {
+        parameterName: `/${id}/AILA/BedrockLLMId`,
+        description: "Parameter containing the Bedrock LLM ID",
+        stringValue: "meta.llama3-70b-instruct-v1:0",
+      }
+    );
 
-    const embeddingModelParameter = new ssm.StringParameter(this, "EmbeddingModelParameter", {
-      parameterName: "/AILA/EmbeddingModelId",
-      description: "Parameter containing the Embedding Model ID",
-      stringValue: "amazon.titan-embed-text-v2:0",
-    });
+    const embeddingModelParameter = new ssm.StringParameter(
+      this,
+      "EmbeddingModelParameter",
+      {
+        parameterName: `/${id}/AILA/EmbeddingModelId`,
+        description: "Parameter containing the Embedding Model ID",
+        stringValue: "amazon.titan-embed-text-v2:0",
+      }
+    );
 
-    const tableNameParameter = new ssm.StringParameter(this, "TableNameParameter", {
-      parameterName: "/AILA/TableName",
-      description: "Parameter containing the DynamoDB table name",
-      stringValue: "DynamoDB-Conversation-Table",
-    });
+    const tableNameParameter = new ssm.StringParameter(
+      this,
+      "TableNameParameter",
+      {
+        parameterName: `/${id}/AILA/TableName`,
+        description: "Parameter containing the DynamoDB table name",
+        stringValue: "DynamoDB-Conversation-Table",
+      }
+    );
 
     /**
      *
@@ -870,13 +908,13 @@ export class ApiGatewayStack extends cdk.Stack {
      */
     const textGenLambdaDockerFunc = new lambda.DockerImageFunction(
       this,
-      "TextGenLambdaDockerFunc",
+      `${id}-TextGenLambdaDockerFunc`,
       {
         code: lambda.DockerImageCode.fromImageAsset("./text_generation"),
         memorySize: 512,
         timeout: cdk.Duration.seconds(300),
         vpc: vpcStack.vpc, // Pass the VPC
-        functionName: "TextGenLambdaDockerFunc",
+        functionName: `${id}-TextGenLambdaDockerFunc`,
         environment: {
           SM_DB_CREDENTIALS: db.secretPathUser.secretName,
           RDS_PROXY_ENDPOINT: db.rdsProxyEndpoint,
@@ -960,7 +998,7 @@ export class ApiGatewayStack extends cdk.Stack {
     );
 
     // Create S3 Bucket to handle documents for each course
-    const dataIngestionBucket = new s3.Bucket(this, "AILADataIngestionBucket", {
+    const dataIngestionBucket = new s3.Bucket(this, `${id}-DataIngestionBucket`, {
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
       cors: [
         {
@@ -983,7 +1021,7 @@ export class ApiGatewayStack extends cdk.Stack {
     // Create the Lambda function for generating presigned URLs
     const generatePreSignedURL = new lambda.Function(
       this,
-      "GeneratePreSignedURLFunc",
+      `${id}-GeneratePreSignedURLFunc`,
       {
         runtime: lambda.Runtime.PYTHON_3_9,
         code: lambda.Code.fromAsset("lambda/generatePreSignedURL"),
@@ -994,7 +1032,7 @@ export class ApiGatewayStack extends cdk.Stack {
           BUCKET: dataIngestionBucket.bucketName,
           REGION: this.region,
         },
-        functionName: "GeneratePreSignedURLFunc",
+        functionName: `${id}-GeneratePreSignedURLFunc`,
         layers: [powertoolsLayer],
       }
     );
@@ -1030,16 +1068,16 @@ export class ApiGatewayStack extends cdk.Stack {
      */
     const dataIngestLambdaDockerFunc = new lambda.DockerImageFunction(
       this,
-      "DataIngestLambdaDockerFunc",
+      `${id}-DataIngestLambdaDockerFunc`,
       {
         code: lambda.DockerImageCode.fromImageAsset("./data_ingestion"),
         memorySize: 512,
         timeout: cdk.Duration.seconds(600),
         vpc: vpcStack.vpc, // Pass the VPC
-        functionName: "DataIngestLambdaDockerFunc",
+        functionName: `${id}-DataIngestLambdaDockerFunc`,
         environment: {
-          SM_DB_CREDENTIALS: db.secretPathUser.secretName,
-          RDS_PROXY_ENDPOINT: db.rdsProxyEndpoint,
+          SM_DB_CREDENTIALS: db.secretPathAdminName,
+          RDS_PROXY_ENDPOINT: db.rdsProxyEndpointAdmin,
           BUCKET: dataIngestionBucket.bucketName,
           REGION: this.region,
           EMBEDDING_BUCKET_NAME: embeddingStorageBucket.bucketName,
@@ -1077,9 +1115,14 @@ export class ApiGatewayStack extends cdk.Stack {
     dataIngestLambdaDockerFunc.addToRolePolicy(
       new iam.PolicyStatement({
         effect: iam.Effect.ALLOW,
-        actions: ["s3:PutObject", "s3:GetObject", "s3:DeleteObject", "s3:HeadObject"],
+        actions: [
+          "s3:PutObject",
+          "s3:GetObject",
+          "s3:DeleteObject",
+          "s3:HeadObject",
+        ],
         resources: [
-          `arn:aws:s3:::${embeddingStorageBucket.bucketName}/*`,  // Grant access to all objects within this bucket
+          `arn:aws:s3:::${embeddingStorageBucket.bucketName}/*`, // Grant access to all objects within this bucket
         ],
       })
     );
@@ -1110,16 +1153,14 @@ export class ApiGatewayStack extends cdk.Stack {
           `arn:aws:secretsmanager:${this.region}:${this.account}:secret:*`,
         ],
       })
-    );  
+    );
 
     // Grant access to SSM Parameter Store for specific parameters
     dataIngestLambdaDockerFunc.addToRolePolicy(
       new iam.PolicyStatement({
         effect: iam.Effect.ALLOW,
         actions: ["ssm:GetParameter"],
-        resources: [
-          embeddingModelParameter.parameterArn,
-        ],
+        resources: [embeddingModelParameter.parameterArn],
       })
     );
 
@@ -1127,7 +1168,7 @@ export class ApiGatewayStack extends cdk.Stack {
      *
      * Create Lambda function that will return all file names for a specified course, concept, and module
      */
-    const getFilesFunction = new lambda.Function(this, "GetFilesFunction", {
+    const getFilesFunction = new lambda.Function(this, `${id}-GetFilesFunction`, {
       runtime: lambda.Runtime.PYTHON_3_9,
       code: lambda.Code.fromAsset("lambda/getFilesFunction"),
       handler: "getFilesFunction.lambda_handler",
@@ -1140,7 +1181,7 @@ export class ApiGatewayStack extends cdk.Stack {
         BUCKET: dataIngestionBucket.bucketName,
         REGION: this.region,
       },
-      functionName: "GetFilesFunction",
+      functionName: `${id}-GetFilesFunction`,
       layers: [psycopgLayer, powertoolsLayer],
     });
 
@@ -1177,7 +1218,7 @@ export class ApiGatewayStack extends cdk.Stack {
      *
      * Create Lambda function to delete certain file
      */
-    const deleteFile = new lambda.Function(this, "DeleteFileFunc", {
+    const deleteFile = new lambda.Function(this, `${id}-DeleteFileFunc`, {
       runtime: lambda.Runtime.PYTHON_3_9,
       code: lambda.Code.fromAsset("lambda/deleteFile"),
       handler: "deleteFile.lambda_handler",
@@ -1190,7 +1231,7 @@ export class ApiGatewayStack extends cdk.Stack {
         BUCKET: dataIngestionBucket.bucketName,
         REGION: this.region,
       },
-      functionName: "DeleteFileFunc",
+      functionName: `${id}-DeleteFileFunc`,
       layers: [psycopgLayer, powertoolsLayer],
     });
 
@@ -1226,7 +1267,7 @@ export class ApiGatewayStack extends cdk.Stack {
      *
      * Create Lambda function to delete an entire module directory
      */
-    const deleteModuleFunction = new lambda.Function(this, "DeleteModuleFunc", {
+    const deleteModuleFunction = new lambda.Function(this, `${id}-DeleteModuleFunc`, {
       runtime: lambda.Runtime.PYTHON_3_9,
       code: lambda.Code.fromAsset("lambda/deleteModule"),
       handler: "deleteModule.lambda_handler",
@@ -1236,7 +1277,7 @@ export class ApiGatewayStack extends cdk.Stack {
         BUCKET: dataIngestionBucket.bucketName,
         REGION: this.region,
       },
-      functionName: "DeleteModuleFunc",
+      functionName: `${id}-DeleteModuleFunc`,
       layers: [powertoolsLayer],
     });
 
@@ -1260,7 +1301,7 @@ export class ApiGatewayStack extends cdk.Stack {
      *
      * Create a Lambda function that deletes the last message in a conversation
      */
-    const deleteLastMessage = new lambda.Function(this, "DeleteLastMessage", {
+    const deleteLastMessage = new lambda.Function(this, `${id}-DeleteLastMessage`, {
       runtime: lambda.Runtime.PYTHON_3_9,
       code: lambda.Code.fromAsset("lambda/deleteLastMessage"),
       handler: "deleteLastMessage.lambda_handler",
@@ -1273,7 +1314,7 @@ export class ApiGatewayStack extends cdk.Stack {
         TABLE_NAME_PARAM: tableNameParameter.parameterName,
         REGION: this.region,
       },
-      functionName: "DeleteLastMessage",
+      functionName: `${id}-DeleteLastMessage`,
       layers: [psycopgLayer, powertoolsLayer],
     });
 
@@ -1317,9 +1358,7 @@ export class ApiGatewayStack extends cdk.Stack {
       new iam.PolicyStatement({
         effect: iam.Effect.ALLOW,
         actions: ["ssm:GetParameter"],
-        resources: [
-          tableNameParameter.parameterArn,
-        ],
+        resources: [tableNameParameter.parameterArn],
       })
     );
 

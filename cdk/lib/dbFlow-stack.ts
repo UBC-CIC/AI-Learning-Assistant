@@ -21,7 +21,7 @@ export class DBFlowStack extends Stack {
          */
 
         const psycopgLambdaLayer = apiStack.getLayers()['psycopg2'];   
-        const lambdaRole = new iam.Role(this, "lambda-vpc-role", {
+        const lambdaRole = new iam.Role(this, `${id}-lambda-vpc-role`, {
           assumedBy: new iam.ServicePrincipal("lambda.amazonaws.com"),
           description: "Role for all Lambda function inside VPC",
         });
@@ -68,8 +68,8 @@ export class DBFlowStack extends Stack {
           iam.ManagedPolicy.fromAwsManagedPolicyName("AmazonS3FullAccess")
         );
         // Create an initilizer for the RDS instance, only invoke during deployment
-        const initializerLambda = new triggers.TriggerFunction(this, "aila-triggerLambda", {
-            functionName: "aila-initializerFunction",
+        const initializerLambda = new triggers.TriggerFunction(this, `${id}-triggerLambda`, {
+            functionName: `${id}-initializerFunction`,
             runtime: lambda.Runtime.PYTHON_3_9,
             handler: "initializer.handler",
             timeout: Duration.seconds(300),

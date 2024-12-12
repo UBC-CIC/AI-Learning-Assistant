@@ -187,7 +187,7 @@ cdk deploy --all \
 
 For example:
 ```
-cdk deploy --all --parameters AILA-AmplifyStack:githubRepoName=AI-Learning-Assistant --context StackPrefix=AILA --profile <your-profile-name>
+cdk deploy --all --parameters AILA-Amplify:githubRepoName=Digital-Strategy-Assistant --context StackPrefix=AILA --profile <your-profile-name>
 ```
 
 If you have trouble running the commands, try removing all the \ and run it in one line.

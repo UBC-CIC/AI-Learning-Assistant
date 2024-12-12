@@ -129,86 +129,67 @@ export const Login = () => {
   // user signs up
   const handleSignUp = async (event) => {
     event.preventDefault();
-    if (
-      username == "" ||
-      password == "" ||
-      confirmPassword == "" ||
-      firstName == "" ||
-      lastName == ""
-    ) {
-      toast.error("All fields are required", {
-        position: "top-center",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        theme: "colored",
-      });
+
+    // Check for empty fields
+    if (!username || !password || !confirmPassword || !firstName || !lastName) {
+      toast.error("All fields are required", { theme: "colored" });
       return;
     }
-    // password specifications
+
+    // Check for password match
     if (password !== confirmPassword) {
-      setPasswordError("Passwords do not match");
-      toast.error("Passwords do not match", {
-        position: "top-center",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        theme: "colored",
-      });
-      return;
-    } else if (password.length < 8) {
-      setPasswordError("Password must be at least 8 characters long");
-      toast.error("Password must be at least 8 characters long", {
-        position: "top-center",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        theme: "colored",
-      });
+      toast.error("Passwords do not match", { theme: "colored" });
       return;
     }
+
+    // Enhanced password validation
+    const passwordError = validatePassword(password);
+    if (passwordError) {
+      toast.error(passwordError, { theme: "colored" });
+      return;
+    }
+
+    // Reset error
     setPasswordError("");
+
     try {
       setLoading(true);
-      const { isSignUpComplete, userId, nextStep } = await signUp({
-        username: username,
-        password: password,
-        attributes: {
-          email: username,
-        },
+      const { isSignUpComplete, nextStep } = await signUp({
+        username,
+        password,
+        attributes: { email: username },
       });
-      setNewSignUp(false);
-      if (!isSignUpComplete) {
-        if (nextStep.signUpStep === "CONFIRM_SIGN_UP") {
-          setSignUpConfirmation(true);
-          setLoading(false);
-        }
+
+      if (!isSignUpComplete && nextStep.signUpStep === "CONFIRM_SIGN_UP") {
+        setSignUpConfirmation(true);
+      } else {
+        setNewSignUp(false);
+        window.location.reload();
       }
     } catch (error) {
-      toast.error(`Error signing up: ${error}`, {
-        position: "top-center",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        theme: "colored",
-      });
-      console.log("Error signing up:", error);
+      toast.error(`Error signing up: ${error.message}`, { theme: "colored" });
       setLoading(false);
-      setError(error.message);
     }
   };
+
+
+  const validatePassword = (pwd) => {
+    if (pwd.length < 8) {
+      return "Password must be at least 8 characters long";
+    }
+    if (!/[a-z]/.test(pwd)) {
+      return "Password must contain at least one lowercase letter";
+    }
+    if (!/[A-Z]/.test(pwd)) {
+      return "Password must contain at least one uppercase letter";
+    }
+    if (!/[0-9]/.test(pwd)) {
+      return "Password must contain at least one number";
+    }
+    return null; // Valid password
+  };
+
+
 
   // user gets new password
   const handleNewUserPassword = async (event) => {
@@ -281,8 +262,7 @@ export const Login = () => {
         const token = session.tokens.idToken
 
         const response = await fetch(
-          `${
-            import.meta.env.VITE_API_ENDPOINT
+          `${import.meta.env.VITE_API_ENDPOINT
           }student/create_user?user_email=${encodeURIComponent(
             username
           )}&username=${encodeURIComponent(

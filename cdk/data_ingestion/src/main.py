@@ -16,6 +16,7 @@ DB_SECRET_NAME = os.environ["SM_DB_CREDENTIALS"]
 REGION = os.environ["REGION"]
 AILA_DATA_INGESTION_BUCKET = os.environ["BUCKET"]
 EMBEDDING_BUCKET_NAME = os.environ["EMBEDDING_BUCKET_NAME"]
+RDS_PROXY_ENDPOINT = os.environ["RDS_PROXY_ENDPOINT"]
 
 def get_secret():
     # secretsmanager client to get db credentials
@@ -46,7 +47,7 @@ def connect_to_db():
             'dbname': db_secret["dbname"],
             'user': db_secret["username"],
             'password': db_secret["password"],
-            'host': db_secret["host"],
+            'host': RDS_PROXY_ENDPOINT,
             'port': db_secret["port"]
         }
         connection_string = " ".join([f"{key}={value}" for key, value in connection_params.items()])
@@ -73,9 +74,6 @@ def parse_s3_file_path(file_key):
                     "statusCode": 400,
                     "body": json.dumps("Error parsing S3 file path.")
                 }
-
-# def log_file_deletion(file_key):
-#     print(f"File deleted: {file_key}")
 
 def insert_file_into_db(module_id, file_name, file_type, file_path, bucket_name):    
     connection = connect_to_db()
@@ -152,37 +150,6 @@ def insert_file_into_db(module_id, file_name, file_type, file_path, bucket_name)
         logger.error(f"Error inserting file {file_name}.{file_type} into database: {e}")
         raise
 
-# def delete_course_from_db(course_id):
-#     """Deletes the course from the database and cascades the delete."""
-#     connection = connect_to_db()
-#     if connection is None:
-#         logger.error("No database connection available for deleting course.")
-#         return False
-    
-#     try:
-#         cur = connection.cursor()
-        
-#         # Delete from langchain_pg_collection with cascade
-#         delete_query = """
-#         DELETE FROM langchain_pg_collection
-#         WHERE name = %s;
-#         """
-#         cur.execute(delete_query, (course_id,))
-#         connection.commit()
-#         logger.info(f"Successfully deleted course {course_id} collection from embeddings.")
-        
-#         cur.close()
-#         connection.close()
-#         return True
-#     except Exception as e:
-#         if cur:
-#             cur.close()
-#         if connection:
-#             connection.rollback()
-#             connection.close()
-#         logger.error(f"Error deleting course {course_id} collection from embeddings: {e}")
-#         return False
-
 def update_vectorstore_from_s3(bucket, course_id):
     
     bedrock_runtime = boto3.client(
@@ -203,7 +170,7 @@ def update_vectorstore_from_s3(bucket, course_id):
         'dbname': db_secret["dbname"],
         'user': db_secret["username"],
         'password': db_secret["password"],
-        'host': db_secret["host"],
+        'host': RDS_PROXY_ENDPOINT,
         'port': db_secret["port"]
     }
 

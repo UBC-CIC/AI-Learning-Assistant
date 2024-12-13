@@ -12,54 +12,71 @@ from langchain_aws import BedrockEmbeddings
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger()
 
+# Environment variables
 DB_SECRET_NAME = os.environ["SM_DB_CREDENTIALS"]
 REGION = os.environ["REGION"]
 AILA_DATA_INGESTION_BUCKET = os.environ["BUCKET"]
 EMBEDDING_BUCKET_NAME = os.environ["EMBEDDING_BUCKET_NAME"]
 RDS_PROXY_ENDPOINT = os.environ["RDS_PROXY_ENDPOINT"]
+EMBEDDING_MODEL_PARAM = os.environ["EMBEDDING_MODEL_PARAM"]
+
+# AWS Clients
+secrets_manager_client = boto3.client("secretsmanager")
+ssm_client = boto3.client("ssm")
+bedrock_runtime = boto3.client("bedrock-runtime", region_name=REGION)
+
+# Cached resources
+connection = None
+db_secret = None
+EMBEDDING_MODEL_ID = None
 
 def get_secret():
-    # secretsmanager client to get db credentials
-    sm_client = boto3.client("secretsmanager")
-    response = sm_client.get_secret_value(SecretId=DB_SECRET_NAME)["SecretString"]
-    secret = json.loads(response)
-    return secret
+    global db_secret
+    if db_secret is None:
+        try:
+            response = secrets_manager_client.get_secret_value(SecretId=DB_SECRET_NAME)["SecretString"]
+            db_secret = json.loads(response)
+        except Exception as e:
+            logger.error(f"Error fetching secret {DB_SECRET_NAME}: {e}")
+            raise
+    return db_secret
 
-def get_parameter(param_name):
+def get_parameter():
     """
     Fetch a parameter value from Systems Manager Parameter Store.
     """
-    try:
-        ssm_client = boto3.client("ssm")
-        response = ssm_client.get_parameter(Name=param_name, WithDecryption=True)
-        return response["Parameter"]["Value"]
-    except Exception as e:
-        logger.error(f"Error fetching parameter {param_name}: {e}")
-        raise
-
-## GET PARAMETER VALUES FOR CONSTANTS
-EMBEDDING_MODEL_ID = get_parameter(os.environ["EMBEDDING_MODEL_PARAM"])
+    global EMBEDDING_MODEL_ID
+    if EMBEDDING_MODEL_ID is None:
+        try:
+            response = ssm_client.get_parameter(Name=EMBEDDING_MODEL_PARAM, WithDecryption=True)
+            EMBEDDING_MODEL_ID = response["Parameter"]["Value"]
+        except Exception as e:
+            logger.error(f"Error fetching parameter {EMBEDDING_MODEL_PARAM}: {e}")
+            raise
+    return EMBEDDING_MODEL_ID
 
 def connect_to_db():
-    try:
-        db_secret = get_secret()
-        connection_params = {
-            'dbname': db_secret["dbname"],
-            'user': db_secret["username"],
-            'password': db_secret["password"],
-            'host': RDS_PROXY_ENDPOINT,
-            'port': db_secret["port"]
-        }
-        connection_string = " ".join([f"{key}={value}" for key, value in connection_params.items()])
-        connection = psycopg2.connect(connection_string)
-        logger.info("Connected to the database!")
-        return connection
-    except Exception as e:
-        logger.error(f"Failed to connect to database: {e}")
-        if connection:
-            connection.rollback()
-            connection.close()
-        return None
+    global connection
+    if connection is None or connection.closed:
+        try:
+            secret = get_secret()
+            connection_params = {
+                'dbname': secret["dbname"],
+                'user': secret["username"],
+                'password': secret["password"],
+                'host': RDS_PROXY_ENDPOINT,
+                'port': secret["port"]
+            }
+            connection_string = " ".join([f"{key}={value}" for key, value in connection_params.items()])
+            connection = psycopg2.connect(connection_string)
+            logger.info("Connected to the database!")
+        except Exception as e:
+            logger.error(f"Failed to connect to database: {e}")
+            if connection:
+                connection.rollback()
+                connection.close()
+            raise
+    return connection
 
 def parse_s3_file_path(file_key):
     # Assuming the file path is of the format: {course_id}/{module_id}/{documents}/{file_name}.{file_type}
@@ -140,38 +157,30 @@ def insert_file_into_db(module_id, file_name, file_type, file_path, bucket_name)
 
         connection.commit()
         cur.close()
-        connection.close()
     except Exception as e:
         if cur:
             cur.close()
-        if connection:
-            connection.rollback()
-            connection.close()
+        connection.rollback()
         logger.error(f"Error inserting file {file_name}.{file_type} into database: {e}")
         raise
 
 def update_vectorstore_from_s3(bucket, course_id):
-    
-    bedrock_runtime = boto3.client(
-        service_name="bedrock-runtime",
-        region_name=REGION
-    )
 
     embeddings = BedrockEmbeddings(
-        model_id=EMBEDDING_MODEL_ID, 
+        model_id=get_parameter(), 
         client=bedrock_runtime,
         region_name=REGION
     )
 
-    db_secret = get_secret()
+    secret = get_secret()
 
     vectorstore_config_dict = {
         'collection_name': f'{course_id}',
-        'dbname': db_secret["dbname"],
-        'user': db_secret["username"],
-        'password': db_secret["password"],
+        'dbname': secret["dbname"],
+        'user': secret["username"],
+        'password': secret["password"],
         'host': RDS_PROXY_ENDPOINT,
-        'port': db_secret["port"]
+        'port': secret["port"]
     }
 
     try:

@@ -25,6 +25,8 @@ import * as bedrock from "aws-cdk-lib/aws-bedrock";
 import * as secretsmanager from "aws-cdk-lib/aws-secretsmanager";
 import * as ssm from "aws-cdk-lib/aws-ssm";
 import * as sqs from "aws-cdk-lib/aws-sqs";
+import * as appsync from "aws-cdk-lib/aws-appsync";
+
 
 export class ApiGatewayStack extends cdk.Stack {
   private readonly api: apigateway.SpecRestApi;
@@ -1383,22 +1385,65 @@ export class ApiGatewayStack extends cdk.Stack {
       })
     );
 
-    // Presigned URL Lambda
-    const presignedUrlLambda = new lambda.Function(this, "PresignedUrlLambda", {
-      runtime: lambda.Runtime.PYTHON_3_9,
-      handler: "index.lambda_handler",
-      code: lambda.Code.fromAsset("lambda/getPresignedURL"),
-      environment: {
-        BUCKET_NAME: dataIngestionBucket.bucketName,
+    //////////////////////////////
+    //////////////////////////////
+
+    // Create AppSync API
+    const eventApi = new appsync.GraphqlApi(this, `${id}-EventApi`, {
+      name: 'EventApi',
+      schema: appsync.SchemaFile.fromAsset('graphql/schema.graphql'),
+      authorizationConfig: {
+        defaultAuthorization: {
+          authorizationType: appsync.AuthorizationType.API_KEY,
+        },
       },
+      xrayEnabled: true,
     });
 
-    // Grant read access to the S3 bucket
-    dataIngestionBucket.grantRead(presignedUrlLambda);
+    // Output API information
+    // new cdk.CfnOutput(this, 'GraphQLAPIURL', { value: eventApi.graphqlUrl });
+    // new cdk.CfnOutput(this, 'GraphQLAPIKey', { value: eventApi.apiKey! });
+    // new cdk.CfnOutput(this, 'GraphQLAPIID', { value: eventApi.apiId });
 
-    // API Gateway Integration
-    const presignedUrlResource = this.api.root.addResource("presigned-url");
-    presignedUrlResource.addMethod("GET", new apigateway.LambdaIntegration(presignedUrlLambda));
+    // Lambda function to handle AppSync notifications
+    const notificationFunction = new lambda.Function(this, `${id}-NotificationFunction`, {
+      runtime: lambda.Runtime.PYTHON_3_9,
+      code: lambda.Code.fromAsset('lambda/eventNotification'),
+      handler: 'eventNotification.lambda_handler',
+      environment: {
+        APPSYNC_API_URL: eventApi.graphqlUrl,
+        APPSYNC_API_ID: eventApi.apiId,
+        APPSYNC_API_KEY: eventApi.apiKey!,
+        REGION: this.region,
+      },
+      timeout: cdk.Duration.seconds(300),
+      memorySize: 128,
+      vpc: vpcStack.vpc,
+      role: lambdaRole, // Ensure your role has required permissions
+    });
 
+    // IAM permissions for the Lambda function
+    notificationFunction.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: ['appsync:GraphQL'],
+        resources: [`arn:aws:appsync:${this.region}:${this.account}:apis/${eventApi.apiId}/*`],
+      })
+    );
+
+    // Allow AppSync to invoke Lambda
+    notificationFunction.addPermission('AppSyncInvokePermission', {
+      principal: new iam.ServicePrincipal('appsync.amazonaws.com'),
+      action: 'lambda:InvokeFunction',
+      sourceArn: `arn:aws:appsync:${this.region}:${this.account}:apis/${eventApi.apiId}/*`,
+    });
+
+    // Override the Logical ID of the Lambda Function to get ARN in OpenAPI
+    const cfneventNotificationLambdaDockerFunction = notificationFunction
+      .node.defaultChild as lambda.CfnFunction;
+    cfneventNotificationLambdaDockerFunction.overrideLogicalId(
+      "NotificationFunction"
+    );
+  
   }
 }

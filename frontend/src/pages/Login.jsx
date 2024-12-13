@@ -126,69 +126,90 @@ export const Login = () => {
     }
   };
 
-  // user signs up
   const handleSignUp = async (event) => {
     event.preventDefault();
 
     // Check for empty fields
     if (!username || !password || !confirmPassword || !firstName || !lastName) {
-      toast.error("All fields are required", { theme: "colored" });
+      toast.error("All fields are required", {
+        position: "top-center",
+        autoClose: 3000,
+        theme: "colored",
+      });
       return;
     }
 
-    // Check for password match
+    // Password validation: match, length, uppercase, lowercase, and number
     if (password !== confirmPassword) {
+      setPasswordError("Passwords do not match");
       toast.error("Passwords do not match", { theme: "colored" });
       return;
     }
 
-    // Enhanced password validation
-    const passwordError = validatePassword(password);
-    if (passwordError) {
-      toast.error(passwordError, { theme: "colored" });
+    if (password.length < 8) {
+      setPasswordError("Password must be at least 8 characters long");
+      toast.error("Password must be at least 8 characters long", { theme: "colored" });
       return;
     }
 
-    // Reset error
-    setPasswordError("");
+    if (!/[a-z]/.test(password)) {
+      setPasswordError("Password must contain at least one lowercase letter");
+      toast.error("Password must contain at least one lowercase letter", { theme: "colored" });
+      return;
+    }
+
+    if (!/[A-Z]/.test(password)) {
+      setPasswordError("Password must contain at least one uppercase letter");
+      toast.error("Password must contain at least one uppercase letter", { theme: "colored" });
+      return;
+    }
+
+    if (!/[0-9]/.test(password)) {
+      setPasswordError("Password must contain at least one number");
+      toast.error("Password must contain at least one number", { theme: "colored" });
+      return;
+    }
+
+    setPasswordError(""); // Clear any previous errors
 
     try {
       setLoading(true);
+      console.log("signing up");
+
       const { isSignUpComplete, nextStep } = await signUp({
-        username,
-        password,
-        attributes: { email: username },
+        username: username,
+        password: password,
+        attributes: {
+          email: username,
+        },
       });
 
-      if (!isSignUpComplete && nextStep.signUpStep === "CONFIRM_SIGN_UP") {
-        setSignUpConfirmation(true);
-      } else {
-        setNewSignUp(false);
-        window.location.reload();
+      console.log("signed up successfully:", isSignUpComplete, nextStep);
+
+      setNewSignUp(false);
+      if (!isSignUpComplete && nextStep?.signUpStep === "CONFIRM_SIGN_UP") {
+        setSignUpConfirmation(true); // Transition to confirmation UI
+        toast.success("Account created. Check your email for the confirmation code.", {
+          theme: "colored",
+        });
       }
     } catch (error) {
-      toast.error(`Error signing up: ${error.message}`, { theme: "colored" });
+      const errorMessage =
+        error.message.includes("PreSignUp failed with error")
+          ? "Your email domain is not allowed. Please use a valid email address."
+          : `Error signing up: ${error.message}`;
+      toast.error(errorMessage, {
+        position: "top-center",
+        autoClose: 3000,
+        theme: "colored",
+      });
+      console.log("Error signing up:", error);
+      setLoading(false);
+      setError(error.message);
+    } finally {
       setLoading(false);
     }
   };
-
-
-  const validatePassword = (pwd) => {
-    if (pwd.length < 8) {
-      return "Password must be at least 8 characters long";
-    }
-    if (!/[a-z]/.test(pwd)) {
-      return "Password must contain at least one lowercase letter";
-    }
-    if (!/[A-Z]/.test(pwd)) {
-      return "Password must contain at least one uppercase letter";
-    }
-    if (!/[0-9]/.test(pwd)) {
-      return "Password must contain at least one number";
-    }
-    return null; // Valid password
-  };
-
 
 
   // user gets new password

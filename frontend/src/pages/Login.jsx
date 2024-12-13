@@ -129,86 +129,67 @@ export const Login = () => {
   // user signs up
   const handleSignUp = async (event) => {
     event.preventDefault();
-    if (
-      username == "" ||
-      password == "" ||
-      confirmPassword == "" ||
-      firstName == "" ||
-      lastName == ""
-    ) {
-      toast.error("All fields are required", {
-        position: "top-center",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        theme: "colored",
-      });
+
+    // Check for empty fields
+    if (!username || !password || !confirmPassword || !firstName || !lastName) {
+      toast.error("All fields are required", { theme: "colored" });
       return;
     }
-    // password specifications
+
+    // Check for password match
     if (password !== confirmPassword) {
-      setPasswordError("Passwords do not match");
-      toast.error("Passwords do not match", {
-        position: "top-center",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        theme: "colored",
-      });
-      return;
-    } else if (password.length < 8) {
-      setPasswordError("Password must be at least 8 characters long");
-      toast.error("Password must be at least 8 characters long", {
-        position: "top-center",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        theme: "colored",
-      });
+      toast.error("Passwords do not match", { theme: "colored" });
       return;
     }
+
+    // Enhanced password validation
+    const passwordError = validatePassword(password);
+    if (passwordError) {
+      toast.error(passwordError, { theme: "colored" });
+      return;
+    }
+
+    // Reset error
     setPasswordError("");
+
     try {
       setLoading(true);
-      const { isSignUpComplete, userId, nextStep } = await signUp({
-        username: username,
-        password: password,
-        attributes: {
-          email: username,
-        },
+      const { isSignUpComplete, nextStep } = await signUp({
+        username,
+        password,
+        attributes: { email: username },
       });
-      setNewSignUp(false);
-      if (!isSignUpComplete) {
-        if (nextStep.signUpStep === "CONFIRM_SIGN_UP") {
-          setSignUpConfirmation(true);
-          setLoading(false);
-        }
+
+      if (!isSignUpComplete && nextStep.signUpStep === "CONFIRM_SIGN_UP") {
+        setSignUpConfirmation(true);
+      } else {
+        setNewSignUp(false);
+        window.location.reload();
       }
     } catch (error) {
-      toast.error(`Error signing up: ${error}`, {
-        position: "top-center",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        theme: "colored",
-      });
-      console.log("Error signing up:", error);
+      toast.error(`Error signing up: ${error.message}`, { theme: "colored" });
       setLoading(false);
-      setError(error.message);
     }
   };
+
+
+  const validatePassword = (pwd) => {
+    if (pwd.length < 8) {
+      return "Password must be at least 8 characters long";
+    }
+    if (!/[a-z]/.test(pwd)) {
+      return "Password must contain at least one lowercase letter";
+    }
+    if (!/[A-Z]/.test(pwd)) {
+      return "Password must contain at least one uppercase letter";
+    }
+    if (!/[0-9]/.test(pwd)) {
+      return "Password must contain at least one number";
+    }
+    return null; // Valid password
+  };
+
+
 
   // user gets new password
   const handleNewUserPassword = async (event) => {
@@ -281,8 +262,7 @@ export const Login = () => {
         const token = session.tokens.idToken
 
         const response = await fetch(
-          `${
-            import.meta.env.VITE_API_ENDPOINT
+          `${import.meta.env.VITE_API_ENDPOINT
           }student/create_user?user_email=${encodeURIComponent(
             username
           )}&username=${encodeURIComponent(
@@ -535,7 +515,7 @@ export const Login = () => {
               </Grid>
             )}
           {newSignUp && (
-            <Grid item xs={12} sm={8} md={5} component={Paper} square>
+            <Grid item xs={12} sm={9} md={7} component={Paper} square>
               <Box
                 sx={{
                   my: 8,
@@ -716,6 +696,9 @@ export const Login = () => {
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "center",
+                margin: "0 auto", // Center the content horizontally
+                justifyContent: "center", // Center the content vertically
+
               }}
             >
               <Typography component="h1" variant="h5" paddingBottom={3}>
@@ -764,123 +747,157 @@ export const Login = () => {
           )}
           {/* forgot password?  */}
           {!loading && forgotPassword && (
-            <Grid item xs={12} sm={8} md={5} component={Paper} square>
+            <Grid
+              item
+              xs={12}
+              sm={12}
+              md={7}
+              component={Paper}
+              square
+              sx={{
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                height: "100vh", // Center vertically and horizontally
+              }}
+            >
               <Box
                 sx={{
-                  my: 10,
-                  mx: 10,
                   display: "flex",
                   flexDirection: "column",
-                  alignItems: "center",
                   justifyContent: "center",
+                  alignItems: "center",
                   width: "100%",
-                  paddingRight: 15,
+                  maxWidth: "500px", // Adjust for a clean form size
+                  padding: 4, // Spacing around content
                 }}
               >
-                <Typography fullWidthvariant="h5" sx={{ mb: 3 }}>
+                {/* Title */}
+                <Typography
+                  component="h1"
+                  variant="h5"
+                  sx={{
+                    mb: 3,
+                    textAlign: "center",
+                    fontSize: "1.8rem", // Match font size with Sign In
+                  }}
+                >
                   Reset Password
                 </Typography>
+
+                {/* Request Reset */}
                 {step === "requestReset" && (
                   <>
-                    <Grid item xs={12} md={12}>
-                      <TextField
-                        label="Email"
-                        type="email"
-                        value={username}
-                        onChange={(e) => setUsername(e.target.value)}
-                        fullWidth
-                        margin="normal"
-                        inputProps={{ maxLength: 40 }}
-                      />
-                    </Grid>
+                    <TextField
+                      label="Email Address"
+                      type="email"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      fullWidth
+                      margin="normal"
+                      inputProps={{ maxLength: 40 }}
+                      sx={{
+                        fontSize: "1rem", // Ensure input matches font size
+                      }}
+                    />
                     <Button
                       variant="contained"
                       color="primary"
                       onClick={() => handleResetPassword(username)}
-                      sx={{ mt: 2 }}
+                      fullWidth
+                      sx={{
+                        mt: 3,
+                        mb: 2,
+                        py: 1.2, // Vertical padding for height consistency
+                        fontSize: "1rem", // Match button text font size
+                      }}
                     >
                       Send Reset Code
                     </Button>
                   </>
                 )}
+
+                {/* Confirm Reset */}
                 {step === "confirmReset" && (
-                  <Grid item xs={12} sm={8} md={5} square>
-                    <Box
-                      component="form"
-                      noValidate
-                      onSubmit={handleConfirmResetPassword}
-                      sx={{ mt: 1 }}
+                  <Box component="form" noValidate onSubmit={handleConfirmResetPassword}>
+                    <TextField
+                      label="Confirmation Code"
+                      value={confirmationCode}
+                      onChange={(e) => setConfirmationCode(e.target.value)}
+                      fullWidth
+                      margin="normal"
+                      inputProps={{ maxLength: 15 }}
+                      sx={{ fontSize: "1rem" }}
+                    />
+                    <TextField
+                      label="New Password"
+                      type="password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      fullWidth
+                      margin="normal"
+                      inputProps={{ maxLength: 50 }}
+                      sx={{ fontSize: "1rem" }}
+                    />
+                    <Button
+                      type="submit"
+                      variant="contained"
+                      color="primary"
+                      fullWidth
+                      sx={{
+                        mt: 3,
+                        mb: 2,
+                        py: 1.2,
+                        fontSize: "1rem",
+                        fontWeight: "bold",
+                      }}
                     >
-                      <Grid item xs={12}>
-                        <TextField
-                          required
-                          fullWidth
-                          id="email"
-                          label="Email Address"
-                          name="email"
-                          autoComplete="email"
-                          value={username}
-                          onChange={(e) => setUsername(e.target.value)}
-                          inputProps={{ maxLength: 40 }}
-                        />
-                      </Grid>
-                      <Grid item xs={12}>
-                        <TextField
-                          label="Confirmation Code"
-                          value={confirmationCode}
-                          onChange={(e) => setConfirmationCode(e.target.value)}
-                          fullWidth
-                          margin="normal"
-                          inputProps={{ maxLength: 15 }}
-                        />
-                      </Grid>
-                      <Grid item xs={12}>
-                        <TextField
-                          label="New Password"
-                          type="password"
-                          value={newPassword}
-                          onChange={(e) => setNewPassword(e.target.value)}
-                          fullWidth
-                          margin="normal"
-                          inputProps={{ maxLength: 50 }}
-                        />
-                      </Grid>
-                      <Button
-                        type="submit"
-                        fullWidth
-                        variant="contained"
-                        color="primary"
-                        sx={{ mt: 3, mb: 2 }}
-                      >
-                        Reset Password
-                      </Button>
-                    </Box>
-                  </Grid>
+                      Reset Password
+                    </Button>
+                  </Box>
                 )}
+
+                {/* Success Message */}
                 {step === "done" && (
-                  <Typography color="primary" sx={{ mt: 2 }}>
+                  <Typography
+                    color="primary"
+                    sx={{ mt: 3, textAlign: "center", fontSize: "1.2rem" }}
+                  >
                     Password has been successfully reset.
                   </Typography>
                 )}
+
+                {/* Error Message */}
                 {error && (
-                  <Typography color="error" sx={{ mt: 2 }}>
+                  <Typography
+                    color="error"
+                    sx={{ mt: 2, textAlign: "center", fontSize: "1rem" }}
+                  >
                     {error}
                   </Typography>
                 )}
-                <Grid container sx={{ mt: 4 }}>
-                  <Grid item xs>
-                    <Link
-                      href="#"
-                      variant="body2"
-                      onClick={() => setForgotPassword(false)}
-                    >
-                      Remember your Password? {"Sign in"}
-                    </Link>
-                  </Grid>
-                </Grid>
+
+                {/* Remember Password Link */}
+                <Link
+                  href="#"
+                  variant="body2"
+                  onClick={() => setForgotPassword(false)}
+                  sx={{
+                    mt: 3,
+                    textAlign: "center",
+                    display: "block",
+                    fontSize: "1rem",
+                    fontWeight: "bold",
+                    color: "primary.main", // Match link color
+                  }}
+                >
+                  Remember your Password? <strong>Sign in</strong>
+                </Link>
               </Box>
             </Grid>
           )}
+
+
         </Grid>
       </PageContainer>
       <ToastContainer

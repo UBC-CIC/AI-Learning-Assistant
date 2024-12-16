@@ -124,7 +124,6 @@ def get_module_name(module_id):
         module_name = result[0] if result else None
         
         cur.close()
-        connection.close()
         
         if module_name:
             logger.info(f"Module name for module_id {module_id} found: {module_name}")
@@ -164,7 +163,6 @@ def get_system_prompt(course_id):
         system_prompt = result[0] if result else None
         
         cur.close()
-        connection.close()
         
         if system_prompt:
             logger.info(f"System prompt for course_id {course_id} found: {system_prompt}")

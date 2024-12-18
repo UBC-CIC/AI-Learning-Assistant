@@ -180,14 +180,14 @@ cdk bootstrap aws://<YOUR_AWS_ACCOUNT_ID>/<YOUR_ACCOUNT_REGION> --profile <your-
 The stack prefix will be prefixed onto the physical names of the resources created during deployment.
 ```
 cdk deploy --all \
- --parameters <your-stack-prefix>-Amplify:githubRepoName=Digital-Strategy-Assistant \
+ --parameters <your-stack-prefix>-AmplifyStack:githubRepoName=AI-Learning-Assistant \
  --context StackPrefix=<your-stack-prefix> \
  --profile <your-profile-name>
 ```
 
 For example:
 ```
-cdk deploy --all --parameters AILA-Amplify:githubRepoName=Digital-Strategy-Assistant --context StackPrefix=AILA --profile <your-profile-name>
+cdk deploy --all --parameters AILA-AmplifyStack:githubRepoName=AI-Learning-Assistant --context StackPrefix=AILA --profile <your-profile-name>
 ```
 
 If you have trouble running the commands, try removing all the \ and run it in one line.

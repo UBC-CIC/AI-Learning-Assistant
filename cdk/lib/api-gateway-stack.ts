@@ -687,7 +687,7 @@ export class ApiGatewayStack extends cdk.Stack {
           "secretsmanager:PutSecretValue",
         ],
         resources: [
-          `arn:aws:secretsmanager:${this.region}:${this.account}:secret:AILA/*`,
+          `arn:aws:secretsmanager:${this.region}:${this.account}:secret:*`,
         ],
       })
     );

@@ -98,8 +98,7 @@ const InstructorEditCourse = () => {
     try {
       const { token, email } = await getAuthSessionAndEmail();
       const response = await fetch(
-        `${
-          import.meta.env.VITE_API_ENDPOINT
+        `${import.meta.env.VITE_API_ENDPOINT
         }instructor/get_all_files?course_id=${encodeURIComponent(
           course_id
         )}&module_id=${encodeURIComponent(
@@ -129,8 +128,7 @@ const InstructorEditCourse = () => {
     try {
       const { token, email } = await getAuthSessionAndEmail();
       const response = await fetch(
-        `${
-          import.meta.env.VITE_API_ENDPOINT
+        `${import.meta.env.VITE_API_ENDPOINT
         }instructor/view_concepts?course_id=${encodeURIComponent(course_id)}`,
         {
           method: "GET",
@@ -170,8 +168,7 @@ const InstructorEditCourse = () => {
       const session = await fetchAuthSession();
       const token = session.tokens.idToken
       const s3Response = await fetch(
-        `${
-          import.meta.env.VITE_API_ENDPOINT
+        `${import.meta.env.VITE_API_ENDPOINT
         }instructor/delete_module_s3?course_id=${encodeURIComponent(
           course_id
         )}&module_id=${encodeURIComponent(
@@ -190,8 +187,7 @@ const InstructorEditCourse = () => {
         throw new Error("Failed to delete module from S3");
       }
       const moduleResponse = await fetch(
-        `${
-          import.meta.env.VITE_API_ENDPOINT
+        `${import.meta.env.VITE_API_ENDPOINT
         }instructor/delete_module?module_id=${encodeURIComponent(
           module.module_id
         )}`,
@@ -260,8 +256,7 @@ const InstructorEditCourse = () => {
     const { token, email } = await getAuthSessionAndEmail();
 
     const editModuleResponse = await fetch(
-      `${
-        import.meta.env.VITE_API_ENDPOINT
+      `${import.meta.env.VITE_API_ENDPOINT
       }instructor/edit_module?module_id=${encodeURIComponent(
         module.module_id
       )}&instructor_email=${encodeURIComponent(
@@ -291,8 +286,7 @@ const InstructorEditCourse = () => {
       const fileType = getFileType(file_name);
       const fileName = cleanFileName(removeFileExtension(file_name));
       return fetch(
-        `${
-          import.meta.env.VITE_API_ENDPOINT
+        `${import.meta.env.VITE_API_ENDPOINT
         }instructor/delete_file?course_id=${encodeURIComponent(
           course_id
         )}&module_id=${encodeURIComponent(
@@ -325,8 +319,7 @@ const InstructorEditCourse = () => {
 
       try {
         const response = await fetch(
-          `${
-            import.meta.env.VITE_API_ENDPOINT
+          `${import.meta.env.VITE_API_ENDPOINT
           }instructor/generate_presigned_url?course_id=${encodeURIComponent(
             course_id
           )}&module_id=${encodeURIComponent(
@@ -380,6 +373,18 @@ const InstructorEditCourse = () => {
     if (isSaving) return;
     setIsSaving(true);
 
+
+    const totalFiles = files.length + newFiles.length;
+    if (totalFiles === 0) {
+      toast.error("At least one file is required to save the module.", {
+        position: "top-center",
+        autoClose: 2000,
+        theme: "colored",
+      });
+      setIsSaving(false);
+      return;
+    }
+
     if (!moduleName || !concept) {
       toast.error("Module Name and Concept are required.", {
         position: "top-center",
@@ -393,6 +398,8 @@ const InstructorEditCourse = () => {
       });
       return;
     }
+
+
     try {
       await updateModule();
       const { token } = await getAuthSessionAndEmail();
@@ -445,8 +452,7 @@ const InstructorEditCourse = () => {
       );
       const fileType = getFileType(fileNameWithExtension);
       return fetch(
-        `${
-          import.meta.env.VITE_API_ENDPOINT
+        `${import.meta.env.VITE_API_ENDPOINT
         }instructor/update_metadata?module_id=${encodeURIComponent(
           module.module_id
         )}&filename=${encodeURIComponent(

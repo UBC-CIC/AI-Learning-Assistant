@@ -1,71 +1,26 @@
 import json
 import os
+import urllib.request
+
+APPSYNC_API_URL = os.environ["APPSYNC_API_URL"]
+
 
 def lambda_handler(event, context):
-    # try:
-    #     session_id = event['sessionId']
-    #     message = event.get('message', "Embeddings created successfully")
-        
-    #     url = f"https://{os.environ['APPSYNC_API_ID']}.appsync-api.{os.environ['REGION']}.amazonaws.com/graphql"
-    #     headers = {
-    #         "Content-Type": "application/json",
-    #         "x-api-key": os.environ["APPSYNC_API_KEY"],
-    #     }
-    #     payload = {
-    #         "query": """
-    #             mutation sendNotification($message: String!, $sessionId: String!) {
-    #                 sendNotification(message: $message, sessionId: $sessionId) {
-    #                     message
-    #                     sessionId
-    #                 }
-    #             }
-    #         """,
-    #         "variables": {
-    #             "message": message,
-    #             "sessionId": session_id,
-    #         },
-    #     }
-        
-    #     response = requests.post(url, headers=headers, json=payload)
-    #     response_json = response.json()
-        
-    #     if response.status_code != 200 or "errors" in response_json:
-    #         return {
-    #             'statusCode': response.status_code,
-    #             'body': json.dumps({"error": response_json.get("errors", "Unknown error")})
-    #         }
-        
-    #     return {
-    #         'statusCode': 200,
-    #         'body': json.dumps({
-    #             "message": "Notification sent successfully",
-    #             "response": response_json
-    #         })
-    #     }
-    # except Exception as e:
-    #     return {
-    #         'statusCode': 500,
-    #         'body': json.dumps({"error": str(e)})
-    #     }
-
-
     print(f"Event Received: {json.dumps(event)}")
     try:
-        # Process the event to extract the sessionId and message
-        session_id = event.get("sessionId", "DefaultSessionId")
-        message = event.get("message", "Default message")
-         # Return the processed data
+        # Extract arguments from the AppSync payload
+        arguments = event.get("arguments", {})
+        session_id = arguments.get("sessionId", "DefaultSessionId")
+        message = arguments.get("message", "Default message")
+        # Log the extracted values for debugging
+        print(f"Extracted sessionId: {session_id}, message: {message}")
+        # Return the values back to AppSync
         return {
-            "message": message, 
-            "sessionId": session_id
-            }
-    except Exception as e:
-        return {
-            'error': str(e)
+            "sessionId": session_id,
+            "message": message
         }
-
-
-
-
-
-
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        return {
+            "error": str(e)
+        }

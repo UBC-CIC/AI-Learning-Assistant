@@ -1,9 +1,10 @@
 import json
 import os
-import urllib.request
+import boto3
 
 APPSYNC_API_URL = os.environ["APPSYNC_API_URL"]
-
+APPSYNC_API_KEY = os.environ["APPSYNC_API_KEY"]
+APPSYNC_API_ID = os.environ["APPSYNC_API_ID"]
 
 def lambda_handler(event, context):
     print(f"Event Received: {json.dumps(event)}")
@@ -12,13 +13,16 @@ def lambda_handler(event, context):
         arguments = event.get("arguments", {})
         session_id = arguments.get("sessionId", "DefaultSessionId")
         message = arguments.get("message", "Default message")
+
         # Log the extracted values for debugging
         print(f"Extracted sessionId: {session_id}, message: {message}")
+
         # Return the values back to AppSync
         return {
             "sessionId": session_id,
             "message": message
         }
+
     except Exception as e:
         print(f"Error: {str(e)}")
         return {

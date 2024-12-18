@@ -34,6 +34,7 @@ export class ApiGatewayStack extends cdk.Stack {
   public readonly userPool: cognito.UserPool;
   public readonly identityPool: cognito.CfnIdentityPool;
   private readonly layerList: { [key: string]: LayerVersion };
+  private eventApi: appsync.GraphqlApi;
   public readonly stageARN_APIGW: string;
   public readonly apiGW_basedURL: string;
   public readonly secret: secretsmanager.ISecret;
@@ -41,6 +42,8 @@ export class ApiGatewayStack extends cdk.Stack {
   public getUserPoolId = () => this.userPool.userPoolId;
   public getUserPoolClientId = () => this.appClient.userPoolClientId;
   public getIdentityPoolId = () => this.identityPool.ref;
+  public getEventApiUrl = () => this.eventApi.graphqlUrl;
+  public getEventApiKey = () => this.eventApi.apiKey!;
   public addLayer = (name: string, layer: LayerVersion) =>
     (this.layerList[name] = layer);
   public getLayers = () => this.layerList;
@@ -1402,20 +1405,46 @@ export class ApiGatewayStack extends cdk.Stack {
       sourceArn: `arn:aws:execute-api:${this.region}:${this.account}:${this.api.restApiId}/*/*/instructor*`,
     });
 
+    const chatlogsBucket = new s3.Bucket(
+      this,
+      `${id}-chatlogsBucket`,
+      {
+        blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
+        cors: [
+          {
+            allowedHeaders: ["*"],
+            allowedMethods: [
+              s3.HttpMethods.GET,
+              s3.HttpMethods.PUT,
+              s3.HttpMethods.HEAD,
+              s3.HttpMethods.POST,
+              s3.HttpMethods.DELETE,
+            ],
+            allowedOrigins: ["*"],
+          },
+        ],
+        // When deleting the stack, need to empty the Bucket and delete it manually
+        removalPolicy: cdk.RemovalPolicy.RETAIN,
+        enforceSSL: true,
+      }
+    );
+
     /**
      *
      * Create a Lambda function that gets triggered when SQS has new parameters
      */
-    const sqsTrigger = new lambda.Function(this, `${id}-SQSTrigger`, {
-      runtime: lambda.Runtime.NODEJS_20_X,
-      code: lambda.Code.fromAsset("lambda/sqsTrigger"),
-      handler: "sqsTrigger.handler",
-      timeout: Duration.seconds(300),
-      environment: {
-        BUCKET: dataIngestionBucket.bucketName,
-      },
+    const sqsTrigger = new lambda.DockerImageFunction(this, `${id}-SQSTrigger`, {
+      code: lambda.DockerImageCode.fromImageAsset("./sqsTrigger"),
+      memorySize: 512,
+      timeout: cdk.Duration.seconds(600),
+      vpc: vpcStack.vpc, // Pass the VPC
       functionName: `${id}-SQSTrigger`,
-      memorySize: 128,
+      environment: {
+        SM_DB_CREDENTIALS: db.secretPathUser.secretName,
+        RDS_PROXY_ENDPOINT: db.rdsProxyEndpoint,
+        CHATLOGS_BUCKET: chatlogsBucket.bucketName,
+        REGION: this.region,
+      },
     });
     
     sqsTrigger.addEventSource(
@@ -1424,11 +1453,69 @@ export class ApiGatewayStack extends cdk.Stack {
       })
     );
 
+    // Override the Logical ID of the Lambda Function to get ARN in OpenAPI
+    const cfnSqsTrigger = sqsTrigger.node
+      .defaultChild as lambda.CfnFunction;
+      cfnSqsTrigger.overrideLogicalId(
+      "SQSTrigger"
+    );
+
+    chatlogsBucket.grantRead(sqsTrigger);
+
+    // Add ListBucket permission explicitly
+    sqsTrigger.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: ["s3:ListBucket"],
+        resources: [chatlogsBucket.bucketArn], // Access to the specific bucket
+      })
+    );
+
+    sqsTrigger.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: [
+          "s3:PutObject",
+          "s3:GetObject",
+          "s3:DeleteObject",
+          "s3:HeadObject",
+        ],
+        resources: [
+          `arn:aws:s3:::${chatlogsBucket.bucketName}/*`, // Grant access to all objects within this bucket
+        ],
+      })
+    );
+
+    // Add the S3 event source trigger to the Lambda function
+    sqsTrigger.addEventSource(
+      new lambdaEventSources.S3EventSource(chatlogsBucket, {
+        events: [
+          s3.EventType.OBJECT_CREATED,
+          s3.EventType.OBJECT_REMOVED,
+          s3.EventType.OBJECT_RESTORE_COMPLETED,
+        ],
+      })
+    );
+
+    // Grant access to Secret Manager
+    sqsTrigger.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: [
+          //Secrets Manager
+          "secretsmanager:GetSecretValue",
+        ],
+        resources: [
+          `arn:aws:secretsmanager:${this.region}:${this.account}:secret:*`,
+        ],
+      })
+    );
+
     //////////////////////////////
     //////////////////////////////
 
     // Create AppSync API
-    const eventApi = new appsync.GraphqlApi(this,
+    this.eventApi = new appsync.GraphqlApi(this,
       `${id}-EventApi`, {
      name: `${id}-EventApi`,
      definition: appsync.Definition.fromFile("./graphql/schema.graphql"),
@@ -1439,51 +1526,59 @@ export class ApiGatewayStack extends cdk.Stack {
      },
      xrayEnabled: true,
    });
-   const notificationFunction = new lambda.Function(this, `${id}-NotificationFunction`, {
-     runtime: lambda.Runtime.PYTHON_3_9,
-     code: lambda.Code.fromAsset("lambda/eventNotification"),
-     handler: "eventNotification.lambda_handler",
-     environment: {
-       APPSYNC_API_URL: eventApi.graphqlUrl,
-       APPSYNC_API_ID: eventApi.apiId,
-       APPSYNC_API_KEY: eventApi.apiKey!,
-       REGION: this.region,
-     },
-     functionName: `${id}-NotificationFunction`,
-     timeout: cdk.Duration.seconds(300),
-     memorySize: 128,
-     vpc: vpcStack.vpc,
-     role: lambdaRole,
-   });
-   notificationFunction.addToRolePolicy(
-     new iam.PolicyStatement({
-         effect: iam.Effect.ALLOW,
-         actions: ['appsync:GraphQL'],
-         resources: [`arn:aws:appsync:${this.region}:${this.account}:apis/${eventApi.apiId}/*`],
-     })
-   );
-   notificationFunction.addPermission("AppSyncInvokePermission", {
-     principal: new iam.ServicePrincipal("appsync.amazonaws.com"),
-     action: "lambda:InvokeFunction",
-     sourceArn: `arn:aws:appsync:${this.region}:${this.account}:apis/${eventApi.apiId}/*`,
-   });
-   const notificationLambdaDataSource = eventApi.addLambdaDataSource(
-     "NotificationLambdaDataSource",
-     notificationFunction
-   );
-   notificationLambdaDataSource.createResolver("ResolverEventApi", {
-     typeName: "Mutation",
-     fieldName: "sendNotification",
-     requestMappingTemplate: appsync.MappingTemplate.lambdaRequest(),
-     responseMappingTemplate: appsync.MappingTemplate.lambdaResult(),
-   });
-   // Override the Logical ID of the Lambda Function to get ARN in OpenAPI
-   const cfnNotificationFunction = notificationFunction
-     .node.defaultChild as lambda.CfnFunction;
-   cfnNotificationFunction.overrideLogicalId(
-     "NotificationFunction"
-   );
 
+   const notificationFunction = new lambda.Function(this, `${id}-NotificationFunction`, {
+      runtime: lambda.Runtime.PYTHON_3_9,
+      code: lambda.Code.fromAsset("lambda/eventNotification"),
+      handler: "eventNotification.lambda_handler",
+      environment: {
+        APPSYNC_API_URL: this.eventApi.graphqlUrl,
+        APPSYNC_API_ID: this.eventApi.apiId,
+        APPSYNC_API_KEY: this.eventApi.apiKey!,
+        REGION: this.region,
+      },
+      functionName: `${id}-NotificationFunction`,
+      timeout: cdk.Duration.seconds(300),
+      memorySize: 128,
+      vpc: vpcStack.vpc,
+      role: lambdaRole,
+    });
+    
+    notificationFunction.addToRolePolicy(
+        new iam.PolicyStatement({
+            effect: iam.Effect.ALLOW,
+            actions: ['appsync:GraphQL'],
+            resources: [`arn:aws:appsync:${this.region}:${this.account}:apis/${this.eventApi.apiId}/*`],
+        })
+      );
+
+    notificationFunction.addPermission("AppSyncInvokePermission", {
+      principal: new iam.ServicePrincipal("appsync.amazonaws.com"),
+      action: "lambda:InvokeFunction",
+      sourceArn: `arn:aws:appsync:${this.region}:${this.account}:apis/${this.eventApi.apiId}/*`,
+    });
+
+    const notificationLambdaDataSource = this.eventApi.addLambdaDataSource(
+      "NotificationLambdaDataSource",
+      notificationFunction
+    );
+    
+    notificationLambdaDataSource.createResolver("ResolverEventApi", {
+      typeName: "Mutation",
+      fieldName: "sendNotification",
+      requestMappingTemplate: appsync.MappingTemplate.lambdaRequest(),
+      responseMappingTemplate: appsync.MappingTemplate.lambdaResult(),
+    });
+    
+    // Add permission to allow main.py Lambda to invoke eventNotification Lambda
+    notificationFunction.grantInvoke(new iam.ServicePrincipal("lambda.amazonaws.com"));
+    
+    // Override the Logical ID of the Lambdas Function to get ARN in OpenAPI
+    const cfnNotificationFunction = notificationFunction
+      .node.defaultChild as lambda.CfnFunction;
+    cfnNotificationFunction.overrideLogicalId(
+      "NotificationFunction"
+    );
   
   }
 }

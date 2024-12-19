@@ -10,7 +10,7 @@
   - [Deployment](#deployment)
     - [Step 1: Fork \& Clone The Repository](#step-1-fork--clone-the-repository)
     - [Step 2: Upload Secrets](#step-2-upload-secrets)
-      - [CDK Deployment in Hybrid Cloud Environment](#cdk-deployment-in-hybrid-cloud-environment)
+      - [CDK Deployment with an Existing VPC](#cdk-deployment-with-an-existing-vpc)
       - [Step-by-Step Instructions](#step-by-step-instructions)
     - [Step 3: CDK Deployment](#step-3-cdk-deployment)
   - [Post-Deployment](#post-deployment)
@@ -130,11 +130,11 @@ aws ssm put-parameter \
     --profile <YOUR-PROFILE-NAME>
 ```
 
-#### CDK Deployment in Hybrid Cloud Environment
+#### CDK Deployment with an Existing VPC
 
-The following set of instructions are only if you want to deploy this application in a **hybrid cloud environment**. If you do not want to do this you can skip this section.
+The following set of instructions are only if you want to deploy this application with an **existing VPC**. If you do not want to do this you can skip this section.
 
-In order to deploy in a hybrid cloud environment, you will need to have access to the **aws-controltower-VPC** and the name of your **AWSControlTowerStackSet**.
+In order to deploy, you will need to have access to the **aws-controltower-VPC** and the name of your **AWSControlTowerStackSet**.
 
 #### Step-by-Step Instructions
 

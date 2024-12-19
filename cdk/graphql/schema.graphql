@@ -4,10 +4,10 @@ type Subscription {
 }
 type Notification {
   message: String
-  sessionId: String
+  course_id: String
 }
 type Mutation {
-  sendNotification(message: String!, sessionId: String!): Notification
+  sendNotification(message: String!, course_id: String!): Notification
 }
 type Query {
   getNotifications: [Notification]

@@ -16,6 +16,8 @@ DB_SECRET_NAME = os.environ["SM_DB_CREDENTIALS"]
 REGION = os.environ["REGION"]
 CHATLOGS_BUCKET = os.environ["CHATLOGS_BUCKET"]
 RDS_PROXY_ENDPOINT = os.environ["RDS_PROXY_ENDPOINT"]
+APPSYNC_API_URL = os.environ["APPSYNC_API_URL"]
+APPSYNC_API_KEY = os.environ["APPSYNC_API_KEY"]
 
 # AWS Clients
 secrets_manager_client = boto3.client("secretsmanager")
@@ -153,6 +155,47 @@ def upload_to_s3(file_path, file_name):
         logger.error(f"Error uploading file to S3: {e}")
         raise
 
+def invoke_event_notification(course_id, message="Chat logs successfully uploaded"):
+    """
+    Publish a notification event to AppSync via HTTPX (directly to the AppSync API).
+    """
+    try:
+        query = """
+        mutation sendNotification($message: String!, $course_id: String!) {
+            sendNotification(message: $message, course_id: $course_id) {
+                message
+                course_id
+            }
+        }
+        """
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": "API_KEY"
+        }
+
+        payload = {
+            "query": query,
+            "variables": {
+                "message": message,
+                "course_id": course_id
+            }
+        }
+
+        # Send the request to AppSync
+        with httpx.Client() as client:
+            response = client.post(APPSYNC_API_URL, headers=headers, json=payload)
+            response_data = response.json()
+
+            logging.info(f"AppSync Response: {json.dumps(response_data, indent=2)}")
+            if response.status_code != 200 or "errors" in response_data:
+                raise Exception(f"Failed to send notification: {response_data}")
+
+            print(f"Notification sent successfully: {response_data}")
+            return response_data["data"]["sendNotification"]
+
+    except Exception as e:
+        logging.error(f"Error publishing event to AppSync: {str(e)}")
+        raise
 
 def handler(event, context):
     """
@@ -178,6 +221,9 @@ def handler(event, context):
             s3_uri = upload_to_s3(csv_path, csv_name)
 
             logger.info(f"Chat logs successfully processed and uploaded to {s3_uri}")
+
+            # Send notification to AppSync
+            invoke_event_notification(course_id, message=f"Chat logs uploaded to {s3_uri}")
         
         return {
             "statusCode": 200,

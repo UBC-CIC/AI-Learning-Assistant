@@ -1,6 +1,6 @@
 import json
 
-def lambda_handler(event, context):
+def handler(event, context):
     """
     Lambda function to process messages from SQS.
     Prints the received parameters for testing purposes.

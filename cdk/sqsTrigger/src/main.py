@@ -141,7 +141,7 @@ def write_to_csv(data, course_id, instructor_email):
         return file_path, file_name
     except Exception as e:
         logger.error(f"Error writing to CSV: {e}")
-        return None None
+        return None, None
 
 
 def upload_to_s3(file_path, file_name):

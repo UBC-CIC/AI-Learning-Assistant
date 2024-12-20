@@ -1,6 +1,6 @@
 import json
 
-def lambda_handler(event, context):
+def handler(event, context):
     """
     Lambda function to process messages from SQS.
     Prints the received parameters for testing purposes.
@@ -10,7 +10,7 @@ def lambda_handler(event, context):
         context (LambdaContext): The runtime information provided by AWS Lambda.
 
     Returns:
-        dict: A success message.
+        dict: A success message..
     """
     try:
         # Loop through the records in the event

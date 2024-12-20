@@ -43,7 +43,6 @@ export class ApiGatewayStack extends cdk.Stack {
   public getUserPoolClientId = () => this.appClient.userPoolClientId;
   public getIdentityPoolId = () => this.identityPool.ref;
   public getEventApiUrl = () => this.eventApi.graphqlUrl;
-  public getEventApiKey = () => this.eventApi.apiKey!;
   public addLayer = (name: string, layer: LayerVersion) =>
     (this.layerList[name] = layer);
   public getLayers = () => this.layerList;
@@ -1443,6 +1442,7 @@ export class ApiGatewayStack extends cdk.Stack {
         SM_DB_CREDENTIALS: db.secretPathUser.secretName,
         RDS_PROXY_ENDPOINT: db.rdsProxyEndpoint,
         CHATLOGS_BUCKET: chatlogsBucket.bucketName,
+        APPSYNC_API_URL: this.eventApi.graphqlUrl,
         REGION: this.region,
       },
     });
@@ -1514,6 +1514,13 @@ export class ApiGatewayStack extends cdk.Stack {
     //////////////////////////////
     //////////////////////////////
 
+    const authHandler = new lambda.Function(this, `${id}-AuthHandler`, {
+      runtime: lambda.Runtime.NODEJS_20_X,
+      code: lambda.Code.fromAsset("lambda/lib"),
+      handler: "appsync.handler",
+      functionName: `${id}-AuthHandler`,
+    });
+
     // Create AppSync API
     this.eventApi = new appsync.GraphqlApi(this,
       `${id}-EventApi`, {
@@ -1521,20 +1528,25 @@ export class ApiGatewayStack extends cdk.Stack {
      definition: appsync.Definition.fromFile("./graphql/schema.graphql"),
      authorizationConfig: {
        defaultAuthorization: {
-         authorizationType: appsync.AuthorizationType.API_KEY,
+         authorizationType: appsync.AuthorizationType.LAMBDA,
+          lambdaAuthorizerConfig: {
+            handler: authHandler,
+          },
        },
      },
      xrayEnabled: true,
    });
 
-   const notificationFunction = new lambda.Function(this, `${id}-NotificationFunction`, {
+   const notificationFunction = new lambda.Function(
+    this,
+    `${id}-NotificationFunction`,
+    {
       runtime: lambda.Runtime.PYTHON_3_9,
       code: lambda.Code.fromAsset("lambda/eventNotification"),
       handler: "eventNotification.lambda_handler",
       environment: {
         APPSYNC_API_URL: this.eventApi.graphqlUrl,
         APPSYNC_API_ID: this.eventApi.apiId,
-        APPSYNC_API_KEY: this.eventApi.apiKey!,
         REGION: this.region,
       },
       functionName: `${id}-NotificationFunction`,
@@ -1543,42 +1555,40 @@ export class ApiGatewayStack extends cdk.Stack {
       vpc: vpcStack.vpc,
       role: lambdaRole,
     });
-    
-    notificationFunction.addToRolePolicy(
-        new iam.PolicyStatement({
-            effect: iam.Effect.ALLOW,
-            actions: ['appsync:GraphQL'],
-            resources: [`arn:aws:appsync:${this.region}:${this.account}:apis/${this.eventApi.apiId}/*`],
-        })
-      );
 
-    notificationFunction.addPermission("AppSyncInvokePermission", {
-      principal: new iam.ServicePrincipal("appsync.amazonaws.com"),
-      action: "lambda:InvokeFunction",
-      sourceArn: `arn:aws:appsync:${this.region}:${this.account}:apis/${this.eventApi.apiId}/*`,
-    });
+  notificationFunction.addToRolePolicy(
+    new iam.PolicyStatement({
+      effect: iam.Effect.ALLOW,
+      actions: ['appsync:GraphQL'],
+      resources: [`arn:aws:appsync:${this.region}:${this.account}:apis/${this.eventApi.apiId}/*`],
+    })
+  );
 
-    const notificationLambdaDataSource = this.eventApi.addLambdaDataSource(
-      "NotificationLambdaDataSource",
-      notificationFunction
-    );
-    
-    notificationLambdaDataSource.createResolver("ResolverEventApi", {
-      typeName: "Mutation",
-      fieldName: "sendNotification",
-      requestMappingTemplate: appsync.MappingTemplate.lambdaRequest(),
-      responseMappingTemplate: appsync.MappingTemplate.lambdaResult(),
-    });
-    
-    // Add permission to allow main.py Lambda to invoke eventNotification Lambda
-    notificationFunction.grantInvoke(new iam.ServicePrincipal("lambda.amazonaws.com"));
-    
-    // Override the Logical ID of the Lambdas Function to get ARN in OpenAPI
-    const cfnNotificationFunction = notificationFunction
-      .node.defaultChild as lambda.CfnFunction;
-    cfnNotificationFunction.overrideLogicalId(
-      "NotificationFunction"
-    );
+  notificationFunction.addPermission("AppSyncInvokePermission", {
+    principal: new iam.ServicePrincipal("appsync.amazonaws.com"),
+    action: "lambda:InvokeFunction",
+    sourceArn: `arn:aws:appsync:${this.region}:${this.account}:apis/${this.eventApi.apiId}/*`,
+  });
+
+  const notificationLambdaDataSource = this.eventApi.addLambdaDataSource(
+    "NotificationLambdaDataSource",
+    notificationFunction
+  );
+
+  notificationLambdaDataSource.createResolver("ResolverEventApi", {
+    typeName: "Mutation",
+    fieldName: "sendNotification",
+    requestMappingTemplate: appsync.MappingTemplate.lambdaRequest(),
+    responseMappingTemplate: appsync.MappingTemplate.lambdaResult(),
+  });
+
+  // Add permission to allow main.py Lambda to invoke eventNotification Lambda
+  notificationFunction.grantInvoke(new iam.ServicePrincipal("lambda.amazonaws.com"));
+
+  // Override the Logical ID of the Lambdas Function to get ARN in OpenAPI
+  const cfnNotificationFunction = notificationFunction.node
+    .defaultChild as lambda.CfnFunction;
+  cfnNotificationFunction.overrideLogicalId("NotificationFunction");
   
   }
 }

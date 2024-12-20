@@ -17,7 +17,6 @@ REGION = os.environ["REGION"]
 CHATLOGS_BUCKET = os.environ["CHATLOGS_BUCKET"]
 RDS_PROXY_ENDPOINT = os.environ["RDS_PROXY_ENDPOINT"]
 APPSYNC_API_URL = os.environ["APPSYNC_API_URL"]
-APPSYNC_API_KEY = os.environ["APPSYNC_API_KEY"]
 
 # AWS Clients
 secrets_manager_client = boto3.client("secretsmanager")

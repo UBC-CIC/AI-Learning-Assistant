@@ -4,6 +4,7 @@ import logging
 import boto3
 import psycopg2
 import csv
+import httpx
 from datetime import datetime
 from botocore.exceptions import ClientError
 

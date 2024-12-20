@@ -141,7 +141,7 @@ def write_to_csv(data, course_id, instructor_email):
         return file_path, file_name
     except Exception as e:
         logger.error(f"Error writing to CSV: {e}")
-        raise
+        return None None
 
 
 def upload_to_s3(file_path, file_name):
@@ -154,7 +154,7 @@ def upload_to_s3(file_path, file_name):
         return f"s3://{CHATLOGS_BUCKET}/{file_name}"
     except Exception as e:
         logger.error(f"Error uploading file to S3: {e}")
-        raise
+        return None
 
 def invoke_event_notification(course_id, instructor_email, message="Chat logs successfully uploaded"):
     """
@@ -198,7 +198,7 @@ def invoke_event_notification(course_id, instructor_email, message="Chat logs su
 
     except Exception as e:
         logging.error(f"Error publishing event to AppSync: {str(e)}")
-        raise
+        return None
 
 def handler(event, context):
     """
@@ -206,42 +206,51 @@ def handler(event, context):
     """
     try:
         # Parse SQS event
-        if "Records" not in event:
-            logger.error("Event does not contain 'Records'.")
-            raise ValueError("Event does not contain 'Records'.")
-        
         for record in event.get("Records", []):
-            if "body" not in record:
-                logger.error("Record does not contain 'body'.")
-                continue  # Skip this record
-
-            try:
-                message_body = json.loads(record["body"])
-                course_id = message_body.get("course_id")
-                instructor_email = message_body.get("instructor_email")
-
-                if not course_id or not instructor_email:
-                    logger.error("course_id and instructor_email are required in the message body")
-                    continue
-
-                # Query chat logs
-                chat_logs = query_chat_logs(course_id)
-
-                # Write to CSV
-                csv_path, csv_name = write_to_csv(chat_logs, course_id, instructor_email)
-
-                # Upload to S3
-                s3_uri = upload_to_s3(csv_path, csv_name)
-
-                logger.info(f"Chat logs successfully processed and uploaded to {s3_uri}")
-
-                # Send notification to AppSync
-                invoke_event_notification(course_id, instructor_email, message=f"Chat logs uploaded to {s3_uri}")
-
-            except json.JSONDecodeError as e:
-                logger.error(f"Error decoding message body: {e}")
+            message_body = json.loads(record["body"])
+            course_id = message_body.get("course_id")
+            instructor_email = message_body.get("instructor_email")
+            if not course_id or not instructor_email:
+                logger.error("course_id and instructor_email is required in the message body")
                 continue
 
+            # Query chat logs
+            chat_logs = query_chat_logs(course_id)
+            if chat_logs is None:
+                logger.error("Failed to fetch chat logs")
+                return {
+                    "statusCode": 500,
+                    "body": json.dumps({"error": "Failed to fetch chat logs"})
+                }
+
+            # Write to CSV
+            csv_path, csv_name = write_to_csv(chat_logs, course_id, instructor_email)
+            if csv_path is None or csv_name is None:
+                logger.error("Failed to write to CSV")
+                return {
+                    "statusCode": 500,
+                    "body": json.dumps({"error": "Failed to write to CSV"})
+                }
+
+            # Upload to S3
+            s3_uri = upload_to_s3(csv_path, csv_name)
+            if s3_uri is None:
+                logger.error("Failed to upload to S3")
+                return {
+                    "statusCode": 500,
+                    "body": json.dumps({"error": "Failed to upload to S3"})
+                }
+            logger.info(f"Chat logs successfully processed and uploaded to {s3_uri}")
+
+            # Send notification to AppSync
+            response = invoke_event_notification(course_id, instructor_email, message=f"Chat logs uploaded to {s3_uri}")
+            if response is None:
+                logger.error("Failed to send notification to AppSync")
+                return {
+                    "statusCode": 500,
+                    "body": json.dumps({"error": "Failed to send notification to AppSync"})
+                }
+        
         return {
             "statusCode": 200,
             "body": json.dumps({"message": "Chat logs processed successfully"})

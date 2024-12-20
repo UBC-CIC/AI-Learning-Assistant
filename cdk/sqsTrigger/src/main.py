@@ -53,6 +53,7 @@ def connect_to_db():
             connection_string = " ".join([f"{key}={value}" for key, value in connection_params.items()])
             connection = psycopg2.connect(connection_string)
             logger.info("Connected to the database!")
+            print("Connected to the database!")
         except Exception as e:
             logger.error(f"Failed to connect to database: {e}")
             if connection:
@@ -61,21 +62,19 @@ def connect_to_db():
             raise
     return connection
 
+
 def query_chat_logs(course_id):
     """
     Queries the database to fetch chat logs for a given course_id.
     """
     connection = connect_to_db()
     if connection is None:
-        logger.error("No database connection available.")
-        return {
-            "statusCode": 500,
-            "body": json.dumps("Database connection failed.")
-        }
-    
+        error_message = "Database connection is unavailable."
+        logger.error(error_message)
+        raise Exception(error_message)
+
     try:
         cur = connection.cursor()
-
         query = """
             SELECT 
                 u.user_id, 
@@ -110,15 +109,17 @@ def query_chat_logs(course_id):
         """
         cur.execute(query, (course_id,))
         results = cur.fetchall()
-        logger.info(f"Fetched {len(results)} records for course_id: {course_id}")
+        logger.info(f"Fetched {len(results)} chat log records for course_id: {course_id}.")
+        print(f"Fetched {len(results)} chat log records for course_id: {course_id}.")
         cur.close()
         return results
     except Exception as e:
         if cur:
             cur.close()
         connection.rollback()
-        logger.error(f"Error querying chat logs: {e}")
-        return none
+        logger.error(f"Error querying chat logs for course_id {course_id}: {e}")
+        raise
+
 
 def write_to_csv(data, course_id, instructor_email):
     """
@@ -130,36 +131,31 @@ def write_to_csv(data, course_id, instructor_email):
     try:
         with open(file_path, mode="w", newline="") as file:
             writer = csv.writer(file)
-            # Write header
             writer.writerow([
                 "user_id", "module_name", "concept_name", "session_id", 
                 "message", "sent_by_student", "competency_status", "timestamp"
             ])
-            # Write rows
             writer.writerows(data)
-        logger.info(f"Data written to CSV file: {file_name}")
+        logger.info(f"CSV file created successfully: {file_path}")
+        print(f"CSV file created successfully: {file_path}")
         return file_path, file_name
     except Exception as e:
-        logger.error(f"Error writing to CSV: {e}")
-        return None, None
+        logger.error(f"Error writing to CSV file {file_name}: {e}")
+        raise
 
 
 def upload_to_s3(file_path, file_name):
-    """
-    Uploads the file to the specified S3 bucket.
-    """
     try:
         s3_client.upload_file(file_path, CHATLOGS_BUCKET, file_name)
-        logger.info(f"File uploaded to S3: s3://{CHATLOGS_BUCKET}/{file_name}")
+        logger.info(f"File uploaded successfully to S3: s3://{CHATLOGS_BUCKET}/{file_name}")
+        print(f"File uploaded successfully to S3: s3://{CHATLOGS_BUCKET}/{file_name}")
         return f"s3://{CHATLOGS_BUCKET}/{file_name}"
     except Exception as e:
         logger.error(f"Error uploading file to S3: {e}")
-        return None
+        raise
+
 
 def invoke_event_notification(course_id, instructor_email, message="Chat logs successfully uploaded"):
-    """
-    Publish a notification event to AppSync via HTTPX (directly to the AppSync API).
-    """
     try:
         query = """
         mutation sendNotification($message: String!, $course_id: String!, $instructor_email: String!) {
@@ -170,18 +166,10 @@ def invoke_event_notification(course_id, instructor_email, message="Chat logs su
             }
         }
         """
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": "API_KEY"
-        }
-
+        headers = {"Content-Type": "application/json", "Authorization": "API_KEY"}
         payload = {
             "query": query,
-            "variables": {
-                "message": message,
-                "course_id": course_id,
-                "instructor_email": instructor_email
-            }
+            "variables": {"message": message, "course_id": course_id, "instructor_email": instructor_email}
         }
 
         # Send the request to AppSync
@@ -189,75 +177,48 @@ def invoke_event_notification(course_id, instructor_email, message="Chat logs su
             response = client.post(APPSYNC_API_URL, headers=headers, json=payload)
             response_data = response.json()
 
-            logging.info(f"AppSync Response: {json.dumps(response_data, indent=2)}")
             if response.status_code != 200 or "errors" in response_data:
+                logger.error(f"Failed to send notification to AppSync: {response_data}")
                 raise Exception(f"Failed to send notification: {response_data}")
 
+            logger.info(f"Notification sent successfully: {response_data}")
             print(f"Notification sent successfully: {response_data}")
-            return response_data["data"]["sendNotification"]
-
     except Exception as e:
-        logging.error(f"Error publishing event to AppSync: {str(e)}")
-        return None
+        logger.error(f"Error invoking AppSync notification: {e}")
+        raise
+
 
 def handler(event, context):
-    """
-    Lambda entry point.
-    """
     try:
-        # Parse SQS event
-        for record in event.get("Records", []):
-            message_body = json.loads(record["body"])
-            course_id = message_body.get("course_id")
-            instructor_email = message_body.get("instructor_email")
-            if not course_id or not instructor_email:
-                logger.error("course_id and instructor_email is required in the message body")
+        if "Records" not in event:
+            logger.error("Invalid event format: missing 'Records'.")
+            raise ValueError("Event does not contain 'Records'.")
+
+        for record in event["Records"]:
+            try:
+                message_body = json.loads(record["body"])
+                course_id = message_body.get("course_id")
+                instructor_email = message_body.get("instructor_email")
+
+                if not course_id or not instructor_email:
+                    logger.error("Missing required parameters: course_id or instructor_email.")
+                    continue
+
+                chat_logs = query_chat_logs(course_id)
+                print("GOT chat_logs")
+                csv_path, csv_name = write_to_csv(chat_logs, course_id, instructor_email)
+                print("GOT got csv_path and csv_name")
+                s3_uri = upload_to_s3(csv_path, csv_name)
+                print("GOT s3_uri")
+                invoke_event_notification(course_id, instructor_email, message=f"Chat logs uploaded to {s3_uri}")
+                print("FINALLY SENT NOTIFICATION")
+
+            except Exception as e:
+                logger.error(f"Error processing SQS message: {e}")
                 continue
 
-            # Query chat logs
-            chat_logs = query_chat_logs(course_id)
-            if chat_logs is None:
-                logger.error("Failed to fetch chat logs")
-                return {
-                    "statusCode": 500,
-                    "body": json.dumps({"error": "Failed to fetch chat logs"})
-                }
+        return {"statusCode": 200, "body": json.dumps({"message": "Processing completed successfully."})}
 
-            # Write to CSV
-            csv_path, csv_name = write_to_csv(chat_logs, course_id, instructor_email)
-            if csv_path is None or csv_name is None:
-                logger.error("Failed to write to CSV")
-                return {
-                    "statusCode": 500,
-                    "body": json.dumps({"error": "Failed to write to CSV"})
-                }
-
-            # Upload to S3
-            s3_uri = upload_to_s3(csv_path, csv_name)
-            if s3_uri is None:
-                logger.error("Failed to upload to S3")
-                return {
-                    "statusCode": 500,
-                    "body": json.dumps({"error": "Failed to upload to S3"})
-                }
-            logger.info(f"Chat logs successfully processed and uploaded to {s3_uri}")
-
-            # Send notification to AppSync
-            response = invoke_event_notification(course_id, instructor_email, message=f"Chat logs uploaded to {s3_uri}")
-            if response is None:
-                logger.error("Failed to send notification to AppSync")
-                return {
-                    "statusCode": 500,
-                    "body": json.dumps({"error": "Failed to send notification to AppSync"})
-                }
-        
-        return {
-            "statusCode": 200,
-            "body": json.dumps({"message": "Chat logs processed successfully"})
-        }
     except Exception as e:
-        logger.error(f"Error in handler of sqsTrigger: {e}")
-        return {
-            "statusCode": 500,
-            "body": json.dumps({"error": "Internal Server Error"})
-        }
+        logger.error(f"Unhandled error in sqsTrigger handler: {e}")
+        return {"statusCode": 500, "body": json.dumps({"error": str(e)})}

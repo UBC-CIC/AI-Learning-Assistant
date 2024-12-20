@@ -1565,17 +1565,6 @@ export class ApiGatewayStack extends cdk.Stack {
       })
     );
 
-    // Add the S3 event source trigger to the Lambda function
-    sqsTrigger.addEventSource(
-      new lambdaEventSources.S3EventSource(chatlogsBucket, {
-        events: [
-          s3.EventType.OBJECT_CREATED,
-          s3.EventType.OBJECT_REMOVED,
-          s3.EventType.OBJECT_RESTORE_COMPLETED,
-        ],
-      })
-    );
-
     // Grant access to Secret Manager
     sqsTrigger.addToRolePolicy(
       new iam.PolicyStatement({

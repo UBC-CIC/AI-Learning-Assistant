@@ -206,34 +206,48 @@ def handler(event, context):
     """
     try:
         # Parse SQS event
+        if "Records" not in event:
+            logger.error("Event does not contain 'Records'.")
+            raise ValueError("Event does not contain 'Records'.")
+        
         for record in event.get("Records", []):
-            message_body = json.loads(record["body"])
-            course_id = message_body.get("course_id")
-            instructor_email = message_body.get("instructor_email")
-            if not course_id:
-                logger.error("course_id is required in the message body")
+            if "body" not in record:
+                logger.error("Record does not contain 'body'.")
+                continue  # Skip this record
+
+            try:
+                message_body = json.loads(record["body"])
+                course_id = message_body.get("course_id")
+                instructor_email = message_body.get("instructor_email")
+
+                if not course_id or not instructor_email:
+                    logger.error("course_id and instructor_email are required in the message body")
+                    continue
+
+                # Query chat logs
+                chat_logs = query_chat_logs(course_id)
+
+                # Write to CSV
+                csv_path, csv_name = write_to_csv(chat_logs, course_id, instructor_email)
+
+                # Upload to S3
+                s3_uri = upload_to_s3(csv_path, csv_name)
+
+                logger.info(f"Chat logs successfully processed and uploaded to {s3_uri}")
+
+                # Send notification to AppSync
+                invoke_event_notification(course_id, instructor_email, message=f"Chat logs uploaded to {s3_uri}")
+
+            except json.JSONDecodeError as e:
+                logger.error(f"Error decoding message body: {e}")
                 continue
 
-            # Query chat logs
-            chat_logs = query_chat_logs(course_id)
-
-            # Write to CSV
-            csv_path, csv_name = write_to_csv(chat_logs, course_id, instructor_email)
-
-            # Upload to S3
-            s3_uri = upload_to_s3(csv_path, csv_name)
-
-            logger.info(f"Chat logs successfully processed and uploaded to {s3_uri}")
-
-            # Send notification to AppSync
-            invoke_event_notification(course_id, instructor_email, message=f"Chat logs uploaded to {s3_uri}")
-        
         return {
             "statusCode": 200,
             "body": json.dumps({"message": "Chat logs processed successfully"})
         }
     except Exception as e:
-        logger.error(f"Error in lambda_handler: {e}")
+        logger.error(f"Error in handler of sqsTrigger: {e}")
         return {
             "statusCode": 500,
             "body": json.dumps({"error": "Internal Server Error"})

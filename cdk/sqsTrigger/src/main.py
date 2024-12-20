@@ -125,8 +125,9 @@ def write_to_csv(data, course_id, instructor_email):
     """
     timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
     file_name = f"{course_id}-{instructor_email}-{timestamp}.csv"
+    file_path = f"/tmp/{file_name}"
     try:
-        with open(f"/tmp/{file_name}", mode="w", newline="") as file:
+        with open(file_path, mode="w", newline="") as file:
             writer = csv.writer(file)
             # Write header
             writer.writerow([
@@ -136,7 +137,7 @@ def write_to_csv(data, course_id, instructor_email):
             # Write rows
             writer.writerows(data)
         logger.info(f"Data written to CSV file: {file_name}")
-        return f"/{course_id}/{file_name}", file_name
+        return file_path, file_name
     except Exception as e:
         logger.error(f"Error writing to CSV: {e}")
         raise

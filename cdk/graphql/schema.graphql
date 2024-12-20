@@ -1,18 +1,22 @@
 type Subscription {
-  onNotify: Notification
+  onNotify(course_id: String!, instructor_email: String!): Notification
     @aws_subscribe(mutations: ["sendNotification"])
 }
+
 type Notification {
   message: String
   course_id: String
   instructor_email: String
 }
+
 type Mutation {
   sendNotification(message: String!, course_id: String!, instructor_email: String!): Notification
 }
+
 type Query {
   getNotifications: [Notification]
 }
+
 schema {
   query: Query
   mutation: Mutation

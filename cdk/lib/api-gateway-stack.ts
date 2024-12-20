@@ -1433,12 +1433,12 @@ export class ApiGatewayStack extends cdk.Stack {
      *
      * Create a Lambda function that gets triggered when SQS has new parameters
      */
-    const sqsTrigger = new lambda.DockerImageFunction(this, `${id}-SQSTrigger`, {
+    const sqsTrigger = new lambda.DockerImageFunction(this, `${id}-SQSTriggerDockerFunc`, {
       code: lambda.DockerImageCode.fromImageAsset("./sqsTrigger"),
       memorySize: 512,
-      timeout: cdk.Duration.seconds(600),
+      timeout: cdk.Duration.seconds(300),
       vpc: vpcStack.vpc, // Pass the VPC
-      functionName: `${id}-SQSTrigger`,
+      functionName: `${id}-SQSTriggerDockerFunc`,
       environment: {
         SM_DB_CREDENTIALS: db.secretPathUser.secretName,
         RDS_PROXY_ENDPOINT: db.rdsProxyEndpoint,
@@ -1457,7 +1457,7 @@ export class ApiGatewayStack extends cdk.Stack {
     const cfnSqsTrigger = sqsTrigger.node
       .defaultChild as lambda.CfnFunction;
       cfnSqsTrigger.overrideLogicalId(
-      "SQSTrigger"
+      "SQSTriggerDockerFunc"
     );
 
     chatlogsBucket.grantRead(sqsTrigger);

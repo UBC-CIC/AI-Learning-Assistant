@@ -155,16 +155,17 @@ def upload_to_s3(file_path, file_name):
         logger.error(f"Error uploading file to S3: {e}")
         raise
 
-def invoke_event_notification(course_id, message="Chat logs successfully uploaded"):
+def invoke_event_notification(course_id, instructor_email, message="Chat logs successfully uploaded"):
     """
     Publish a notification event to AppSync via HTTPX (directly to the AppSync API).
     """
     try:
         query = """
-        mutation sendNotification($message: String!, $course_id: String!) {
-            sendNotification(message: $message, course_id: $course_id) {
+        mutation sendNotification($message: String!, $course_id: String!, $instructor_email: String!) {
+            sendNotification(message: $message, course_id: $course_id, instructor_email: $instructor_email) {
                 message
                 course_id
+                instructor_email
             }
         }
         """
@@ -177,7 +178,8 @@ def invoke_event_notification(course_id, message="Chat logs successfully uploade
             "query": query,
             "variables": {
                 "message": message,
-                "course_id": course_id
+                "course_id": course_id,
+                "instructor_email": instructor_email
             }
         }
 
@@ -223,7 +225,7 @@ def handler(event, context):
             logger.info(f"Chat logs successfully processed and uploaded to {s3_uri}")
 
             # Send notification to AppSync
-            invoke_event_notification(course_id, message=f"Chat logs uploaded to {s3_uri}")
+            invoke_event_notification(course_id, instructor_email, message=f"Chat logs uploaded to {s3_uri}")
         
         return {
             "statusCode": 200,

@@ -126,9 +126,15 @@ def write_to_csv(data, course_id, instructor_email):
     Writes the queried data to a CSV file.
     """
     timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-    file_name = f"{course_id}-{instructor_email}-{timestamp}.csv"
-    file_path = f"/tmp/{file_name}"
+    file_name = f"{timestamp}.csv"
+    file_dir = f"/tmp/{course_id}/{instructor_email}"
+    file_path = f"{file_dir}/{file_name}"
+
     try:
+        # Ensure the directory exists (including nested directories)
+        os.makedirs(file_dir, exist_ok=True)
+
+        # Write the data to the CSV file
         with open(file_path, mode="w", newline="") as file:
             writer = csv.writer(file)
             writer.writerow([
@@ -136,6 +142,7 @@ def write_to_csv(data, course_id, instructor_email):
                 "message", "sent_by_student", "competency_status", "timestamp"
             ])
             writer.writerows(data)
+
         logger.info(f"CSV file created successfully: {file_path}")
         print(f"CSV file created successfully: {file_path}")
         return file_path, file_name
@@ -144,12 +151,18 @@ def write_to_csv(data, course_id, instructor_email):
         raise
 
 
-def upload_to_s3(file_path, file_name):
+def upload_to_s3(file_path, course_id, instructor_email, file_name):
+    """
+    Uploads the file to S3 with the specified path.
+    """
+    # Construct the S3 key (path in the bucket)
+    s3_key = f"{course_id}/{instructor_email}/{file_name}"
+
     try:
-        s3_client.upload_file(file_path, CHATLOGS_BUCKET, file_name)
-        logger.info(f"File uploaded successfully to S3: s3://{CHATLOGS_BUCKET}/{file_name}")
-        print(f"File uploaded successfully to S3: s3://{CHATLOGS_BUCKET}/{file_name}")
-        return f"s3://{CHATLOGS_BUCKET}/{file_name}"
+        s3_client.upload_file(file_path, CHATLOGS_BUCKET, s3_key)
+        logger.info(f"File uploaded successfully to S3: s3://{CHATLOGS_BUCKET}/{s3_key}")
+        print(f"File uploaded successfully to S3: s3://{CHATLOGS_BUCKET}/{s3_key}")
+        return f"s3://{CHATLOGS_BUCKET}/{s3_key}"
     except Exception as e:
         logger.error(f"Error uploading file to S3: {e}")
         raise
@@ -208,7 +221,7 @@ def handler(event, context):
                 print("GOT chat_logs")
                 csv_path, csv_name = write_to_csv(chat_logs, course_id, instructor_email)
                 print("GOT got csv_path and csv_name")
-                s3_uri = upload_to_s3(csv_path, csv_name)
+                s3_uri = upload_to_s3(csv_path, course_id, instructor_email, csv_name)
                 print("GOT s3_uri")
                 invoke_event_notification(course_id, instructor_email, message=f"Chat logs uploaded to {s3_uri}")
                 print("FINALLY SENT NOTIFICATION")

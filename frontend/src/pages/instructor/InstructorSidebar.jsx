@@ -15,16 +15,13 @@ import ViewTimelineIcon from "@mui/icons-material/ViewTimeline";
 import EditIcon from "@mui/icons-material/Edit";
 import PsychologyIcon from "@mui/icons-material/Psychology";
 import GroupIcon from "@mui/icons-material/Group";
+import DescriptionIcon from "@mui/icons-material/Description";
 
 const InstructorSidebar = ({ setSelectedComponent }) => {
   const navigate = useNavigate();
 
   const handleNavigation = (component) => {
-    if (component === "InstructorAllCourses") {
-      navigate("/home"); 
-    } else {
-      setSelectedComponent(component);
-    }
+    setSelectedComponent(component);
   };
 
   return (
@@ -91,6 +88,13 @@ const InstructorSidebar = ({ setSelectedComponent }) => {
               <GroupIcon />
             </ListItemIcon>
             <ListItemText primary="View Students" />
+          </ListItem>
+          <Divider />
+          <ListItem button onClick={() => handleNavigation("ChatLogs")}>
+            <ListItemIcon>
+              <DescriptionIcon />
+            </ListItemIcon>
+            <ListItemText primary="Chat History" />
           </ListItem>
         </List>
       </Box>

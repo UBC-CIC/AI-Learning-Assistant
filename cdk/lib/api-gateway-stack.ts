@@ -1451,7 +1451,7 @@ export class ApiGatewayStack extends cdk.Stack {
      */
     const sqsFunction = new lambda.Function(this, `${id}-sqsFunction`, {
       runtime: lambda.Runtime.NODEJS_20_X,
-      code: lambda.Code.fromAsset("lambda/sqsFunction"),
+      code: lambda.Code.fromAsset("lambda/lib"),
       handler: "sqsFunction.handler",
       timeout: Duration.seconds(300),
       environment: {

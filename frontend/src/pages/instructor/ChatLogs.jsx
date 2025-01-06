@@ -15,6 +15,8 @@ import {
 } from "@mui/material";
 import { useState, useEffect, useRef } from "react";
 import { fetchAuthSession, fetchUserAttributes } from "aws-amplify/auth";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 // Function to capitalize course title case
 function courseTitleCase(str) {
@@ -124,12 +126,28 @@ const ChatLogs = ({ courseName }) => {
             );
 
             if (response.ok) {
-                alert("CSV generation initiated. You'll be notified once it's ready.");
+                toast.success("Generating Chat Logs...", {
+                    position: "top-center",
+                    autoClose: 1000,
+                    hideProgressBar: true,
+                    theme: "colored",
+                });
             } else {
-                console.error("Failed to initiate CSV generation:", response.statusText);
+                toast.error("Failed to generate chat logs", {
+                    position: "top-center",
+                    autoClose: 1000,
+                    hideProgressBar: true,
+                    theme: "colored",
+                });
             }
         } catch (error) {
             console.error("Error initiating CSV generation:", error);
+            toast.error("Failed to generate chat logs", {
+                position: "top-center",
+                autoClose: 1000,
+                hideProgressBar: true,
+                theme: "colored",
+            });
         }
     };
 
@@ -183,7 +201,12 @@ const ChatLogs = ({ courseName }) => {
             console.log("Received:", message);
 
             if (message.type === "data" && message.payload?.data?.onNotify) {
-                alert(`Notification: ${message.payload.data.onNotify.message}`);
+                toast.success("Ready to download requested logs", {
+                    position: "top-center",
+                    autoClose: 1000,
+                    hideProgressBar: true,
+                    theme: "colored",
+                });
                 fetchChatLogs();
             }
         };
@@ -222,6 +245,7 @@ const ChatLogs = ({ courseName }) => {
     return (
         <Box component="main" sx={{ flexGrow: 1, p: 3, marginTop: 1 }}>
             <Toolbar />
+            <ToastContainer />
             <Box
                 sx={{
                     display: "flex",

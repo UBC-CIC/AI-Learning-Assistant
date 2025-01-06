@@ -1456,6 +1456,8 @@ export class ApiGatewayStack extends cdk.Stack {
       timeout: Duration.seconds(300),
       environment: {
         SQS_QUEUE_URL: messagesQueue.queueUrl,
+        SM_DB_CREDENTIALS: db.secretPathTableCreator.secretName,
+        RDS_PROXY_ENDPOINT: db.rdsProxyEndpointTableCreator,
       },
       functionName: `${id}-sqsFunction`,
       memorySize: 128,

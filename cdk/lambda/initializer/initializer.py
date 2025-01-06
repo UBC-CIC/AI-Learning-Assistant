@@ -143,6 +143,13 @@ def handler(event, context):
                 "engagement_details" text
             );
 
+            CREATE TABLE IF NOT EXISTS "chatlogs_notifications" (
+                "id" uuid PRIMARY KEY DEFAULT (uuid_generate_v4()),
+                "course_id" uuid NOT NULL,
+                "instructor_email" varchar NOT NULL,
+                "completion" boolean DEFAULT FALSE
+            );
+
             ALTER TABLE "User_Engagement_Log" ADD FOREIGN KEY ("enrolment_id") REFERENCES "Enrolments" ("enrolment_id") ON DELETE CASCADE ON UPDATE CASCADE;
             ALTER TABLE "User_Engagement_Log" ADD FOREIGN KEY ("user_id") REFERENCES "Users" ("user_id") ON DELETE CASCADE ON UPDATE CASCADE;
             ALTER TABLE "User_Engagement_Log" ADD FOREIGN KEY ("course_id") REFERENCES "Courses" ("course_id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -163,6 +170,9 @@ def handler(event, context):
             ALTER TABLE "Sessions" ADD FOREIGN KEY ("student_module_id") REFERENCES "Student_Modules" ("student_module_id") ON DELETE CASCADE ON UPDATE CASCADE;
 
             ALTER TABLE "Messages" ADD FOREIGN KEY ("session_id") REFERENCES "Sessions" ("session_id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+            ALTER TABLE "chatlogs_notifications" ADD FOREIGN KEY ("course_id") REFERENCES "Courses" ("course_id") ON DELETE CASCADE ON UPDATE CASCADE;
+            ALTER TABLE "chatlogs_notifications" ADD FOREIGN KEY ("instructor_email") REFERENCES "Users" ("user_email") ON DELETE CASCADE ON UPDATE CASCADE;
 
             DO $$
             BEGIN

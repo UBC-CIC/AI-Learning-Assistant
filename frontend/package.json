@@ -42,7 +42,8 @@
     "react-router-dom": "^6.24.1",
     "react-syntax-highlighter": "^15.5.0",
     "react-toastify": "^10.0.5",
-    "recharts": "^2.12.7"
+    "recharts": "^2.12.7",
+    "u": "^0.1.0"
   },
   "devDependencies": {
     "@types/node": "^22.0.2",

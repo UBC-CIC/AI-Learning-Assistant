@@ -24,7 +24,7 @@ function titleCase(str) {
   if (typeof str !== 'string') {
     return str;
   }
-  return str.toLowerCase().split(' ').map(function (word) {
+  return str.toLowerCase().split(' ').map(function(word) {
     return word.charAt(0).toUpperCase() + word.slice(1);
   }).join(' ');
 }
@@ -72,7 +72,8 @@ export const InstructorNewModule = ({ courseId }) => {
         const session = await fetchAuthSession();
         var token = session.tokens.idToken
         const response = await fetch(
-          `${import.meta.env.VITE_API_ENDPOINT
+          `${
+            import.meta.env.VITE_API_ENDPOINT
           }instructor/view_concepts?course_id=${encodeURIComponent(course_id)}`,
           {
             method: "GET",
@@ -107,7 +108,8 @@ export const InstructorNewModule = ({ courseId }) => {
       const fileType = getFileType(file.name);
       const fileName = cleanFileName(removeFileExtension(file.name));
       return fetch(
-        `${import.meta.env.VITE_API_ENDPOINT
+        `${
+          import.meta.env.VITE_API_ENDPOINT
         }instructor/generate_presigned_url?course_id=${encodeURIComponent(
           course_id
         )}&module_id=${encodeURIComponent(
@@ -181,7 +183,8 @@ export const InstructorNewModule = ({ courseId }) => {
       const token = session.tokens.idToken
       const { email } = await fetchUserAttributes();
       const response = await fetch(
-        `${import.meta.env.VITE_API_ENDPOINT
+        `${
+          import.meta.env.VITE_API_ENDPOINT
         }instructor/create_module?course_id=${encodeURIComponent(
           course_id
         )}&concept_id=${encodeURIComponent(

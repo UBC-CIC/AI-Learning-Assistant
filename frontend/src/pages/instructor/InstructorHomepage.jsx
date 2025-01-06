@@ -37,7 +37,9 @@ import StudentDetails from "./StudentDetails";
 import InstructorNewConcept from "./InstructorNewConcept";
 import InstructorConcepts from "./InstructorConcepts";
 import InstructorEditConcept from "./InstructorEditConcept";
+import ChatLogs from "./ChatLogs"; // Import ChatLogs
 import { UserContext } from "../../App";
+
 function titleCase(str) {
   if (typeof str !== "string") {
     return str;
@@ -72,12 +74,18 @@ const CourseDetails = () => {
         );
       case "InstructorEditConcepts":
         return (
-          <InstructorConcepts courseName={courseName} course_id={course_id} setSelectedComponent={setSelectedComponent}/>
+          <InstructorConcepts
+            courseName={courseName}
+            course_id={course_id}
+            setSelectedComponent={setSelectedComponent}
+          />
         );
       case "PromptSettings":
         return <PromptSettings courseName={courseName} course_id={course_id} />;
       case "ViewStudents":
         return <ViewStudents courseName={courseName} course_id={course_id} />;
+      case "ChatLogs": // Add ChatLogs case
+        return <ChatLogs courseName={courseName} course_id={course_id} />;
       default:
         return (
           <InstructorAnalytics courseName={courseName} course_id={course_id} />
@@ -126,11 +134,10 @@ const InstructorHomepage = () => {
     const fetchCourses = async () => {
       try {
         const session = await fetchAuthSession();
-        var token = session.tokens.idToken
+        var token = session.tokens.idToken;
         const { email } = await fetchUserAttributes();
         const response = await fetch(
-          `${
-            import.meta.env.VITE_API_ENDPOINT
+          `${import.meta.env.VITE_API_ENDPOINT
           }instructor/courses?email=${encodeURIComponent(email)}`,
           {
             method: "GET",
@@ -230,8 +237,13 @@ const InstructorHomepage = () => {
                   onChange={handleSearchChange}
                   sx={{ width: "100%", marginBottom: 2 }}
                 />
-                <TableContainer sx={{ width: "100%", maxHeight: "70vh",
-              overflowY: "auto",}}>
+                <TableContainer
+                  sx={{
+                    width: "100%",
+                    maxHeight: "70vh",
+                    overflowY: "auto",
+                  }}
+                >
                   <Table aria-label="course table">
                     <TableHead>
                       <TableRow>

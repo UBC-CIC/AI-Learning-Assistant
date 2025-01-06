@@ -13,9 +13,10 @@ import {
     TableFooter,
     TablePagination,
 } from "@mui/material";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { fetchAuthSession, fetchUserAttributes } from "aws-amplify/auth";
 
+// Function to capitalize course title case
 function courseTitleCase(str) {
     if (typeof str !== "string") {
         return str;
@@ -32,11 +33,40 @@ function courseTitleCase(str) {
         .join(" ");
 }
 
+// Function to dynamically construct WebSocket URL
+const constructWebSocketUrl = () => {
+    const tempUrl = import.meta.env.VITE_GRAPHQL_WS_URL;
+    const apiUrl = tempUrl.replace("https://", "wss://");
+    const urlObj = new URL(apiUrl);
+    const tmpObj = new URL(tempUrl);
+
+    const modifiedHost = urlObj.hostname.replace(
+        "appsync-api",
+        "appsync-realtime-api"
+    );
+
+    urlObj.hostname = modifiedHost;
+    const host = tmpObj.hostname;
+
+    const header = {
+        host: host,
+        Authorization: "API_KEY=",
+    };
+
+    const encodedHeader = btoa(JSON.stringify(header));
+    const payload = "e30=";
+
+    return `${urlObj.toString()}?header=${encodedHeader}&payload=${payload}`;
+};
+
 const ChatLogs = ({ courseName }) => {
     const [logs, setLogs] = useState([]);
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(5);
     const [loading, setLoading] = useState(false);
+    const [webSocket, setWebSocket] = useState(null);
+
+    const messagesEndRef = useRef(null);
 
     const fetchChatLogs = async () => {
         try {
@@ -79,7 +109,7 @@ const ChatLogs = ({ courseName }) => {
             const { email } = await fetchUserAttributes();
 
             const response = await fetch(
-                `${import.meta.env.VITE_API_ENDPOINT}instructor/generate_chat_logs`,
+                `${import.meta.env.VITE_API_ENDPOINT}generate-chat-logs`,
                 {
                     method: "POST",
                     headers: {
@@ -88,18 +118,18 @@ const ChatLogs = ({ courseName }) => {
                     },
                     body: JSON.stringify({
                         instructor_email: email,
+                        course_id,
                     }),
                 }
             );
 
             if (response.ok) {
-                alert("Chat logs generation started!");
-                fetchChatLogs(); // Refresh the logs after generating
+                alert("CSV generation initiated. You'll be notified once it's ready.");
             } else {
-                console.error("Failed to generate chat logs:", response.statusText);
+                console.error("Failed to initiate CSV generation:", response.statusText);
             }
         } catch (error) {
-            console.error("Error generating chat logs:", error);
+            console.error("Error initiating CSV generation:", error);
         }
     };
 
@@ -123,8 +153,61 @@ const ChatLogs = ({ courseName }) => {
         }
     };
 
+    const openWebSocket = () => {
+        const wsUrl = constructWebSocketUrl();
+        const ws = new WebSocket(wsUrl, "graphql-ws");
+
+        ws.onopen = () => {
+            console.log("WebSocket connection established");
+
+            const initMessage = { type: "connection_init" };
+            ws.send(JSON.stringify(initMessage));
+
+            const subscriptionMessage = {
+                id: "1", // Unique ID for the subscription
+                type: "start",
+                payload: {
+                    data: `{"query":"subscription OnNotify { onNotify { message } }"}`,
+                    extensions: {
+                        authorization: {
+                            Authorization: "API_KEY=",
+                        },
+                    },
+                },
+            };
+            ws.send(JSON.stringify(subscriptionMessage));
+        };
+
+        ws.onmessage = (event) => {
+            const message = JSON.parse(event.data);
+            console.log("Received:", message);
+
+            if (message.type === "data" && message.payload?.data?.onNotify) {
+                alert(`Notification: ${message.payload.data.onNotify.message}`);
+                fetchChatLogs();
+            }
+        };
+
+        ws.onerror = (error) => {
+            console.error("WebSocket error:", error);
+        };
+
+        ws.onclose = () => {
+            console.log("WebSocket connection closed");
+        };
+
+        setWebSocket(ws);
+    };
+
     useEffect(() => {
         fetchChatLogs();
+        openWebSocket();
+
+        return () => {
+            if (webSocket) {
+                webSocket.close();
+            }
+        };
     }, []);
 
     const handleChangePage = (event, newPage) => {

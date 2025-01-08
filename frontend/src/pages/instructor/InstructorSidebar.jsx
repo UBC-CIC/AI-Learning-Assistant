@@ -9,6 +9,7 @@ import {
   ListItemText,
   Divider,
   Box,
+  Badge,
 } from "@mui/material";
 import HomeIcon from "@mui/icons-material/Home";
 import ViewTimelineIcon from "@mui/icons-material/ViewTimeline";
@@ -17,7 +18,7 @@ import PsychologyIcon from "@mui/icons-material/Psychology";
 import GroupIcon from "@mui/icons-material/Group";
 import DescriptionIcon from "@mui/icons-material/Description";
 
-const InstructorSidebar = ({ setSelectedComponent }) => {
+const InstructorSidebar = ({ setSelectedComponent, hasChatLogNotification }) => {
   const navigate = useNavigate();
 
   const handleNavigation = (component) => {
@@ -92,7 +93,14 @@ const InstructorSidebar = ({ setSelectedComponent }) => {
           <Divider />
           <ListItem button onClick={() => handleNavigation("ChatLogs")}>
             <ListItemIcon>
-              <DescriptionIcon />
+              <Badge
+                color="error"
+                variant="dot"
+                invisible={!hasChatLogNotification}
+                anchorOrigin={{ vertical: "top", horizontal: "right" }}
+              >
+                <DescriptionIcon />
+              </Badge>
             </ListItemIcon>
             <ListItemText primary="Chat History" />
           </ListItem>

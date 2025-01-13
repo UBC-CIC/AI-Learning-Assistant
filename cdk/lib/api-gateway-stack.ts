@@ -1461,6 +1461,7 @@ export class ApiGatewayStack extends cdk.Stack {
       },
       functionName: `${id}-sqsFunction`,
       memorySize: 128,
+      layers: [postgres]
     });
     
     messagesQueue.grantSendMessages(sqsFunction);

@@ -78,7 +78,7 @@ const ChatLogs = ({ courseName }) => {
             const { email } = await fetchUserAttributes();
 
             const response = await fetch(
-                `${import.meta.env.VITE_API_ENDPOINT}instructor/fetch_chat_logs`,
+                `${import.meta.env.VITE_API_ENDPOINT}instructor/course_messages`,
                 {
                     method: "POST",
                     headers: {

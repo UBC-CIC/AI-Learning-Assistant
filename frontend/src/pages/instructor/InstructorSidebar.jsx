@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 // MUI
 import {
@@ -18,12 +18,33 @@ import PsychologyIcon from "@mui/icons-material/Psychology";
 import GroupIcon from "@mui/icons-material/Group";
 import DescriptionIcon from "@mui/icons-material/Description";
 
-const InstructorSidebar = ({ setSelectedComponent, hasChatLogNotification }) => {
+const InstructorSidebar = ({ setSelectedComponent, onClearChatLogNotification }) => {
   const navigate = useNavigate();
+  const [hasNewNotification, setHasNewNotification] = useState(false);
 
   const handleNavigation = (component) => {
-    setSelectedComponent(component);
+    if (component === "InstructorAllCourses") {
+      navigate("/home"); 
+    } else {
+      setSelectedComponent(component);
+      if (component === "ChatLogs") {
+        onClearChatLogNotification?.();
+        setHasNewNotification(false); // Clear notification on visit
+
+        // Add logic here for setting the notification checked boolean to true
+        
+      }
+    }
   };
+
+  useEffect(() => {
+    // Simulate receiving a notification
+    const timer = setTimeout(() => {
+      setHasNewNotification(true);
+    }, 1000); // Notification appears after 1 second
+
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
     <Drawer
@@ -96,8 +117,7 @@ const InstructorSidebar = ({ setSelectedComponent, hasChatLogNotification }) => 
               <Badge
                 color="error"
                 variant="dot"
-                invisible={!hasChatLogNotification}
-                anchorOrigin={{ vertical: "top", horizontal: "right" }}
+                invisible={!hasNewNotification}
               >
                 <DescriptionIcon />
               </Badge>

@@ -78,7 +78,7 @@ export class DatabaseStack extends Stack {
                 version: rds.PostgresEngineVersion.VER_16_3,
             }),
             instanceType: ec2.InstanceType.of(
-                ec2.InstanceClass.BURSTABLE4_GRAVITON,
+                ec2.InstanceClass.BURSTABLE3,
                 ec2.InstanceSize.MICRO
             ),
             credentials: rds.Credentials.fromUsername(secret.secretValueFromJson("DB_Username").unsafeUnwrap(), {
@@ -100,12 +100,23 @@ export class DatabaseStack extends Stack {
             parameterGroup: parameterGroup
         });
 
+        // Add CIDR ranges of private subnets to inbound rules of RDS
+        const dbSecurityGroup = this.dbInstance.connections.securityGroups[0];
+        vpcStack.privateSubnetsCidrStrings.forEach((cidr) => {
+          dbSecurityGroup.addIngressRule(
+            ec2.Peer.ipv4(cidr),
+            ec2.Port.tcp(5432),
+            `Allow PostgreSQL traffic from private subnet CIDR range ${cidr}`
+          );
+        });
+
+        // Add CIDR ranges of public subnets to inbound rules of RDS
         this.dbInstance.connections.securityGroups.forEach(function (securityGroup) {
-            // 10.0.0.0/16 match the cidr range in vpc stack
+            // Allow Postgres access in VPC
             securityGroup.addIngressRule(
-              ec2.Peer.ipv4(vpcStack.vpcCidrString),
-              ec2.Port.tcp(5432),
-              "Postgres Ingress"
+                ec2.Peer.ipv4(vpcStack.vpcCidrString),
+                ec2.Port.tcp(5432),
+                "Allow PostgreSQL traffic from public subnets"
             );
         });
          

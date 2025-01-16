@@ -7,6 +7,8 @@ import { Fn } from 'aws-cdk-lib';
 export class VpcStack extends Stack {
   public readonly vpc: ec2.Vpc;
   public readonly vpcCidrString: string;
+  public readonly privateSubnetsCidrStrings: string[];
+
   constructor(scope: Construct, id: string, props?: StackProps) {
     super(scope, id, props);
 
@@ -51,6 +53,13 @@ export class VpcStack extends Stack {
         vpcCidrBlock: Fn.importValue(`${AWSControlTowerStackSet}-VPCCIDR`),
     }) as ec2.Vpc;
 
+    // Extract CIDR ranges from the private subnets
+    this.privateSubnetsCidrStrings = [
+      Fn.importValue(`${AWSControlTowerStackSet}-PrivateSubnet1ACIDR`),
+      Fn.importValue(`${AWSControlTowerStackSet}-PrivateSubnet2ACIDR`),
+      Fn.importValue(`${AWSControlTowerStackSet}-PrivateSubnet3ACIDR`),
+    ];
+
     // Create a public subnet
     const publicSubnet = new ec2.Subnet(this, `PublicSubnet`, {
         vpcId: this.vpc.vpcId,
@@ -66,28 +75,20 @@ export class VpcStack extends Stack {
         internetGatewayId: internetGateway.ref,
     });
 
-    // Create a route table for the public subnet
-    const publicRouteTable = new ec2.CfnRouteTable(this, `PublicRouteTable`, {
-        vpcId: this.vpc.vpcId,
-    });
-
-    // Associate the public subnet with the new route table
-    new ec2.CfnSubnetRouteTableAssociation(this, `PublicSubnetAssociation`, {
-        subnetId: publicSubnet.subnetId,
-        routeTableId: publicRouteTable.ref,
-    });
-
     // Add a NAT Gateway in the public subnet
     const natGateway = new ec2.CfnNatGateway(this, `NatGateway`, {
         subnetId: publicSubnet.subnetId,
         allocationId: new ec2.CfnEIP(this, 'EIP', {}).attrAllocationId,
     });
 
-    // Create a route to the Internet Gateway
+    // Use the route table associated with the public subnet
+    const publicRouteTableId = publicSubnet.routeTable.routeTableId;
+
+    // Add a route to the Internet Gateway in the existing public route table
     new ec2.CfnRoute(this, `PublicRoute`, {
-        routeTableId: publicRouteTable.ref,
-        destinationCidrBlock: '0.0.0.0/0',
-        gatewayId: internetGateway.ref,
+      routeTableId: publicRouteTableId,
+      destinationCidrBlock: '0.0.0.0/0',
+      gatewayId: internetGateway.ref,
     });
 
     // Update route table for private subnets

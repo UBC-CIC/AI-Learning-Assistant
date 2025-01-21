@@ -24,9 +24,6 @@ import * as s3 from "aws-cdk-lib/aws-s3";
 import * as bedrock from "aws-cdk-lib/aws-bedrock";
 import * as secretsmanager from "aws-cdk-lib/aws-secretsmanager";
 import * as ssm from "aws-cdk-lib/aws-ssm";
-import * as sqs from "aws-cdk-lib/aws-sqs";
-import * as appsync from "aws-cdk-lib/aws-appsync";
-
 
 export class ApiGatewayStack extends cdk.Stack {
   private readonly api: apigateway.SpecRestApi;
@@ -34,7 +31,6 @@ export class ApiGatewayStack extends cdk.Stack {
   public readonly userPool: cognito.UserPool;
   public readonly identityPool: cognito.CfnIdentityPool;
   private readonly layerList: { [key: string]: LayerVersion };
-  private eventApi: appsync.GraphqlApi;
   public readonly stageARN_APIGW: string;
   public readonly apiGW_basedURL: string;
   public readonly secret: secretsmanager.ISecret;
@@ -42,7 +38,6 @@ export class ApiGatewayStack extends cdk.Stack {
   public getUserPoolId = () => this.userPool.userPoolId;
   public getUserPoolClientId = () => this.appClient.userPoolClientId;
   public getIdentityPoolId = () => this.identityPool.ref;
-  public getEventApiUrl = () => this.eventApi.graphqlUrl;
   public addLayer = (name: string, layer: LayerVersion) =>
     (this.layerList[name] = layer);
   public getLayers = () => this.layerList;
@@ -121,22 +116,6 @@ export class ApiGatewayStack extends cdk.Stack {
     this.layerList["psycopg2"] = psycopgLayer;
     this.layerList["postgres"] = postgres;
     this.layerList["jwt"] = jwt;
-
-    // Create FIFO SQS Queue for jobs that get classroom chatlogs for a course
-    const messagesQueue = new sqs.Queue(this, `${id}-MessagesQueue`, {
-      queueName: `${id}-messages-queue.fifo`,
-      fifo: true,
-      removalPolicy: cdk.RemovalPolicy.DESTROY,
-      visibilityTimeout: Duration.seconds(300),
-    });
-    
-    messagesQueue.addToResourcePolicy(
-      new iam.PolicyStatement({
-        actions: ["sqs:SendMessage"],
-        principals: [new iam.ServicePrincipal("lambda.amazonaws.com")],
-        resources: [messagesQueue.queueArn],
-      })
-    );
 
     // Create Cognito user pool
 
@@ -1366,222 +1345,5 @@ export class ApiGatewayStack extends cdk.Stack {
         resources: [tableNameParameter.parameterArn],
       })
     );
-
-    //////////////////////////////
-    //////////////////////////////
-
-    const authHandler = new lambda.Function(this, `${id}-AuthHandler`, {
-      runtime: lambda.Runtime.NODEJS_20_X,
-      code: lambda.Code.fromAsset("lambda/lib"),
-      handler: "appsync.handler",
-      functionName: `${id}-AuthHandler`,
-    });
-
-    // Create AppSync API
-    this.eventApi = new appsync.GraphqlApi(this,
-      `${id}-EventApi`, {
-      name: `${id}-EventApi`,
-      definition: appsync.Definition.fromFile("./graphql/schema.graphql"),
-      authorizationConfig: {
-        defaultAuthorization: {
-          authorizationType: appsync.AuthorizationType.LAMBDA,
-            lambdaAuthorizerConfig: {
-              handler: authHandler,
-            },
-        },
-      },
-      xrayEnabled: true,
-    });
-
-    const notificationFunction = new lambda.Function(
-      this,
-      `${id}-NotificationFunction`,
-      {
-        runtime: lambda.Runtime.PYTHON_3_9,
-        code: lambda.Code.fromAsset("lambda/eventNotification"),
-        handler: "eventNotification.lambda_handler",
-        environment: {
-          APPSYNC_API_URL: this.eventApi.graphqlUrl,
-          APPSYNC_API_ID: this.eventApi.apiId,
-          REGION: this.region,
-        },
-        functionName: `${id}-NotificationFunction`,
-        timeout: cdk.Duration.seconds(300),
-        memorySize: 128,
-        vpc: vpcStack.vpc,
-        role: lambdaRole,
-      });
-
-    notificationFunction.addToRolePolicy(
-      new iam.PolicyStatement({
-        effect: iam.Effect.ALLOW,
-        actions: ['appsync:GraphQL'],
-        resources: [`arn:aws:appsync:${this.region}:${this.account}:apis/${this.eventApi.apiId}/*`],
-      })
-    );
-
-    notificationFunction.addPermission("AppSyncInvokePermission", {
-      principal: new iam.ServicePrincipal("appsync.amazonaws.com"),
-      action: "lambda:InvokeFunction",
-      sourceArn: `arn:aws:appsync:${this.region}:${this.account}:apis/${this.eventApi.apiId}/*`,
-    });
-
-    const notificationLambdaDataSource = this.eventApi.addLambdaDataSource(
-      "NotificationLambdaDataSource",
-      notificationFunction
-    );
-
-    notificationLambdaDataSource.createResolver("ResolverEventApi", {
-      typeName: "Mutation",
-      fieldName: "sendNotification",
-      requestMappingTemplate: appsync.MappingTemplate.lambdaRequest(),
-      responseMappingTemplate: appsync.MappingTemplate.lambdaResult(),
-    });
-
-    // Add permission to allow main.py Lambda to invoke eventNotification Lambda
-    notificationFunction.grantInvoke(new iam.ServicePrincipal("lambda.amazonaws.com"));
-
-    // Override the Logical ID of the Lambdas Function to get ARN in OpenAPI
-    const cfnNotificationFunction = notificationFunction.node
-      .defaultChild as lambda.CfnFunction;
-    cfnNotificationFunction.overrideLogicalId("NotificationFunction");  
-
-    /**
-     *
-     * Create a Lambda function that populates SQS with parameters to start new job
-     */
-    const sqsFunction = new lambda.Function(this, `${id}-sqsFunction`, {
-      runtime: lambda.Runtime.NODEJS_20_X,
-      code: lambda.Code.fromAsset("lambda/lib"),
-      handler: "sqsFunction.handler",
-      timeout: Duration.seconds(300),
-      environment: {
-        SQS_QUEUE_URL: messagesQueue.queueUrl,
-        SM_DB_CREDENTIALS: db.secretPathTableCreator.secretName,
-        RDS_PROXY_ENDPOINT: db.rdsProxyEndpointTableCreator,
-      },
-      functionName: `${id}-sqsFunction`,
-      memorySize: 128,
-      layers: [postgres]
-    });
-    
-    messagesQueue.grantSendMessages(sqsFunction);
-    
-    sqsFunction.addToRolePolicy(
-      new iam.PolicyStatement({
-        actions: ["sqs:SendMessage"],
-        resources: [messagesQueue.queueArn],
-        effect: iam.Effect.ALLOW,
-      })
-    );
-
-    // Override the Logical ID of the Lambda Function to get ARN in OpenAPI
-    const cfnSqsFunction = sqsFunction.node
-      .defaultChild as lambda.CfnFunction;
-      cfnSqsFunction.overrideLogicalId("sqsFunction");
-
-    // Add the permission to the Lambda function's policy to allow API Gateway access
-    sqsFunction.addPermission("AllowApiGatewayInvoke", {
-      principal: new iam.ServicePrincipal("apigateway.amazonaws.com"),
-      action: "lambda:InvokeFunction",
-      sourceArn: `arn:aws:execute-api:${this.region}:${this.account}:${this.api.restApiId}/*/*/instructor*`,
-    });
-
-    const chatlogsBucket = new s3.Bucket(
-      this,
-      `${id}-chatlogsBucket`,
-      {
-        blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
-        cors: [
-          {
-            allowedHeaders: ["*"],
-            allowedMethods: [
-              s3.HttpMethods.GET,
-              s3.HttpMethods.PUT,
-              s3.HttpMethods.HEAD,
-              s3.HttpMethods.POST,
-              s3.HttpMethods.DELETE,
-            ],
-            allowedOrigins: ["*"],
-          },
-        ],
-        // When deleting the stack, need to empty the Bucket and delete it manually
-        removalPolicy: cdk.RemovalPolicy.RETAIN,
-        enforceSSL: true,
-      }
-    );
-
-    /**
-     *
-     * Create a Lambda function that gets triggered when SQS has new parameters
-     */
-    const sqsTrigger = new lambda.DockerImageFunction(this, `${id}-SQSTriggerDockerFunc`, {
-      code: lambda.DockerImageCode.fromImageAsset("./sqsTrigger"),
-      memorySize: 512,
-      timeout: cdk.Duration.seconds(300),
-      vpc: vpcStack.vpc, // Pass the VPC
-      functionName: `${id}-SQSTriggerDockerFunc`,
-      environment: {
-        SM_DB_CREDENTIALS: db.secretPathUser.secretName,
-        RDS_PROXY_ENDPOINT: db.rdsProxyEndpoint,
-        CHATLOGS_BUCKET: chatlogsBucket.bucketName,
-        APPSYNC_API_URL: this.eventApi.graphqlUrl,
-        REGION: this.region,
-      },
-    });
-    
-    sqsTrigger.addEventSource(
-      new lambdaEventSources.SqsEventSource(messagesQueue, {
-        batchSize: 1, // Process messages one at a time
-      })
-    );
-
-    // Override the Logical ID of the Lambda Function to get ARN in OpenAPI
-    const cfnSqsTrigger = sqsTrigger.node
-      .defaultChild as lambda.CfnFunction;
-      cfnSqsTrigger.overrideLogicalId(
-      "SQSTriggerDockerFunc"
-    );
-
-    chatlogsBucket.grantRead(sqsTrigger);
-
-    // Add ListBucket permission explicitly
-    sqsTrigger.addToRolePolicy(
-      new iam.PolicyStatement({
-        effect: iam.Effect.ALLOW,
-        actions: ["s3:ListBucket"],
-        resources: [chatlogsBucket.bucketArn], // Access to the specific bucket
-      })
-    );
-
-    sqsTrigger.addToRolePolicy(
-      new iam.PolicyStatement({
-        effect: iam.Effect.ALLOW,
-        actions: [
-          "s3:PutObject",
-          "s3:GetObject",
-          "s3:DeleteObject",
-          "s3:HeadObject",
-        ],
-        resources: [
-          `arn:aws:s3:::${chatlogsBucket.bucketName}/*`, // Grant access to all objects within this bucket
-        ],
-      })
-    );
-
-    // Grant access to Secret Manager
-    sqsTrigger.addToRolePolicy(
-      new iam.PolicyStatement({
-        effect: iam.Effect.ALLOW,
-        actions: [
-          //Secrets Manager
-          "secretsmanager:GetSecretValue",
-        ],
-        resources: [
-          `arn:aws:secretsmanager:${this.region}:${this.account}:secret:*`,
-        ],
-      })
-    );
-  
   }
 }

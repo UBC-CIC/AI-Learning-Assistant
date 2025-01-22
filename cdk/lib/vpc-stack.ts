@@ -147,21 +147,6 @@ export class VpcStack extends Stack {
       } else {
         console.log(`Existing NAT Gateway ID:`);
       }
-    
-
-      // // Create an Internet Gateway and attach it to the VPC
-      // const internetGateway = new ec2.CfnInternetGateway(this, `InternetGateway`, {});
-      // new ec2.CfnVPCGatewayAttachment(this, 'VPCGatewayAttachment', {
-      //     vpcId: this.vpc.vpcId,
-      //     internetGatewayId: internetGateway.ref,
-      // });
-
-
-      // // Add a NAT Gateway in the public subnet
-      // const natGateway = new ec2.CfnNatGateway(this, `NatGateway`, {
-      //     subnetId: publicSubnet.subnetId,
-      //     allocationId: new ec2.CfnEIP(this, 'EIP', {}).attrAllocationId,
-      // });
 
       // Use the route table associated with the public subnet
       const publicRouteTableId = publicSubnet.routeTable.routeTableId;
@@ -172,25 +157,6 @@ export class VpcStack extends Stack {
         destinationCidrBlock: '0.0.0.0/0',
         gatewayId: internetGatewayId,
       });
-
-      // // Update route table for private subnets
-      // new ec2.CfnRoute(this, `${ailaPrefix}PrivateSubnetRoute1`, {
-      //   routeTableId: this.vpc.privateSubnets[0].routeTable.routeTableId,
-      //   destinationCidrBlock: '0.0.0.0/0',
-      //   natGatewayId: natGatewayId,
-      // });
-
-      // new ec2.CfnRoute(this, `${ailaPrefix}PrivateSubnetRoute2`, {
-      //   routeTableId: this.vpc.privateSubnets[1].routeTable.routeTableId,
-      //   destinationCidrBlock: '0.0.0.0/0',
-      //   natGatewayId: natGatewayId,
-      // });
-
-      // new ec2.CfnRoute(this, `${ailaPrefix}PrivateSubnetRoute3`, {
-      //   routeTableId: this.vpc.privateSubnets[2].routeTable.routeTableId,
-      //   destinationCidrBlock: '0.0.0.0/0',
-      //   natGatewayId: natGatewayId,
-      // });
 
       const createRouteIfNotExists = (routeTableId: string, destinationCidrBlock: string, natGatewayId: string) => {
         new AwsCustomResource(this, `${routeTableId}-RouteCreator`, {

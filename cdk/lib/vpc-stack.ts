@@ -26,7 +26,7 @@ export class VpcStack extends Stack {
       const AWSControlTowerStackSet = ""; //CHANGE TO YOUR CONTROL TOWER STACK SET
       const ailaPrefix = "AI-LEARNING-ASSISTANT-production";
 
-      this.vpcCidrString = "172.31.96.0/20"; // CHANGE TO AVAILABLE CIDR RANGE IN EXISTING VPC 
+      this.vpcCidrString = "172.31.32.0/20"; // CHANGE TO AVAILABLE CIDR RANGE IN EXISTING VPC 
 
       // VPC for application
       this.vpc = ec2.Vpc.fromVpcAttributes(this, `${id}-Vpc`, {

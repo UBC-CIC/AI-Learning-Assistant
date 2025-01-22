@@ -95,7 +95,7 @@ export class VpcStack extends Stack {
 
       const internetGatewayId = internetGatewayIdResource.getResponseField('InternetGateways.0.InternetGatewayId');
 
-      console.log(`Retrieved Internet Gateway ID: ${internetGatewayId}`);
+      console.log(`Retrieved Internet Gateway ID`);
 
       if (!internetGatewayId) {
         const internetGateway = new ec2.CfnInternetGateway(this, `InternetGateway`, {});
@@ -106,7 +106,7 @@ export class VpcStack extends Stack {
   
         console.log('Created a new Internet Gateway and attached it to the VPC');
       } else {
-        console.log(`Existing Internet Gateway ID: ${internetGatewayId}`);
+        console.log(`Existing Internet Gateway ID`);
       }
 
       // Retrieve NAT Gateway ID dynamically
@@ -133,7 +133,7 @@ export class VpcStack extends Stack {
 
       const natGatewayId = natGatewayIdResource.getResponseField('NatGateways.0.NatGatewayId');
 
-      console.log(`Retrieved NAT Gateway ID: ${natGatewayId}`);
+      console.log(`Retrieved NAT Gateway ID:`);
 
       if (!natGatewayId) {
         // Create a new NAT Gateway if it doesn't exist
@@ -145,7 +145,7 @@ export class VpcStack extends Stack {
   
         console.log('Created a new NAT Gateway in the public subnet');
       } else {
-        console.log(`Existing NAT Gateway ID: ${natGatewayId}`);
+        console.log(`Existing NAT Gateway ID:`);
       }
     
 

@@ -65,6 +65,29 @@ export const ViewStudents = ({ courseName, course_id }) => {
   const navigate = useNavigate();
   const [allMessageData, setAllMessageData] = useState([]);
 
+  const constructWebSocketUrl = () => {
+    const tempUrl = process.env.VITE_GRAPHQL_WS_URL; // Replace with your WebSocket URL
+    const apiUrl = tempUrl.replace("https://", "wss://");
+    const urlObj = new URL(apiUrl);
+    const tmpObj = new URL(tempUrl);
+    const modifiedHost = urlObj.hostname.replace(
+      "appsync-api",
+      "appsync-realtime-api"
+    );
+  
+    urlObj.hostname = modifiedHost;
+    const host = tmpObj.hostname;
+    const header = {
+      host: host,
+      Authorization: "API_KEY=",
+    };
+  
+    const encodedHeader = btoa(JSON.stringify(header));
+    const payload = "e30=";
+  
+    return `${urlObj.toString()}?header=${encodedHeader}&payload=${payload}`;
+  };
+
   useEffect(() => {
     const fetchCode = async () => {
       try {
@@ -159,8 +182,62 @@ export const ViewStudents = ({ courseName, course_id }) => {
       );
   
       if (response.ok) {
+        console.log(response)
         const data = await response.json();
         console.log("Job submitted successfully:", data);
+
+        // Open WebSocket connection
+        const wsUrl = constructWebSocketUrl(); // Function to construct WebSocket URL
+        const ws = new WebSocket(wsUrl, "graphql-ws");
+
+        // Handle WebSocket connection
+        ws.onopen = () => {
+          console.log("WebSocket connection established");
+
+          // Initialize WebSocket connection
+          const initMessage = { type: "connection_init" };
+          ws.send(JSON.stringify(initMessage));
+
+          // Subscribe to notifications
+          const subscriptionMessage = {
+            id: "1",
+            type: "start",
+            payload: {
+              data: `{"query":"subscription OnNotify($course_id: String!, $instructor_email: String!) { onNotify(course_id: $course_id, instructor_email: $instructor_email) { message course_id instructor_email } }","variables":{"course_id":"${course_id}", "instructor_email":"${instructor_email}"}}`,
+              extensions: {
+                authorization: {
+                  Authorization: "API_KEY=",
+                  host: new URL(process.env.VITE_GRAPHQL_WS_URL).hostname,
+                },
+              },
+            },
+          };
+
+          ws.send(JSON.stringify(subscriptionMessage));
+          console.log("Subscribed to WebSocket notifications");
+        };
+
+        ws.onmessage = (event) => {
+          const message = JSON.parse(event.data);
+          console.log("WebSocket message received:", message);
+
+          // Handle notification
+          if (message.type === "data" && message.payload?.data?.onNotify) {
+            const receivedMessage = message.payload.data.onNotify.message;
+            console.log("Notification received:", receivedMessage);
+
+            // TODO: Update UI with the notification (e.g., toast notification, state update)
+          }
+        };
+
+        ws.onerror = (error) => {
+          console.error("WebSocket error:", error);
+        };
+
+        ws.onclose = () => {
+          console.log("WebSocket connection closed");
+        };
+
       } else {
         console.error("Failed to submit job:", response.statusText);
       }
@@ -168,27 +245,6 @@ export const ViewStudents = ({ courseName, course_id }) => {
       console.error("Error submitting job:", error);
     }
   };
-
-  function downloadCSV(data) {
-    const headers = Object.keys(data[0]);
-    const csvRows = data.map((obj) =>
-      headers
-        .map((header) => {
-          const value = obj[header];
-          // Enclose the value in quotes and escape inner quotes
-          return `"${String(value).replace(/"/g, '""')}"`;
-        })
-        .join(",")
-    );
-    const csvContent = [headers.join(","), ...csvRows].join("\n");
-    const blob = new Blob([csvContent], { type: "text/csv" });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = "data.csv";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  }
 
   const handleGenerateAccessCode = async () => {
     try {

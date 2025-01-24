@@ -5,6 +5,8 @@ import StudentMessage from "../../components/StudentMessage";
 import { fetchAuthSession } from "aws-amplify/auth";
 import { useNavigate } from "react-router-dom";
 import { fetchUserAttributes } from "aws-amplify/auth";
+import { signOut } from "aws-amplify/auth";
+
 const TypingIndicator = () => (
   <div className="flex items-center ml-28 mb-4">
     <div className="flex space-x-1">
@@ -360,6 +362,16 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
     navigate(-1);
   };
 
+  const handleSignOut = async (event) => {
+    event.preventDefault();
+    try {
+      await signOut();
+      window.location.href = "/";
+    } catch (error) {
+      console.error("Error signing out: ", error);
+    }
+  };
+
   const handleNewChat = () => {
     let sessionData;
     let userEmail;
@@ -670,6 +682,18 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
         </div>
       </div>
       <div className="flex flex-col-reverse w-3/4 bg-[#F8F9FD]">
+
+        <div className="absolute top-4 right-4">
+          <button
+            type="button"
+            className="bg-gray-800 text-white px-4 py-2 rounded hover:bg-gray-700 transition duration-200"
+            onClick={handleSignOut}
+          >
+            Sign Out
+          </button>
+        </div>
+      
+  
         <div className="flex items-center justify-between border bg-[#f2f0f0] border-[#8C8C8C] py-2 mb-12 mx-20">
           <textarea
             ref={textareaRef}
@@ -710,7 +734,7 @@ const StudentChat = ({ course, module, setModule, setCourse }) => {
             currentSessionId === session.session_id && <TypingIndicator />}
           <div ref={messagesEndRef} />
         </div>
-        <div className="font-roboto font-bold text-2xl text-left mt-6 ml-12 mb-6 text-black">
+        <div className="font-roboto font-bold text-2xl text-center mt-6 ml-12 mb-6 text-black">
           AI Assistant 🌟
         </div>
       </div>

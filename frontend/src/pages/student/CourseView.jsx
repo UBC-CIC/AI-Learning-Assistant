@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import { fetchAuthSession } from "aws-amplify/auth";
 import { fetchUserAttributes } from "aws-amplify/auth";
 
+import { signOut } from "aws-amplify/auth";
+
 import { BiCheck } from "react-icons/bi";
 import { FaInfoCircle } from "react-icons/fa";
 
@@ -115,6 +117,16 @@ export const CourseView = ({ course, setModule, setCourse }) => {
     navigate("/home");
   };
 
+  const handleSignOut = async (event) => {
+    event.preventDefault();
+    try {
+      await signOut();
+      window.location.href = "/";
+    } catch (error) {
+      console.error("Error signing out: ", error);
+    }
+  };
+
   useEffect(() => {
     const fetchCoursePage = async () => {
       try {
@@ -173,7 +185,7 @@ export const CourseView = ({ course, setModule, setCourse }) => {
 
   return (
     <div className="bg-[#F8F9FD] w-screen h-screen">
-      <header className="bg-[#F8F9FD] p-2 flex justify-between items-center max-h-20">
+      <header className="bg-[#F8F9FD] p-4 flex justify-between items-center max-h-20">
         <div className="text-black text-xl font-roboto font-semibold p-2 flex flex-row">
           <img
             onClick={() => handleBack()}
@@ -183,7 +195,16 @@ export const CourseView = ({ course, setModule, setCourse }) => {
           />
           {course.course_department.toUpperCase()} {course.course_number}
         </div>
+        
+        <button
+          type="button"
+          className="bg-gray-800 text-white hover:bg-gray-700"
+          onClick={handleSignOut}
+        >
+          Sign Out
+        </button>
       </header>
+      
       <div className="flex flex-col">
         <div className="text-black text-start text-xl font-roboto font-semibold p-2 ml-4">
           Learning Journey

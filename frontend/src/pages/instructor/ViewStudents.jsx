@@ -66,7 +66,7 @@ export const ViewStudents = ({ courseName, course_id }) => {
   const [allMessageData, setAllMessageData] = useState([]);
 
   const constructWebSocketUrl = () => {
-    const tempUrl = process.env.VITE_GRAPHQL_WS_URL; // Replace with your WebSocket URL
+    const tempUrl = import.meta.env.VITE_GRAPHQL_WS_URL; // Replace with your WebSocket URL
     const apiUrl = tempUrl.replace("https://", "wss://");
     const urlObj = new URL(apiUrl);
     const tmpObj = new URL(tempUrl);
@@ -203,11 +203,11 @@ export const ViewStudents = ({ courseName, course_id }) => {
             id: "1",
             type: "start",
             payload: {
-              data: `{"query":"subscription OnNotify($course_id: String!, $instructor_email: String!) { onNotify(course_id: $course_id, instructor_email: $instructor_email) { message course_id instructor_email } }","variables":{"course_id":"${course_id}", "instructor_email":"${instructor_email}"}}`,
+              data: `{"query":"subscription OnNotify($course_id: String!, $instructor_email: String!) { onNotify(course_id: $course_id, instructor_email: $instructor_email) { message course_id instructor_email } }","variables":{"course_id":"${course_id}", "instructor_email":"${email}"}}`,
               extensions: {
                 authorization: {
                   Authorization: "API_KEY=",
-                  host: new URL(process.env.VITE_GRAPHQL_WS_URL).hostname,
+                  host: new URL(import.meta.env.VITE_GRAPHQL_WS_URL).hostname,
                 },
               },
             },

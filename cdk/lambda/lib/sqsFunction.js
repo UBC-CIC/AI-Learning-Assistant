@@ -14,6 +14,11 @@ exports.handler = async (event) => {
     if (!instructor_email || !course_id) {
       return {
         statusCode: 400,
+        headers: {
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Headers": "Content-Type,X-Amz-Date,Authorization,X-Api-Key",
+          "Access-Control-Allow-Methods": "OPTIONS,POST",
+        },
         body: JSON.stringify({ error: "Missing instructor_email or course_id" }),
       };
     }
@@ -46,12 +51,22 @@ exports.handler = async (event) => {
     // Return success response
     return {
       statusCode: 200,
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Headers": "Content-Type,X-Amz-Date,Authorization,X-Api-Key",
+        "Access-Control-Allow-Methods": "OPTIONS,POST",
+      },
       body: JSON.stringify({ message: "Job submitted and notification logged successfully" }),
     };
   } catch (error) {
     console.error("Error processing SQS function:", error);
     return {
       statusCode: 500,
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Headers": "Content-Type,X-Amz-Date,Authorization,X-Api-Key",
+        "Access-Control-Allow-Methods": "OPTIONS,POST",
+      },
       body: JSON.stringify({ error: "Internal Server Error" }),
     };
   }

@@ -17,6 +17,7 @@ import {
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { fetchAuthSession, fetchUserAttributes } from "aws-amplify/auth";
+import { v4 as uuidv4 } from 'uuid';
 
 // populate with dummy data
 const createData = (name, email) => {
@@ -61,9 +62,9 @@ export const ViewStudents = ({ courseName, course_id }) => {
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [loading, setLoading] = useState(false);
   const [accessCode, setAccessCode] = useState("loading...");
+  const [isDownloadButtonEnabled, setIsDownloadButtonEnabled] = useState(false);
 
   const navigate = useNavigate();
-  const [allMessageData, setAllMessageData] = useState([]);
 
   const constructWebSocketUrl = () => {
     const tempUrl = import.meta.env.VITE_GRAPHQL_WS_URL; // Replace with your WebSocket URL
@@ -86,6 +87,73 @@ export const ViewStudents = ({ courseName, course_id }) => {
     const payload = "e30=";
   
     return `${urlObj.toString()}?header=${encodedHeader}&payload=${payload}`;
+  };
+
+  const checkNotificationStatus = async () => {
+    try {
+      const session = await fetchAuthSession();
+      const token = session.tokens.idToken;
+      const { email } = await fetchUserAttributes();
+      const response = await fetch(
+        `${
+          import.meta.env.VITE_API_ENDPOINT
+        }instructor/check_notifications_status?course_id=${encodeURIComponent(
+          course_id
+        )}&instructor_email=${encodeURIComponent(email)}`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: token,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      if (response.ok) {
+        const data = await response.json();
+        console.log(`Download Chatlogs is ${data.isEnabled}`)
+        setIsDownloadButtonEnabled(data.isEnabled);
+      } else {
+        console.error("Failed to fetch notification status:", response.statusText);
+      }
+    } catch (error) {
+      console.error("Error checking notification status:", error);
+    }
+  };
+
+  useEffect(() => {
+    checkNotificationStatus();
+  }, [course_id]);
+
+  const removeCompletedNotification = async () => {
+    try {
+      const session = await fetchAuthSession();
+      const token = session.tokens.idToken;
+      const { email } = await fetchUserAttributes();
+
+      const response = await fetch(
+        `${
+          import.meta.env.VITE_API_ENDPOINT
+        }instructor/remove_completed_notification?course_id=${encodeURIComponent(
+          course_id
+        )}&instructor_email=${encodeURIComponent(email)}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: token,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (response.ok) {
+        console.log("Notification removed successfully.");
+        await checkNotificationStatus(); // Refresh button state
+      } else {
+        console.error("Failed to remove notification:", response.statusText);
+      }
+    } catch (error) {
+      console.error("Error removing completed notification:", error);
+    }
   };
 
   useEffect(() => {
@@ -120,6 +188,7 @@ export const ViewStudents = ({ courseName, course_id }) => {
 
     fetchCode();
   }, [course_id]);
+
   // retrieve analytics data
   useEffect(() => {
     const fetchStudents = async () => {
@@ -199,8 +268,9 @@ export const ViewStudents = ({ courseName, course_id }) => {
           ws.send(JSON.stringify(initMessage));
 
           // Subscribe to notifications
+          const subscriptionId = uuidv4();
           const subscriptionMessage = {
-            id: "1",
+            id: subscriptionId,
             type: "start",
             payload: {
               data: `{"query":"subscription OnNotify($course_id: String!, $instructor_email: String!) { onNotify(course_id: $course_id, instructor_email: $instructor_email) { message course_id instructor_email } }","variables":{"course_id":"${course_id}", "instructor_email":"${email}"}}`,
@@ -227,16 +297,30 @@ export const ViewStudents = ({ courseName, course_id }) => {
             console.log("Notification received:", receivedMessage);
 
             // TODO: Update UI with the notification (e.g., toast notification, state update)
+            removeCompletedNotification();
+
+            // Close WebSocket after receiving the notification
+            ws.close();
+            console.log("WebSocket connection closed after handling notification");
           }
         };
 
         ws.onerror = (error) => {
           console.error("WebSocket error:", error);
+          ws.close();
         };
 
         ws.onclose = () => {
           console.log("WebSocket connection closed");
         };
+
+        // Set a timeout to close the WebSocket if no message is received
+        setTimeout(() => {
+          if (ws && ws.readyState === WebSocket.OPEN) {
+            console.warn("WebSocket timeout reached, closing connection");
+            ws.close();
+          }
+        }, 180000);
 
       } else {
         console.error("Failed to submit job:", response.statusText);
@@ -323,6 +407,7 @@ export const ViewStudents = ({ courseName, course_id }) => {
             onClick={() => {
               fetchCourseMessages();
             }}
+            disabled={!isDownloadButtonEnabled}
           >
             Download Classroom Chatlog
           </Button>

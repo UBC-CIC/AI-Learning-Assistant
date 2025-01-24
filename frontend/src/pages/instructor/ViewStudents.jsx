@@ -231,6 +231,7 @@ export const ViewStudents = ({ courseName, course_id }) => {
 
   const fetchCourseMessages = async () => {
     try {
+      setIsDownloadButtonEnabled(false);
       const session = await fetchAuthSession();
       const token = session.tokens.idToken;
       const { email } = await fetchUserAttributes();

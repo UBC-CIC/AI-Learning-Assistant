@@ -211,7 +211,11 @@ def invoke_event_notification(course_id, instructor_email, message="Chat logs su
         headers = {"Content-Type": "application/json", "Authorization": "API_KEY"}
         payload = {
             "query": query,
-            "variables": {"message": message, "course_id": course_id, "instructor_email": instructor_email}
+            "variables": {
+                "message": message,
+                "course_id": course_id,
+                "instructor_email": instructor_email,
+            }
         }
 
         # Send the request to AppSync

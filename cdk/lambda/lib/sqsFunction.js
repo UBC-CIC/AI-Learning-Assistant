@@ -8,6 +8,7 @@ let sqlConnection = global.sqlConnection;
 exports.handler = async (event) => {
   try {
     // Parse the incoming event
+    console.log("Parsing instructor_email and course_id");
     const { instructor_email, course_id } = JSON.parse(event.body);
 
     // Validate input
@@ -30,23 +31,29 @@ exports.handler = async (event) => {
     }
 
     // Insert the record into the chatlogs_notifications table
+    console.log("Inserting record into the chatlogs_notifications table with completion status FALSE");
     await sqlConnection`
       INSERT INTO "chatlogs_notifications" ("course_id", "instructor_email", "completion")
       VALUES (${course_id}, ${instructor_email}, false)
       ON CONFLICT DO NOTHING;
     `;
 
+    const date = new Date();
+    const formattedDate = date.toISOString().replace("T", "-").split(".")[0].replace(/:/g, "-");
+
     // Prepare the SQS message
     const params = {
       QueueUrl: process.env.SQS_QUEUE_URL,
       MessageBody: JSON.stringify({ instructor_email, course_id }),
       MessageGroupId: course_id, // FIFO requires group ID
-      MessageDeduplicationId: `${instructor_email}-${course_id}`, // Deduplication ID
+      MessageDeduplicationId: `${instructor_email}-${course_id}-${formattedDate}`, // Deduplication ID
     };
 
     // Send the message to SQS
+    console.log("Sending message to SQS");
     const command = new SendMessageCommand(params);
     await sqsClient.send(command);
+    console.log("Message sent to SQS");
 
     // Return success response
     return {

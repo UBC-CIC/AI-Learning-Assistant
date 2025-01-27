@@ -197,14 +197,15 @@ def update_completion_status(course_id, instructor_email):
         raise
 
 
-def invoke_event_notification(course_id, instructor_email, message="Chat logs successfully uploaded"):
+def invoke_event_notification(course_id, instructor_email, request_id, message="Chat logs successfully uploaded"):
     try:
         query = """
-        mutation sendNotification($message: String!, $course_id: String!, $instructor_email: String!) {
-            sendNotification(message: $message, course_id: $course_id, instructor_email: $instructor_email) {
+        mutation sendNotification($message: String!, $course_id: String!, $instructor_email: String!, $request_id: String!) {
+            sendNotification(message: $message, course_id: $course_id, instructor_email: $instructor_email, request_id: $request_id) {
                 message
                 course_id
                 instructor_email
+                request_id
             }
         }
         """
@@ -215,6 +216,7 @@ def invoke_event_notification(course_id, instructor_email, message="Chat logs su
                 "message": message,
                 "course_id": course_id,
                 "instructor_email": instructor_email,
+                "request_id": request_id,
             }
         }
 
@@ -245,9 +247,10 @@ def handler(event, context):
                 message_body = json.loads(record["body"])
                 course_id = message_body.get("course_id")
                 instructor_email = message_body.get("instructor_email")
+                request_id = message_body.get("request_id")
 
-                if not course_id or not instructor_email:
-                    logger.error("Missing required parameters: course_id or instructor_email.")
+                if not course_id or not instructor_email or not request_id:
+                    logger.error("Missing required parameters: course_id or instructor_email or request_id.")
                     continue
 
                 chat_logs = query_chat_logs(course_id)
@@ -258,7 +261,7 @@ def handler(event, context):
                 print("GOT s3_uri")
                 update_completion_status(course_id, instructor_email)
                 print("Updating completion status")
-                invoke_event_notification(course_id, instructor_email, message=f"Chat logs uploaded to {s3_uri}")
+                invoke_event_notification(course_id, instructor_email, request_id, message=f"Chat logs uploaded to {s3_uri}")
                 print("FINALLY SENT NOTIFICATION")
 
             except Exception as e:

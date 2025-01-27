@@ -1,5 +1,5 @@
 type Subscription {
-  onNotify(course_id: String!, instructor_email: String!): Notification
+  onNotify(course_id: String!, instructor_email: String!, request_id: String!): Notification
     @aws_subscribe(mutations: ["sendNotification"])
 }
 
@@ -7,10 +7,11 @@ type Notification {
   message: String
   course_id: String
   instructor_email: String
+  request_id: String
 }
 
 type Mutation {
-  sendNotification(message: String!, course_id: String!, instructor_email: String!): Notification
+  sendNotification(message: String!, course_id: String!, instructor_email: String!, request_id: String!): Notification
 }
 
 type Query {

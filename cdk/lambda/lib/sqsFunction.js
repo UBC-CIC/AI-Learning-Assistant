@@ -8,11 +8,11 @@ let sqlConnection = global.sqlConnection;
 exports.handler = async (event) => {
   try {
     // Parse the incoming event
-    console.log("Parsing instructor_email and course_id");
-    const { instructor_email, course_id } = JSON.parse(event.body);
+    console.log("Parsing instructor_email, course_id, and request_id");
+    const { instructor_email, course_id, request_id } = JSON.parse(event.body);
 
     // Validate input
-    if (!instructor_email || !course_id) {
+    if (!instructor_email || !course_id || !request_id) {
       return {
         statusCode: 400,
         headers: {
@@ -20,7 +20,7 @@ exports.handler = async (event) => {
           "Access-Control-Allow-Headers": "Content-Type,X-Amz-Date,Authorization,X-Api-Key",
           "Access-Control-Allow-Methods": "OPTIONS,POST",
         },
-        body: JSON.stringify({ error: "Missing instructor_email or course_id" }),
+        body: JSON.stringify({ error: "Missing instructor_email, course_id, or request_id" }),
       };
     }
 
@@ -38,15 +38,12 @@ exports.handler = async (event) => {
       ON CONFLICT DO NOTHING;
     `;
 
-    const date = new Date();
-    const formattedDate = date.toISOString().replace("T", "-").split(".")[0].replace(/:/g, "-");
-
     // Prepare the SQS message
     const params = {
       QueueUrl: process.env.SQS_QUEUE_URL,
-      MessageBody: JSON.stringify({ instructor_email, course_id }),
+      MessageBody: JSON.stringify({ instructor_email, course_id, request_id }),
       MessageGroupId: course_id, // FIFO requires group ID
-      MessageDeduplicationId: `${instructor_email}-${course_id}-${formattedDate}`, // Deduplication ID
+      MessageDeduplicationId: `${instructor_email}-${course_id}-${request_id}`, // Deduplication ID
     };
 
     // Send the message to SQS

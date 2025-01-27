@@ -235,6 +235,7 @@ export const ViewStudents = ({ courseName, course_id }) => {
       const session = await fetchAuthSession();
       const token = session.tokens.idToken;
       const { email } = await fetchUserAttributes();
+      const request_id = uuidv4();
   
       const response = await fetch(
         `${import.meta.env.VITE_API_ENDPOINT}instructor/course_messages`,
@@ -245,8 +246,9 @@ export const ViewStudents = ({ courseName, course_id }) => {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            course_id: course_id, // Include course_id in the body
-            instructor_email: email, // Include instructor_email in the body
+            course_id: course_id,
+            instructor_email: email,
+            request_id: request_id,
           }),
         }
       );
@@ -274,7 +276,7 @@ export const ViewStudents = ({ courseName, course_id }) => {
             id: subscriptionId,
             type: "start",
             payload: {
-              data: `{"query":"subscription OnNotify($course_id: String!, $instructor_email: String!) { onNotify(course_id: $course_id, instructor_email: $instructor_email) { message course_id instructor_email } }","variables":{"course_id":"${course_id}", "instructor_email":"${email}"}}`,
+              data: `{"query":"subscription OnNotify($course_id: String!, $instructor_email: String!, $request_id: String!) { onNotify(course_id: $course_id, instructor_email: $instructor_email, request_id: $request_id) { message course_id instructor_email request_id } }","variables":{"course_id":"${course_id}", "instructor_email":"${email}", "request_id":"${request_id}"}}`,
               extensions: {
                 authorization: {
                   Authorization: "API_KEY=",
@@ -321,7 +323,7 @@ export const ViewStudents = ({ courseName, course_id }) => {
             console.warn("WebSocket timeout reached, closing connection");
             ws.close();
           }
-        }, 180000);
+        }, 600000);
 
       } else {
         console.error("Failed to submit job:", response.statusText);

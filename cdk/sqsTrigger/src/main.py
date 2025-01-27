@@ -5,6 +5,7 @@ import boto3
 import psycopg2
 import csv
 import httpx
+import time
 from datetime import datetime
 from botocore.exceptions import ClientError
 
@@ -197,14 +198,12 @@ def update_completion_status(course_id, instructor_email):
         raise
 
 
-def invoke_event_notification(course_id, instructor_email, request_id, message="Chat logs successfully uploaded"):
+def invoke_event_notification(request_id, message="Chat logs successfully uploaded"):
     try:
         query = """
-        mutation sendNotification($message: String!, $course_id: String!, $instructor_email: String!, $request_id: String!) {
-            sendNotification(message: $message, course_id: $course_id, instructor_email: $instructor_email, request_id: $request_id) {
+        mutation sendNotification($message: String!, $request_id: String!) {
+            sendNotification(message: $message, request_id: $request_id) {
                 message
-                course_id
-                instructor_email
                 request_id
             }
         }
@@ -214,16 +213,20 @@ def invoke_event_notification(course_id, instructor_email, request_id, message="
             "query": query,
             "variables": {
                 "message": message,
-                "course_id": course_id,
-                "instructor_email": instructor_email,
                 "request_id": request_id,
             }
         }
+
+        # Delay to ensure client subscribes before mutation is sent 
+        time.sleep(1)
 
         # Send the request to AppSync
         with httpx.Client() as client:
             response = client.post(APPSYNC_API_URL, headers=headers, json=payload)
             response_data = response.json()
+
+            logger.info(f"RESPONSE: {response}")
+            print(f"RESPONSE: {response}")
 
             if response.status_code != 200 or "errors" in response_data:
                 logger.error(f"Failed to send notification to AppSync: {response_data}")
@@ -261,7 +264,7 @@ def handler(event, context):
                 print("GOT s3_uri")
                 update_completion_status(course_id, instructor_email)
                 print("Updating completion status")
-                invoke_event_notification(course_id, instructor_email, request_id, message=f"Chat logs uploaded to {s3_uri}")
+                invoke_event_notification(request_id, message=f"Chat logs uploaded to {s3_uri}")
                 print("FINALLY SENT NOTIFICATION")
 
             except Exception as e:

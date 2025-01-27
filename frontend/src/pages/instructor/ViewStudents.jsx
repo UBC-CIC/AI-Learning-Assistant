@@ -276,7 +276,7 @@ export const ViewStudents = ({ courseName, course_id }) => {
             id: subscriptionId,
             type: "start",
             payload: {
-              data: `{"query":"subscription OnNotify($course_id: String!, $instructor_email: String!, $request_id: String!) { onNotify(course_id: $course_id, instructor_email: $instructor_email, request_id: $request_id) { message course_id instructor_email request_id } }","variables":{"course_id":"${course_id}", "instructor_email":"${email}", "request_id":"${request_id}"}}`,
+              data: `{"query":"subscription OnNotify($request_id: String!) { onNotify(request_id: $request_id) { message request_id } }","variables":{"request_id":"${request_id}"}}`,
               extensions: {
                 authorization: {
                   Authorization: "API_KEY=",

@@ -10,7 +10,7 @@
   - [Deployment](#deployment)
     - [Step 1: Fork \& Clone The Repository](#step-1-fork--clone-the-repository)
     - [Step 2: Upload Secrets](#step-2-upload-secrets)
-      - [CDK Deployment with an Existing VPC](#cdk-deployment-with-an-existing-vpc)
+      - [CDK Deployment in Hybrid Cloud Environment](#cdk-deployment-in-hybrid-cloud-environment)
       - [Step-by-Step Instructions](#step-by-step-instructions)
     - [Step 3: CDK Deployment](#step-3-cdk-deployment)
   - [Post-Deployment](#post-deployment)
@@ -130,17 +130,17 @@ aws ssm put-parameter \
     --profile <YOUR-PROFILE-NAME>
 ```
 
-#### CDK Deployment with an Existing VPC
+#### CDK Deployment in Hybrid Cloud Environment
 
-The following set of instructions are only if you want to deploy this application with an **existing VPC**. If you do not want to do this you can skip this section.
+The following set of instructions are only if you want to deploy this application in a **hybrid cloud environment**. If you do not want to do this you can skip this section.
 
-In order to deploy, you will need to have access to the **aws-controltower-VPC** and the name of your **AWSControlTowerStackSet**.
+In order to deploy in a hybrid cloud environment, you will need to have access to the **aws-controltower-VPC** and the name of your **AWSControlTowerStackSet**.
 
 #### Step-by-Step Instructions
 
 1. **Modify the VPC Stack:**
    - Navigate to the `vpc-stack.ts` file located at `cdk/lib/vpc-stack.ts`.
-   - Replace **line 13** with your existing VPC ID:
+   - Replace **line 15** with your existing VPC ID:
      ```typescript
      const existingVpcId: string = 'your-vpc-id'; //CHANGE IF DEPLOYING WITH EXISTING VPC
      ```
@@ -149,13 +149,40 @@ In order to deploy, you will need to have access to the **aws-controltower-VPC**
      ![VPC ID Image](images/ExistingVPCId.png)
 
 2. **Update the AWS Control Tower Stack Set:**
-   - Replace **line 21** with your AWS Control Tower Stack Set name:
+   - Replace **line 18** with your AWS Control Tower Stack Set name:
      ```typescript
      const AWSControlTowerStackSet = "your-stackset-name"; //CHANGE TO YOUR CONTROL TOWER STACK SET
      ```
      You can find this name by navigating to the **CloudFormation dashboard** in AWS, under `Stacks`. Look for a stack name that starts with `StackSet-AWSControlTowerBP-VPC-ACCOUNT-FACTORY`.
 
      ![AWS Control Tower Stack Image](images/AWSControlTowerStack.png)
+
+#### Second deployment in the Hybrid Cloud Environment:
+
+The following set of instructions are only if this is the second project you are deploying in a **hybrid cloud environment**. If you do not want to do this you can skip this section.
+
+In order to deploy a second project in a hybrid cloud environment, you will need to have access to the **Public Subnet ID**.
+
+#### 
+
+3. **Update the Public Subnet ID and CIDR Range:**
+   - Replace **line 20** with your Public Subnet ID:
+     ```typescript
+      const existingPublicSubnetID: string = "" // CHANGE IF DEPLOYING WITH EXISTING PUBLIC SUBNET
+     ```
+     You can find this ID by navigating to the **VPC dashboard** in AWS, under `Public Subnets`. Look for the Public Subnet which already exists that was created when deploying the first project.
+
+     ![VPC Dashboard](images/VPCStack.png)
+
+    - Update **line 24** CIDR Range:
+     ```typescript
+      this.vpcCidrString = "172.31.96.0/20";
+     ```
+     Change the third number to its own value plus 32, in this case "94" to "128":
+     ```typescript
+      this.vpcCidrString = "172.31.128.0/20";
+     ```
+
 
 
 You can proceed with the rest of the deployment instructions and the Vpc Stack will automatically use your existing VPC instead of creating a new one. For more detailed information about the hybrid cloud deployment you checkout the [Hybrid Cloud Deployment Guide](/docs/HybridCloudDeploymentGuide.md)

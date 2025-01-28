@@ -178,7 +178,7 @@ In order to deploy a second project in a hybrid cloud environment, you will need
      ```typescript
       this.vpcCidrString = "172.31.96.0/20";
      ```
-     Change the third number to its own value plus 32, in this case "94" to "128":
+     Change the third number to its own value plus 32, in this case "96" to "128":
      ```typescript
       this.vpcCidrString = "172.31.128.0/20";
      ```

@@ -2,23 +2,20 @@ import {
     Typography,
     Box,
     Toolbar,
+    Paper,
+    Button,
     Table,
     TableBody,
     TableCell,
     TableContainer,
     TableHead,
-    TableRow,
-    Paper,
-    Button,
-    TableFooter,
-    TablePagination,
+    TableRow
 } from "@mui/material";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { fetchAuthSession, fetchUserAttributes } from "aws-amplify/auth";
-import { toast, ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+import { v4 as uuidv4 } from 'uuid';
 
-// Function to capitalize course title case
 function courseTitleCase(str) {
     if (typeof str !== "string") {
         return str;
@@ -35,47 +32,107 @@ function courseTitleCase(str) {
         .join(" ");
 }
 
-// Function to dynamically construct WebSocket URL
-const constructWebSocketUrl = () => {
-    const tempUrl = import.meta.env.VITE_GRAPHQL_WS_URL;
-    const apiUrl = tempUrl.replace("https://", "wss://");
-    const urlObj = new URL(apiUrl);
-    const tmpObj = new URL(tempUrl);
+export const ChatLogs = ({ courseName, course_id }) => {
+    const [loading, setLoading] = useState(false);
+    const [isDownloadButtonEnabled, setIsDownloadButtonEnabled] = useState(false);
 
-    const modifiedHost = urlObj.hostname.replace(
-        "appsync-api",
-        "appsync-realtime-api"
-    );
+    const navigate = useNavigate();
 
-    urlObj.hostname = modifiedHost;
-    const host = tmpObj.hostname;
+    const constructWebSocketUrl = () => {
+        const tempUrl = import.meta.env.VITE_GRAPHQL_WS_URL;
+        const apiUrl = tempUrl.replace("https://", "wss://");
+        const urlObj = new URL(apiUrl);
+        const tmpObj = new URL(tempUrl);
+        const modifiedHost = urlObj.hostname.replace(
+            "appsync-api",
+            "appsync-realtime-api"
+        );
 
-    const header = {
-        host: host,
-        Authorization: "API_KEY=",
+        urlObj.hostname = modifiedHost;
+        const host = tmpObj.hostname;
+        const header = {
+            host: host,
+            Authorization: "API_KEY=",
+        };
+
+        const encodedHeader = btoa(JSON.stringify(header));
+        const payload = "e30=";
+
+        return `${urlObj.toString()}?header=${encodedHeader}&payload=${payload}`;
     };
 
-    const encodedHeader = btoa(JSON.stringify(header));
-    const payload = "e30=";
-
-    return `${urlObj.toString()}?header=${encodedHeader}&payload=${payload}`;
-};
-
-const ChatLogs = ({ courseName }) => {
-    const [logs, setLogs] = useState([]);
-    const [page, setPage] = useState(0);
-    const [rowsPerPage, setRowsPerPage] = useState(5);
-    const [loading, setLoading] = useState(false);
-    const [webSocket, setWebSocket] = useState(null);
-
-    const messagesEndRef = useRef(null);
-
-    const fetchChatLogs = async () => {
+    const checkNotificationStatus = async () => {
         try {
-            setLoading(true);
             const session = await fetchAuthSession();
             const token = session.tokens.idToken;
             const { email } = await fetchUserAttributes();
+            const response = await fetch(
+                `${import.meta.env.VITE_API_ENDPOINT
+                }instructor/check_notifications_status?course_id=${encodeURIComponent(
+                    course_id
+                )}&instructor_email=${encodeURIComponent(email)}`,
+                {
+                    method: "GET",
+                    headers: {
+                        Authorization: token,
+                        "Content-Type": "application/json",
+                    },
+                }
+            );
+            if (response.ok) {
+                const data = await response.json();
+                console.log(`Download Chatlogs is ${data.isEnabled}`)
+                setIsDownloadButtonEnabled(data.isEnabled);
+            } else {
+                console.error("Failed to fetch notification status:", response.statusText);
+            }
+        } catch (error) {
+            console.error("Error checking notification status:", error);
+        }
+    };
+
+    useEffect(() => {
+        checkNotificationStatus();
+    }, [course_id]);
+
+    const removeCompletedNotification = async () => {
+        try {
+            const session = await fetchAuthSession();
+            const token = session.tokens.idToken;
+            const { email } = await fetchUserAttributes();
+
+            const response = await fetch(
+                `${import.meta.env.VITE_API_ENDPOINT
+                }instructor/remove_completed_notification?course_id=${encodeURIComponent(
+                    course_id
+                )}&instructor_email=${encodeURIComponent(email)}`,
+                {
+                    method: "DELETE",
+                    headers: {
+                        Authorization: token,
+                        "Content-Type": "application/json",
+                    },
+                }
+            );
+
+            if (response.ok) {
+                console.log("Notification removed successfully.");
+                await checkNotificationStatus();
+            } else {
+                console.error("Failed to remove notification:", response.statusText);
+            }
+        } catch (error) {
+            console.error("Error removing completed notification:", error);
+        }
+    };
+
+    const fetchCourseMessages = async () => {
+        try {
+            setIsDownloadButtonEnabled(false);
+            const session = await fetchAuthSession();
+            const token = session.tokens.idToken;
+            const { email } = await fetchUserAttributes();
+            const request_id = uuidv4();
 
             const response = await fetch(
                 `${import.meta.env.VITE_API_ENDPOINT}instructor/course_messages`,
@@ -86,256 +143,186 @@ const ChatLogs = ({ courseName }) => {
                         "Content-Type": "application/json",
                     },
                     body: JSON.stringify({
+                        course_id: course_id,
                         instructor_email: email,
+                        request_id: request_id,
                     }),
                 }
             );
 
             if (response.ok) {
+                console.log(response)
                 const data = await response.json();
-                setLogs(Object.entries(data.logs || {})); // Convert hashmap to array for rendering
-            } else {
-                console.error("Failed to fetch chat logs:", response.statusText);
-            }
-        } catch (error) {
-            console.error("Error fetching chat logs:", error);
-        } finally {
-            setLoading(false);
-        }
-    };
+                console.log("Job submitted successfully:", data);
 
-    const generateChatLogs = async () => {
-        try {
-            const session = await fetchAuthSession();
-            const token = session.tokens.idToken;
-            const { email } = await fetchUserAttributes();
+                const wsUrl = constructWebSocketUrl();
+                const ws = new WebSocket(wsUrl, "graphql-ws");
 
-            const response = await fetch(
-                `${import.meta.env.VITE_API_ENDPOINT}generate-chat-logs`,
-                {
-                    method: "POST",
-                    headers: {
-                        Authorization: token,
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({
-                        instructor_email: email,
-                        course_id,
-                    }),
-                }
-            );
+                ws.onopen = () => {
+                    console.log("WebSocket connection established");
+                    const initMessage = { type: "connection_init" };
+                    ws.send(JSON.stringify(initMessage));
 
-            if (response.ok) {
-                toast.success("Generating Chat Logs...", {
-                    position: "top-center",
-                    autoClose: 1000,
-                    hideProgressBar: true,
-                    theme: "colored",
-                });
-            } else {
-                toast.error("Failed to generate chat logs", {
-                    position: "top-center",
-                    autoClose: 1000,
-                    hideProgressBar: true,
-                    theme: "colored",
-                });
-            }
-        } catch (error) {
-            console.error("Error initiating CSV generation:", error);
-            toast.error("Failed to generate chat logs", {
-                position: "top-center",
-                autoClose: 1000,
-                hideProgressBar: true,
-                theme: "colored",
-            });
-        }
-    };
-
-    const handleDownload = async (url) => {
-        try {
-            const response = await fetch(url);
-            if (response.ok) {
-                const blob = await response.blob();
-                const downloadUrl = window.URL.createObjectURL(blob);
-                const a = document.createElement("a");
-                a.href = downloadUrl;
-                a.download = "chat_logs.csv";
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-            } else {
-                console.error("Failed to download file:", response.statusText);
-            }
-        } catch (error) {
-            console.error("Error downloading file:", error);
-        }
-    };
-
-    const openWebSocket = () => {
-        const wsUrl = constructWebSocketUrl();
-        const ws = new WebSocket(wsUrl, "graphql-ws");
-
-        ws.onopen = () => {
-            console.log("WebSocket connection established");
-
-            const initMessage = { type: "connection_init" };
-            ws.send(JSON.stringify(initMessage));
-
-            const subscriptionMessage = {
-                id: "1", // Unique ID for the subscription
-                type: "start",
-                payload: {
-                    data: `{"query":"subscription OnNotify { onNotify { message } }"}`,
-                    extensions: {
-                        authorization: {
-                            Authorization: "API_KEY=",
+                    const subscriptionId = uuidv4();
+                    const subscriptionMessage = {
+                        id: subscriptionId,
+                        type: "start",
+                        payload: {
+                            data: `{"query":"subscription OnNotify($request_id: String!) { onNotify(request_id: $request_id) { message request_id } }","variables":{"request_id":"${request_id}"}}`,
+                            extensions: {
+                                authorization: {
+                                    Authorization: "API_KEY=",
+                                    host: new URL(import.meta.env.VITE_GRAPHQL_WS_URL).hostname,
+                                },
+                            },
                         },
-                    },
-                },
-            };
-            ws.send(JSON.stringify(subscriptionMessage));
-        };
+                    };
 
-        ws.onmessage = (event) => {
-            const message = JSON.parse(event.data);
-            console.log("Received:", message);
+                    ws.send(JSON.stringify(subscriptionMessage));
+                    console.log("Subscribed to WebSocket notifications");
+                };
 
-            if (message.type === "data" && message.payload?.data?.onNotify) {
-                toast.success("Ready to download requested logs", {
-                    position: "top-center",
-                    autoClose: 1000,
-                    hideProgressBar: true,
-                    theme: "colored",
-                });
-                fetchChatLogs();
+                ws.onmessage = (event) => {
+                    const message = JSON.parse(event.data);
+                    console.log("WebSocket message received:", message);
+
+                    if (message.type === "data" && message.payload?.data?.onNotify) {
+                        const receivedMessage = message.payload.data.onNotify.message;
+                        console.log("Notification received:", receivedMessage);
+                        removeCompletedNotification();
+                        ws.close();
+                        console.log("WebSocket connection closed after handling notification");
+                    }
+                };
+
+                ws.onerror = (error) => {
+                    console.error("WebSocket error:", error);
+                    ws.close();
+                };
+
+                ws.onclose = () => {
+                    console.log("WebSocket connection closed");
+                };
+
+                setTimeout(() => {
+                    if (ws && ws.readyState === WebSocket.OPEN) {
+                        console.warn("WebSocket timeout reached, closing connection");
+                        ws.close();
+                    }
+                }, 600000);
+
+            } else {
+                console.error("Failed to submit job:", response.statusText);
             }
-        };
-
-        ws.onerror = (error) => {
-            console.error("WebSocket error:", error);
-        };
-
-        ws.onclose = () => {
-            console.log("WebSocket connection closed");
-        };
-
-        setWebSocket(ws);
+        } catch (error) {
+            console.error("Error submitting job:", error);
+        }
     };
+
+    ////////
+
+    const [previousChatLogs, setPreviousChatLogs] = useState([
+    // Dummy data
+    {
+        date: "2024-03-15T12:00:00Z",
+        fileName: "chatlog_20240315.pdf",
+        downloadUrl: "#"
+    },
+    {
+        date: "2024-03-14T09:30:00Z",
+        fileName: "chatlog_20240314.pdf",
+        downloadUrl: "#"
+    }
+    ]);
+
+    ////////
+
+    // const fetchPreviousChatLogs = async () => {
+    //     try {
+    //         const session = await fetchAuthSession();
+    //         const token = session.tokens.idToken;
+    //         const { email } = await fetchUserAttributes();
+    //         const response = await fetch(
+    //             `${import.meta.env.VITE_API_ENDPOINT}instructor/previous_chat_logs?course_id=${encodeURIComponent(course_id)}&instructor_email=${encodeURIComponent(email)}`,
+    //             {
+    //                 method: "GET",
+    //                 headers: {
+    //                     Authorization: token,
+    //                     "Content-Type": "application/json",
+    //                 },
+    //             }
+    //         );
+    //         if (response.ok) {
+    //             const data = await response.json();
+    //             setPreviousChatLogs(data.chatLogs || []);
+    //         } else {
+    //             console.error("Failed to fetch previous chat logs:", response.statusText);
+    //         }
+    //     } catch (error) {
+    //         console.error("Error fetching previous chat logs:", error);
+    //     }
+    // };
 
     useEffect(() => {
-        fetchChatLogs();
-        openWebSocket();
+        checkNotificationStatus();
+        // fetchPreviousChatLogs();
+    }, [course_id]);
 
-        return () => {
-            if (webSocket) {
-                webSocket.close();
-            }
-        };
-    }, []);
-
-    const handleChangePage = (event, newPage) => {
-        setPage(newPage);
-    };
-
-    const handleChangeRowsPerPage = (event) => {
-        setRowsPerPage(parseInt(event.target.value, 10));
-        setPage(0);
-    };
 
     return (
-        <Box component="main" sx={{ flexGrow: 1, p: 3, marginTop: 1 }}>
-            <Toolbar />
-            <ToastContainer />
-            <Box
-                sx={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    marginBottom: 2,
-                }}
-            >
-                <Typography
-                    color="black"
-                    fontStyle="semibold"
-                    textAlign="left"
-                    variant="h6"
-                >
-                    {courseTitleCase(courseName)} Chat History
-                </Typography>
-                <Button
-                    variant="contained"
-                    color="primary"
-                    onClick={generateChatLogs}
-                    disabled={loading}
-                >
-                    Generate Chat Logs
-                </Button>
-            </Box>
-            <Paper sx={{ width: "100%", overflow: "hidden", marginTop: 2 }}>
-                <TableContainer sx={{ maxHeight: "60vh", overflowY: "auto" }}>
-                    <Table aria-label="chat logs table">
-                        {!loading ? (
-                            <>
-                                <TableHead>
-                                    <TableRow>
-                                        <TableCell sx={{ width: "50%" }}>Generated Time</TableCell>
-                                        <TableCell>Action</TableCell>
-                                    </TableRow>
-                                </TableHead>
-                                <TableBody>
-                                    {logs.length > 0 ? (
-                                        logs
-                                            .slice(
-                                                page * rowsPerPage,
-                                                page * rowsPerPage + rowsPerPage
-                                            )
-                                            .map(([time, url], index) => (
-                                                <TableRow key={index}>
-                                                    <TableCell>{time}</TableCell>
-                                                    <TableCell>
-                                                        <Button
-                                                            variant="contained"
-                                                            color="secondary"
-                                                            onClick={() => handleDownload(url)}
-                                                        >
-                                                            Download
-                                                        </Button>
-                                                    </TableCell>
-                                                </TableRow>
-                                            ))
-                                    ) : (
-                                        <TableRow>
-                                            <TableCell colSpan={2} align="center">
-                                                No chat logs available
+        <div>
+            <Box component="main" sx={{ flexGrow: 1, p: 3, marginTop: 1 }}>
+                <Toolbar />
+                <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", marginTop: 2 }}>
+                    <Typography color="black" fontStyle="semibold" textAlign="left" variant="h6">
+                        {courseName} Chat Logs
+                    </Typography>
+                    <Button
+                        variant="contained"
+                        color="primary"
+                        disabled={!isDownloadButtonEnabled}
+                        sx={{ marginRight: 2 }}
+                    >
+                        Download Classroom Chatlog
+                    </Button>
+                </Box>
+                <Paper sx={{ width: "100%", marginTop: 2, p: 3 }}>
+                    <Typography variant="body1" color="textSecondary">
+                        {isDownloadButtonEnabled ? "Click the button to download chat logs" : "Chat log download in progress. Please wait..."}
+                    </Typography>
+                    <TableContainer component={Paper} sx={{ marginTop: 2 }}>
+                        <Table>
+                            <TableHead>
+                                <TableRow>
+                                    <TableCell><strong>Date</strong></TableCell>
+                                    <TableCell><strong>File Name</strong></TableCell>
+                                    <TableCell><strong>Download</strong></TableCell>
+                                </TableRow>
+                            </TableHead>
+                            <TableBody>
+                                {previousChatLogs.length > 0 ? (
+                                    previousChatLogs.map((log, index) => (
+                                        <TableRow key={index}>
+                                            <TableCell>{new Date(log.date).toLocaleString()}</TableCell>
+                                            <TableCell>{log.fileName}</TableCell>
+                                            <TableCell>
+                                                <Button variant="contained" color="secondary" href={log.downloadUrl} target="_blank" rel="noopener noreferrer">
+                                                    Download
+                                                </Button>
                                             </TableCell>
                                         </TableRow>
-                                    )}
-                                </TableBody>
-                            </>
-                        ) : (
-                            <TableRow>
-                                <TableCell colSpan={2} align="center">
-                                    Loading...
-                                </TableCell>
-                            </TableRow>
-                        )}
-                        <TableFooter>
-                            <TableRow>
-                                <TablePagination
-                                    rowsPerPageOptions={[5, 10, 25]}
-                                    component="div"
-                                    count={logs.length}
-                                    rowsPerPage={rowsPerPage}
-                                    page={page}
-                                    onPageChange={handleChangePage}
-                                    onRowsPerPageChange={handleChangeRowsPerPage}
-                                />
-                            </TableRow>
-                        </TableFooter>
-                    </Table>
-                </TableContainer>
-            </Paper>
-        </Box>
+                                    ))
+                                ) : (
+                                    <TableRow>
+                                        <TableCell colSpan={3} align="center">No previous chat logs available.</TableCell>
+                                    </TableRow>
+                                )}
+                            </TableBody>
+                        </Table>
+                    </TableContainer>
+                </Paper>
+            </Box>
+        </div>
     );
 };
 

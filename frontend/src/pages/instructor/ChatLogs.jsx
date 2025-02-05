@@ -39,93 +39,91 @@ export const ChatLogs = ({ courseName, course_id }) => {
     const navigate = useNavigate();
 
     const constructWebSocketUrl = () => {
-      const tempUrl = import.meta.env.VITE_GRAPHQL_WS_URL; // Replace with your WebSocket URL
-      const apiUrl = tempUrl.replace("https://", "wss://");
-      const urlObj = new URL(apiUrl);
-      const tmpObj = new URL(tempUrl);
-      const modifiedHost = urlObj.hostname.replace(
-        "appsync-api",
-        "appsync-realtime-api"
-      );
-    
-      urlObj.hostname = modifiedHost;
-      const host = tmpObj.hostname;
-      const header = {
-        host: host,
-        Authorization: "API_KEY=",
-      };
-    
-      const encodedHeader = btoa(JSON.stringify(header));
-      const payload = "e30=";
-    
-      return `${urlObj.toString()}?header=${encodedHeader}&payload=${payload}`;
+        const tempUrl = import.meta.env.VITE_GRAPHQL_WS_URL; // Replace with your WebSocket URL
+        const apiUrl = tempUrl.replace("https://", "wss://");
+        const urlObj = new URL(apiUrl);
+        const tmpObj = new URL(tempUrl);
+        const modifiedHost = urlObj.hostname.replace(
+            "appsync-api",
+            "appsync-realtime-api"
+        );
+
+        urlObj.hostname = modifiedHost;
+        const host = tmpObj.hostname;
+        const header = {
+            host: host,
+            Authorization: "API_KEY=",
+        };
+
+        const encodedHeader = btoa(JSON.stringify(header));
+        const payload = "e30=";
+
+        return `${urlObj.toString()}?header=${encodedHeader}&payload=${payload}`;
     };
 
     const checkNotificationStatus = async () => {
-      try {
-        const session = await fetchAuthSession();
-        const token = session.tokens.idToken;
-        const { email } = await fetchUserAttributes();
-        const response = await fetch(
-          `${
-            import.meta.env.VITE_API_ENDPOINT
-          }instructor/check_notifications_status?course_id=${encodeURIComponent(
-            course_id
-          )}&instructor_email=${encodeURIComponent(email)}`,
-          {
-            method: "GET",
-            headers: {
-              Authorization: token,
-              "Content-Type": "application/json",
-            },
-          }
-        );
-        if (response.ok) {
-          const data = await response.json();
-          console.log(`Download Chatlogs is ${data.isEnabled}`)
-          setIsDownloadButtonEnabled(data.isEnabled);
-        } else {
-          console.error("Failed to fetch notification status:", response.statusText);
+        try {
+            const session = await fetchAuthSession();
+            const token = session.tokens.idToken;
+            const { email } = await fetchUserAttributes();
+            const response = await fetch(
+                `${import.meta.env.VITE_API_ENDPOINT
+                }instructor/check_notifications_status?course_id=${encodeURIComponent(
+                    course_id
+                )}&instructor_email=${encodeURIComponent(email)}`,
+                {
+                    method: "GET",
+                    headers: {
+                        Authorization: token,
+                        "Content-Type": "application/json",
+                    },
+                }
+            );
+            if (response.ok) {
+                const data = await response.json();
+                console.log(`Download Chatlogs is ${data.isEnabled}`)
+                setIsDownloadButtonEnabled(data.isEnabled);
+            } else {
+                console.error("Failed to fetch notification status:", response.statusText);
+            }
+        } catch (error) {
+            console.error("Error checking notification status:", error);
         }
-      } catch (error) {
-        console.error("Error checking notification status:", error);
-      }
     };
-  
+
     useEffect(() => {
-      checkNotificationStatus();
+        checkNotificationStatus();
     }, [course_id]);
-  
+
     const removeCompletedNotification = async () => {
-      try {
-        const session = await fetchAuthSession();
-        const token = session.tokens.idToken;
-        const { email } = await fetchUserAttributes();
-  
-        const response = await fetch(
-          `${
-            import.meta.env.VITE_API_ENDPOINT
-          }instructor/remove_completed_notification?course_id=${encodeURIComponent(
-            course_id
-          )}&instructor_email=${encodeURIComponent(email)}`,
-          {
-            method: "DELETE",
-            headers: {
-              Authorization: token,
-              "Content-Type": "application/json",
-            },
-          }
-        );
-  
-        if (response.ok) {
-          console.log("Notification removed successfully.");
-          await checkNotificationStatus(); // Refresh button state
-        } else {
-          console.error("Failed to remove notification:", response.statusText);
+        try {
+            const session = await fetchAuthSession();
+            const token = session.tokens.idToken;
+            const { email } = await fetchUserAttributes();
+
+            const response = await fetch(
+                `${import.meta.env.VITE_API_ENDPOINT
+                }instructor/remove_completed_notification?course_id=${encodeURIComponent(
+                    course_id
+                )}&instructor_email=${encodeURIComponent(email)}`,
+                {
+                    method: "DELETE",
+                    headers: {
+                        Authorization: token,
+                        "Content-Type": "application/json",
+                    },
+                }
+            );
+
+            if (response.ok) {
+                console.log("Notification removed successfully.");
+                await checkNotificationStatus(); // Refresh button state
+            } else {
+                console.error("Failed to remove notification:", response.statusText);
+            }
+        } catch (error) {
+            console.error("Error removing completed notification:", error);
         }
-      } catch (error) {
-        console.error("Error removing completed notification:", error);
-      }
     };
 
     const generateCourseMessages = async () => {
@@ -235,17 +233,17 @@ export const ChatLogs = ({ courseName, course_id }) => {
     ////////
 
     const [previousChatLogs, setPreviousChatLogs] = useState([
-    // Dummy data
-    {
-        date: "2024-03-15T12:00:00Z",
-        fileName: "chatlog_20240315.pdf",
-        downloadUrl: "#"
-    },
-    {
-        date: "2024-03-14T09:30:00Z",
-        fileName: "chatlog_20240314.pdf",
-        downloadUrl: "#"
-    }
+        // Dummy data
+        {
+            date: "2024-03-15T12:00:00Z",
+            fileName: "chatlog_20240315.pdf",
+            downloadUrl: "#"
+        },
+        {
+            date: "2024-03-14T09:30:00Z",
+            fileName: "chatlog_20240314.pdf",
+            downloadUrl: "#"
+        }
     ]);
 
     return (
@@ -264,7 +262,7 @@ export const ChatLogs = ({ courseName, course_id }) => {
                       }}
                       disabled={!isDownloadButtonEnabled}
                     >
-                      Download Classroom Chatlog
+                        Download Classroom Chatlog
                     </Button>
                 </Box>
                 <Paper sx={{ width: "100%", marginTop: 2, p: 3 }}>

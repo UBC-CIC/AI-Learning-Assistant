@@ -1203,10 +1203,16 @@ exports.handler = async (event) => {
                 // if exists, true or false, button should not be enabled
                 if (notificationStatus.length > 0) {
                     response.statusCode = 200;
-                    response.body = JSON.stringify({ isEnabled: false });
+                    response.body = JSON.stringify({
+                      isEnabled: false,
+                      completionStatus: notificationStatus[0].completion
+                    });
                 } else {
                   response.statusCode = 200;
-                  response.body = JSON.stringify({ isEnabled: true });
+                  response.body = JSON.stringify({
+                    isEnabled: true,
+                    completionStatus: null
+                  });
                 }
             } catch (err) {
                 response.statusCode = 500;

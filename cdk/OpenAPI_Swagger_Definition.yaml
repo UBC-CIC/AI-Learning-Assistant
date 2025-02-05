@@ -3156,7 +3156,11 @@ paths:
                 properties:
                   isEnabled:
                     type: Boolean
-                    description: The status for getting the chatlogs for a course requested by an instructor
+                    description: Indicates whether the button to generate chatlogs should be enabled or disabled
+                  completionStatus:
+                    type: boolean
+                    nullable: true
+                    description: The actual value of the completion status. If the row does not exist, this will be null.
         "400":
           description: Bad Request
         "404":

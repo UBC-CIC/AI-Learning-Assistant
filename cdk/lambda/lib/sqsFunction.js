@@ -33,8 +33,8 @@ exports.handler = async (event) => {
     // Insert the record into the chatlogs_notifications table
     console.log("Inserting record into the chatlogs_notifications table with completion status FALSE");
     await sqlConnection`
-      INSERT INTO "chatlogs_notifications" ("course_id", "instructor_email", "completion")
-      VALUES (${course_id}, ${instructor_email}, false)
+      INSERT INTO "chatlogs_notifications" ("course_id", "instructor_email", "request_id", "completion")
+      VALUES (${course_id}, ${instructor_email}, ${request_id}, false)
       ON CONFLICT DO NOTHING;
     `;
 

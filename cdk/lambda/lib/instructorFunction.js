@@ -1194,7 +1194,7 @@ exports.handler = async (event) => {
             try {
                 // Query to check the completion status in the chatlogs_notifications table
                 const notificationStatus = await sqlConnection`
-                    SELECT completion
+                    SELECT completion, request_id
                     FROM "chatlogs_notifications"
                     WHERE instructor_email = ${instructor_email} AND course_id = ${course_id}
                     LIMIT 1;
@@ -1205,13 +1205,15 @@ exports.handler = async (event) => {
                     response.statusCode = 200;
                     response.body = JSON.stringify({
                       isEnabled: false,
-                      completionStatus: notificationStatus[0].completion
+                      completionStatus: notificationStatus[0].completion,
+                      requestId: notificationStatus[0].request_id
                     });
                 } else {
                   response.statusCode = 200;
                   response.body = JSON.stringify({
                     isEnabled: true,
-                    completionStatus: null
+                    completionStatus: null,
+                    requestId: null
                   });
                 }
             } catch (err) {

@@ -147,6 +147,7 @@ def handler(event, context):
                 "id" uuid PRIMARY KEY DEFAULT (uuid_generate_v4()),
                 "course_id" uuid NOT NULL,
                 "instructor_email" varchar NOT NULL,
+                "request_id" uuid NOT NULL,
                 "completion" boolean DEFAULT FALSE
             );
 

@@ -3161,6 +3161,11 @@ paths:
                     type: boolean
                     nullable: true
                     description: The actual value of the completion status. If the row does not exist, this will be null.
+                  requestId:
+                    type: string
+                    format: uuid
+                    nullable: true
+                    description: The request_id used to subscribe to AppSync. If the row does not exist, this will be null.
         "400":
           description: Bad Request
         "404":

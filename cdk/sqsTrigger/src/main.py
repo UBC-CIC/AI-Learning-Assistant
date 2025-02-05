@@ -168,7 +168,7 @@ def upload_to_s3(file_path, course_id, instructor_email, file_name):
         logger.error(f"Error uploading file to S3: {e}")
         raise
 
-def update_completion_status(course_id, instructor_email):
+def update_completion_status(course_id, instructor_email, request_id):
     """
     Updates the completion status to True in the chatlogs_notifications table.
     """
@@ -183,18 +183,18 @@ def update_completion_status(course_id, instructor_email):
         update_query = """
             UPDATE chatlogs_notifications
             SET completion = TRUE
-            WHERE course_id = %s AND instructor_email = %s;
+            WHERE course_id = %s AND instructor_email = %s AND request_id = %s;
         """
-        cur.execute(update_query, (course_id, instructor_email))
+        cur.execute(update_query, (course_id, instructor_email, request_id))
         connection.commit()
         cur.close()
-        logger.info(f"Completion status updated for course_id: {course_id}, instructor_email: {instructor_email}.")
-        print(f"Completion status updated for course_id: {course_id}, instructor_email: {instructor_email}.")
+        logger.info(f"Completion status updated for course_id: {course_id}, instructor_email: {instructor_email}, request_id: {request_id}.")
+        print(f"Completion status updated for course_id: {course_id}, instructor_email: {instructor_email}, request_id: {request_id}.")
     except Exception as e:
         if cur:
             cur.close()
         connection.rollback()
-        logger.error(f"Error updating completion status for course_id {course_id}, instructor_email {instructor_email}: {e}")
+        logger.error(f"Error updating completion status for course_id {course_id}, instructor_email {instructor_email}, request_id {request_id}: {e}")
         raise
 
 
@@ -262,7 +262,7 @@ def handler(event, context):
                 print("GOT got csv_path and csv_name")
                 s3_uri = upload_to_s3(csv_path, course_id, instructor_email, csv_name)
                 print("GOT s3_uri")
-                update_completion_status(course_id, instructor_email)
+                update_completion_status(course_id, instructor_email, request_id)
                 print("Updating completion status")
                 invoke_event_notification(request_id, message=f"Chat logs uploaded to {s3_uri}")
                 print("FINALLY SENT NOTIFICATION")

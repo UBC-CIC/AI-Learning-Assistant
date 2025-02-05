@@ -127,107 +127,107 @@ export const ChatLogs = ({ courseName, course_id }) => {
     };
 
     const generateCourseMessages = async () => {
-        try {
-            setIsDownloadButtonEnabled(false);
-            const session = await fetchAuthSession();
-            const token = session.tokens.idToken;
-            const { email } = await fetchUserAttributes();
-            const request_id = uuidv4();
-
-            const response = await fetch(
-                `${import.meta.env.VITE_API_ENDPOINT}instructor/course_messages`,
-                {
-                    method: "POST",
-                    headers: {
-                        Authorization: token,
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({
-                        course_id: course_id,
-                        instructor_email: email,
-                        request_id: request_id,
-                    }),
-                }
-            );
-
-            if (response.ok) {
-                console.log(response)
-                const data = await response.json();
-                console.log("Job submitted successfully:", data);
-
-                // Open WebSocket connection
-                const wsUrl = constructWebSocketUrl(); // Function to construct WebSocket URL
-                const ws = new WebSocket(wsUrl, "graphql-ws");
-
-                // Handle WebSocket connection
-                ws.onopen = () => {
-                    console.log("WebSocket connection established");
-
-                    // Initialize WebSocket connection
-                    const initMessage = { type: "connection_init" };
-                    ws.send(JSON.stringify(initMessage));
-
-                    // Subscribe to notifications
-                    const subscriptionId = uuidv4();
-                    const subscriptionMessage = {
-                        id: subscriptionId,
-                        type: "start",
-                        payload: {
-                            data: `{"query":"subscription OnNotify($request_id: String!) { onNotify(request_id: $request_id) { message request_id } }","variables":{"request_id":"${request_id}"}}`,
-                            extensions: {
-                                authorization: {
-                                    Authorization: "API_KEY=",
-                                    host: new URL(import.meta.env.VITE_GRAPHQL_WS_URL).hostname,
-                                },
-                            },
-                        },
-                    };
-
-                    ws.send(JSON.stringify(subscriptionMessage));
-                    console.log("Subscribed to WebSocket notifications");
-                };
-
-                ws.onmessage = (event) => {
-                    const message = JSON.parse(event.data);
-                    console.log("WebSocket message received:", message);
-
-                    // Handle notification
-                    if (message.type === "data" && message.payload?.data?.onNotify) {
-                        const receivedMessage = message.payload.data.onNotify.message;
-                        console.log("Notification received:", receivedMessage);
-
-                        // TODO: Update UI with the notification (e.g., toast notification, state update)
-                        removeCompletedNotification();
-
-                        // Close WebSocket after receiving the notification
-                        ws.close();
-                        console.log("WebSocket connection closed after handling notification");
-                    }
-                };
-
-                ws.onerror = (error) => {
-                    console.error("WebSocket error:", error);
-                    ws.close();
-                };
-
-                ws.onclose = () => {
-                    console.log("WebSocket connection closed");
-                };
-
-                // Set a timeout to close the WebSocket if no message is received
-                setTimeout(() => {
-                    if (ws && ws.readyState === WebSocket.OPEN) {
-                        console.warn("WebSocket timeout reached, closing connection");
-                        ws.close();
-                    }
-                }, 180000);
-
-            } else {
-                console.error("Failed to submit job:", response.statusText);
+      try {
+        setIsDownloadButtonEnabled(false);
+        const session = await fetchAuthSession();
+        const token = session.tokens.idToken;
+        const { email } = await fetchUserAttributes();
+        const request_id = uuidv4();
+    
+        const response = await fetch(
+          `${import.meta.env.VITE_API_ENDPOINT}instructor/course_messages`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: token,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              course_id: course_id,
+              instructor_email: email,
+              request_id: request_id,
+            }),
+          }
+        );
+    
+        if (response.ok) {
+          console.log(response)
+          const data = await response.json();
+          console.log("Job submitted successfully:", data);
+  
+          // Open WebSocket connection
+          const wsUrl = constructWebSocketUrl(); // Function to construct WebSocket URL
+          const ws = new WebSocket(wsUrl, "graphql-ws");
+  
+          // Handle WebSocket connection
+          ws.onopen = () => {
+            console.log("WebSocket connection established");
+  
+            // Initialize WebSocket connection
+            const initMessage = { type: "connection_init" };
+            ws.send(JSON.stringify(initMessage));
+  
+            // Subscribe to notifications
+            const subscriptionId = uuidv4();
+            const subscriptionMessage = {
+              id: subscriptionId,
+              type: "start",
+              payload: {
+                data: `{"query":"subscription OnNotify($request_id: String!) { onNotify(request_id: $request_id) { message request_id } }","variables":{"request_id":"${request_id}"}}`,
+                extensions: {
+                  authorization: {
+                    Authorization: "API_KEY=",
+                    host: new URL(import.meta.env.VITE_GRAPHQL_WS_URL).hostname,
+                  },
+                },
+              },
+            };
+  
+            ws.send(JSON.stringify(subscriptionMessage));
+            console.log("Subscribed to WebSocket notifications");
+          };
+  
+          ws.onmessage = (event) => {
+            const message = JSON.parse(event.data);
+            console.log("WebSocket message received:", message);
+  
+            // Handle notification
+            if (message.type === "data" && message.payload?.data?.onNotify) {
+              const receivedMessage = message.payload.data.onNotify.message;
+              console.log("Notification received:", receivedMessage);
+  
+              // TODO: Update UI with the notification (e.g., toast notification, state update)
+              removeCompletedNotification();
+  
+              // Close WebSocket after receiving the notification
+              ws.close();
+              console.log("WebSocket connection closed after handling notification");
             }
-        } catch (error) {
-            console.error("Error submitting job:", error);
+          };
+  
+          ws.onerror = (error) => {
+            console.error("WebSocket error:", error);
+            ws.close();
+          };
+  
+          ws.onclose = () => {
+            console.log("WebSocket connection closed");
+          };
+  
+          // Set a timeout to close the WebSocket if no message is received
+          setTimeout(() => {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+              console.warn("WebSocket timeout reached, closing connection");
+              ws.close();
+            }
+          }, 180000);
+  
+        } else {
+          console.error("Failed to submit job:", response.statusText);
         }
+      } catch (error) {
+        console.error("Error submitting job:", error);
+      }
     };
 
     ////////
@@ -255,12 +255,12 @@ export const ChatLogs = ({ courseName, course_id }) => {
                         {courseName} Chat Logs
                     </Typography>
                     <Button
-                        variant="contained"
-                        color="primary"
-                        onClick={() => {
-                            generateCourseMessages();
-                        }}
-                        disabled={!isDownloadButtonEnabled}
+                      variant="contained"
+                      color="primary"
+                      onClick={() => {
+                        generateCourseMessages();
+                      }}
+                      disabled={!isDownloadButtonEnabled}
                     >
                         Download Classroom Chatlog
                     </Button>

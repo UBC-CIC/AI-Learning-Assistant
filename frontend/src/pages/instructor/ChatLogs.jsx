@@ -128,7 +128,7 @@ export const ChatLogs = ({ courseName, course_id }) => {
       }
     };
 
-    const fetchCourseMessages = async () => {
+    const generateCourseMessages = async () => {
       try {
         setIsDownloadButtonEnabled(false);
         const session = await fetchAuthSession();
@@ -260,7 +260,7 @@ export const ChatLogs = ({ courseName, course_id }) => {
                       variant="contained"
                       color="primary"
                       onClick={() => {
-                        fetchCourseMessages();
+                        generateCourseMessages();
                       }}
                       disabled={!isDownloadButtonEnabled}
                     >

@@ -36,6 +36,8 @@ export const ChatLogs = ({ courseName, course_id }) => {
     const [loading, setLoading] = useState(false);
     const [isDownloadButtonEnabled, setIsDownloadButtonEnabled] = useState(false);
 
+    const [previousChatLogs, setPreviousChatLogs] = useState([]); 
+    
     const navigate = useNavigate();
 
     const constructWebSocketUrl = () => {
@@ -93,6 +95,7 @@ export const ChatLogs = ({ courseName, course_id }) => {
 
     useEffect(() => {
         checkNotificationStatus();
+        fetchChatLogs();  
     }, [course_id]);
 
     const removeCompletedNotification = async () => {
@@ -125,6 +128,51 @@ export const ChatLogs = ({ courseName, course_id }) => {
             console.error("Error removing completed notification:", error);
         }
     };
+
+
+    const fetchChatLogs = async () => {
+        try {
+            setLoading(true);
+            const session = await fetchAuthSession();
+            const token = session.tokens.idToken;
+            const { email } = await fetchUserAttributes();
+    
+            const response = await fetch(
+                `${import.meta.env.VITE_API_ENDPOINT}instructor/fetch_chatlogs?course_id=${encodeURIComponent(course_id)}&instructor_email=${encodeURIComponent(email)}`,
+                {
+                    method: "GET",
+                    headers: {
+                        Authorization: token,
+                        "Content-Type": "application/json",
+                    },
+                }
+            );
+    
+            if (response.ok) {
+                const data = await response.json();
+                console.log("Chat logs fetched:", data);
+    
+                if (data.chatLogs && data.chatLogs.length > 0) {
+                    // Ensure logs are formatted correctly for display
+                    const formattedLogs = data.chatLogs.map(log => ({
+                        date: log.timestamp ? new Date(log.timestamp).toLocaleString() : "Unknown Date", // Formatting date
+                        fileName: log.file_name || "Unnamed File",
+                        downloadUrl: log.download_url || "#",
+                    }));
+                    setPreviousChatLogs(formattedLogs);
+                } else {
+                    setPreviousChatLogs([]); // If no logs, set an empty array
+                }
+            } else {
+                console.error("Failed to fetch chat logs:", response.statusText);
+            }
+        } catch (error) {
+            console.error("Error fetching chat logs:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+    
 
     const generateCourseMessages = async () => {
       try {
@@ -230,22 +278,7 @@ export const ChatLogs = ({ courseName, course_id }) => {
       }
     };
 
-    ////////
-
-    const [previousChatLogs, setPreviousChatLogs] = useState([
-        // Dummy data
-        {
-            date: "2024-03-15T12:00:00Z",
-            fileName: "chatlog_20240315.pdf",
-            downloadUrl: "#"
-        },
-        {
-            date: "2024-03-14T09:30:00Z",
-            fileName: "chatlog_20240314.pdf",
-            downloadUrl: "#"
-        }
-    ]);
-
+    
     return (
         <div>
             <Box component="main" sx={{ flexGrow: 1, p: 3, marginTop: 1 }}>
@@ -254,16 +287,24 @@ export const ChatLogs = ({ courseName, course_id }) => {
                     <Typography color="black" fontStyle="semibold" textAlign="left" variant="h6">
                         {courseName} Chat Logs
                     </Typography>
-                    <Button
-                      variant="contained"
-                      color="primary"
-                      onClick={() => {
-                        generateCourseMessages();
-                      }}
-                      disabled={!isDownloadButtonEnabled}
-                    >
-                        Download Classroom Chatlog
-                    </Button>
+                    <Box sx={{ display: "flex", gap: 2 }}> {/**/}
+                        <Button
+                            variant="contained"
+                            color="primary"
+                            onClick={fetchChatLogs}  // CHECK 
+                            disabled={loading}
+                        >
+                            {loading ? "Fetching Logs..." : "Refresh Chat Logs"}
+                        </Button>
+                        <Button
+                            variant="contained"
+                            color="primary"
+                            onClick={generateCourseMessages} // CHECK
+                            disabled={!isDownloadButtonEnabled}
+                        >
+                            Download Classroom Chatlog
+                        </Button>
+                    </Box>
                 </Box>
                 <Paper sx={{ width: "100%", marginTop: 2, p: 3 }}>
                     <Typography variant="body1" color="textSecondary">
@@ -282,10 +323,16 @@ export const ChatLogs = ({ courseName, course_id }) => {
                                 {previousChatLogs.length > 0 ? (
                                     previousChatLogs.map((log, index) => (
                                         <TableRow key={index}>
-                                            <TableCell>{new Date(log.date).toLocaleString()}</TableCell>
-                                            <TableCell>{log.fileName}</TableCell>
+                                            <TableCell>{log.date}</TableCell> {/* Date dynamically fetched */}
+                                            <TableCell>{log.fileName}</TableCell> {/* Filename dynamically fetched */}
                                             <TableCell>
-                                                <Button variant="contained" color="secondary" href={log.downloadUrl} target="_blank" rel="noopener noreferrer">
+                                                <Button
+                                                    variant="contained"
+                                                    color="secondary"
+                                                    href={log.downloadUrl}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                >
                                                     Download
                                                 </Button>
                                             </TableCell>
@@ -293,7 +340,7 @@ export const ChatLogs = ({ courseName, course_id }) => {
                                     ))
                                 ) : (
                                     <TableRow>
-                                        <TableCell colSpan={3} align="center">No previous chat logs available.</TableCell>
+                                        <TableCell colSpan={3} align="center">No chat logs available.</TableCell>
                                     </TableRow>
                                 )}
                             </TableBody>

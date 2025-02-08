@@ -32,7 +32,7 @@ function courseTitleCase(str) {
         .join(" ");
 }
 
-export const ChatLogs = ({ courseName, course_id }) => {
+export const ChatLogs = ({ courseName, course_id, openWebSocket }) => {
     const [loading, setLoading] = useState(false);
     const [isDownloadButtonEnabled, setIsDownloadButtonEnabled] = useState(false);
     const [previousChatLogs, setPreviousChatLogs] = useState([]);
@@ -45,29 +45,6 @@ export const ChatLogs = ({ courseName, course_id }) => {
         const interval = setInterval(fetchChatLogs, 5 * 60 * 1000);
         return () => clearInterval(interval);
     }, [course_id]);
-
-    const constructWebSocketUrl = () => {
-        const tempUrl = import.meta.env.VITE_GRAPHQL_WS_URL; // Replace with your WebSocket URL
-        const apiUrl = tempUrl.replace("https://", "wss://");
-        const urlObj = new URL(apiUrl);
-        const tmpObj = new URL(tempUrl);
-        const modifiedHost = urlObj.hostname.replace(
-            "appsync-api",
-            "appsync-realtime-api"
-        );
-
-        urlObj.hostname = modifiedHost;
-        const host = tmpObj.hostname;
-        const header = {
-            host: host,
-            Authorization: "API_KEY=",
-        };
-
-        const encodedHeader = btoa(JSON.stringify(header));
-        const payload = "e30=";
-
-        return `${urlObj.toString()}?header=${encodedHeader}&payload=${payload}`;
-    };
 
     const checkNotificationStatus = async () => {
         try {
@@ -96,37 +73,6 @@ export const ChatLogs = ({ courseName, course_id }) => {
             }
         } catch (error) {
             console.error("Error checking notification status:", error);
-        }
-    };
-
-    const removeCompletedNotification = async () => {
-        try {
-            const session = await fetchAuthSession();
-            const token = session.tokens.idToken;
-            const { email } = await fetchUserAttributes();
-
-            const response = await fetch(
-                `${import.meta.env.VITE_API_ENDPOINT
-                }instructor/remove_completed_notification?course_id=${encodeURIComponent(
-                    course_id
-                )}&instructor_email=${encodeURIComponent(email)}`,
-                {
-                    method: "DELETE",
-                    headers: {
-                        Authorization: token,
-                        "Content-Type": "application/json",
-                    },
-                }
-            );
-
-            if (response.ok) {
-                console.log("Notification removed successfully.");
-                await checkNotificationStatus(); // Refresh button state
-            } else {
-                console.error("Failed to remove notification:", response.statusText);
-            }
-        } catch (error) {
-            console.error("Error removing completed notification:", error);
         }
     };
 
@@ -181,6 +127,11 @@ export const ChatLogs = ({ courseName, course_id }) => {
 
     const generateCourseMessages = async () => {
         try {
+            console.log("openWebSocket function:", openWebSocket);
+            if (typeof openWebSocket !== "function") {
+                console.error("Error: openWebSocket is not a function!");
+                return;
+            }
             setIsDownloadButtonEnabled(false);
             const session = await fetchAuthSession();
             const token = session.tokens.idToken;
@@ -204,82 +155,20 @@ export const ChatLogs = ({ courseName, course_id }) => {
             );
 
             if (response.ok) {
-                console.log(response)
-                const data = await response.json();
-                console.log("Job submitted successfully:", data);
+              console.log(response)
+              const data = await response.json();
+              console.log("Job submitted successfully:", data);
 
-                // Open WebSocket connection
-                const wsUrl = constructWebSocketUrl(); // Function to construct WebSocket URL
-                const ws = new WebSocket(wsUrl, "graphql-ws");
-
-                // Handle WebSocket connection
-                ws.onopen = () => {
-                    console.log("WebSocket connection established");
-
-                    // Initialize WebSocket connection
-                    const initMessage = { type: "connection_init" };
-                    ws.send(JSON.stringify(initMessage));
-
-                    // Subscribe to notifications
-                    const subscriptionId = uuidv4();
-                    const subscriptionMessage = {
-                        id: subscriptionId,
-                        type: "start",
-                        payload: {
-                            data: `{"query":"subscription OnNotify($request_id: String!) { onNotify(request_id: $request_id) { message request_id } }","variables":{"request_id":"${request_id}"}}`,
-                            extensions: {
-                                authorization: {
-                                    Authorization: "API_KEY=",
-                                    host: new URL(import.meta.env.VITE_GRAPHQL_WS_URL).hostname,
-                                },
-                            },
-                        },
-                    };
-
-                    ws.send(JSON.stringify(subscriptionMessage));
-                    console.log("Subscribed to WebSocket notifications");
-                };
-
-                ws.onmessage = async (event) => {
-                    const message = JSON.parse(event.data);
-                    console.log("WebSocket message received:", message);
-
-                    // Handle notification
-                    if (message.type === "data" && message.payload?.data?.onNotify) {
-                        const receivedMessage = message.payload.data.onNotify.message;
-                        console.log("Notification received:", receivedMessage);
-
-                        // TODO: Update UI with the notification (e.g., toast notification, state update)
-                        removeCompletedNotification();
-
-                        // Refresh chat logs once the new log file is created
-                        await fetchChatLogs();
-
-                        // Close WebSocket after receiving the notification
-                        ws.close();
-                        console.log("WebSocket connection closed after handling notification");
-                    }
-                };
-
-                ws.onerror = (error) => {
-                    console.error("WebSocket error:", error);
-                    ws.close();
-                };
-
-                ws.onclose = () => {
-                    console.log("WebSocket connection closed");
-                };
-
-                // Set a timeout to close the WebSocket if no message is received
+              // Invoke global WebSocket function from InstructorHomepage and delay checkNotificationStatus slightly
+              openWebSocket(courseName, course_id, request_id, () => {
+                console.log("Waiting before checking notification status...");
                 setTimeout(() => {
-                    if (ws && ws.readyState === WebSocket.OPEN) {
-                        console.warn("WebSocket timeout reached, closing connection");
-                        ws.close();
-                    }
-                }, 180000);
-
+                  checkNotificationStatus();
+                  fetchChatLogs(); // Fetch latest chat logs after WebSocket completes
+                }, 2000); // Wait 2 seconds before checking
+              });
             } else {
-                console.error("Failed to submit job:", response.statusText);
+              console.error("Failed to submit job:", response.statusText);
             }
         } catch (error) {
             console.error("Error submitting job:", error);

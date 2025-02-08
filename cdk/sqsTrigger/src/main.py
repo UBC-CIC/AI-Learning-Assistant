@@ -126,7 +126,7 @@ def write_to_csv(data, course_id, instructor_email):
     """
     Writes the queried data to a CSV file.
     """
-    timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     file_name = f"{timestamp}.csv"
     file_dir = f"/tmp/{course_id}/{instructor_email}"
     file_path = f"{file_dir}/{file_name}"

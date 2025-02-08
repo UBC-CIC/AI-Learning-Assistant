@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { fetchAuthSession, fetchUserAttributes } from "aws-amplify/auth";
+import { fetchAuthSession } from "aws-amplify/auth";
 import {
   Container,
   Typography,
@@ -12,8 +12,6 @@ import {
   LinearProgress,
   Grid,
   Paper,
-  Snackbar,
-  Alert,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import {
@@ -60,61 +58,6 @@ const InstructorAnalytics = ({ courseName, course_id }) => {
   const [graphData, setGraphData] = useState([]);
   const [data, setData] = useState([]);
   const [maxMessages, setMaxMessages] = useState(0);
-  const [toastOpen, setToastOpen] = useState(false);
-  const [toastMessage, setToastMessage] = useState("");
-
-  const constructWebSocketUrl = () => {
-    const tempUrl = import.meta.env.VITE_GRAPHQL_WS_URL; // Replace with your WebSocket URL
-    const apiUrl = tempUrl.replace("https://", "wss://");
-    const urlObj = new URL(apiUrl);
-    const tmpObj = new URL(tempUrl);
-    const modifiedHost = urlObj.hostname.replace(
-        "appsync-api",
-        "appsync-realtime-api"
-    );
-
-    urlObj.hostname = modifiedHost;
-    const host = tmpObj.hostname;
-    const header = {
-        host: host,
-        Authorization: "API_KEY=",
-    };
-
-    const encodedHeader = btoa(JSON.stringify(header));
-    const payload = "e30=";
-
-    return `${urlObj.toString()}?header=${encodedHeader}&payload=${payload}`;
-  };
-
-  const removeCompletedNotification = async () => {
-    try {
-      const session = await fetchAuthSession();
-      const token = session.tokens.idToken;
-      const { email } = await fetchUserAttributes();
-
-      const response = await fetch(
-          `${import.meta.env.VITE_API_ENDPOINT
-          }instructor/remove_completed_notification?course_id=${encodeURIComponent(
-              course_id
-          )}&instructor_email=${encodeURIComponent(email)}`,
-          {
-              method: "DELETE",
-              headers: {
-                  Authorization: token,
-                  "Content-Type": "application/json",
-              },
-          }
-      );
-
-      if (response.ok) {
-          console.log("Notification removed successfully.");
-      } else {
-          console.error("Failed to remove notification:", response.statusText);
-      }
-    } catch (error) {
-        console.error("Error removing completed notification:", error);
-    }
-  };
 
   useEffect(() => {
     const fetchAnalytics = async () => {
@@ -149,109 +92,7 @@ const InstructorAnalytics = ({ courseName, course_id }) => {
       }
     };
 
-    const checkNotificationStatus = async () => {
-      try {
-        const session = await fetchAuthSession();
-        const token = session.tokens.idToken;
-        const { email } = await fetchUserAttributes();
-        const response = await fetch(
-            `${import.meta.env.VITE_API_ENDPOINT
-            }instructor/check_notifications_status?course_id=${encodeURIComponent(
-                course_id
-            )}&instructor_email=${encodeURIComponent(email)}`,
-            {
-                method: "GET",
-                headers: {
-                    Authorization: token,
-                    "Content-Type": "application/json",
-                },
-            }
-        );
-        if (response.ok) {
-            const data = await response.json();
-            if (data.completionStatus === true) {
-              // Notify the user
-              console.log("Getting chatlogs is completed. Notifying the user and removing row from database.");
-              removeCompletedNotification();
-              setToastMessage("CSV generation is complete!");
-              setToastOpen(true);
-            } else if (data.completionStatus === false) {
-              // Reopen WebSocket to listen for notifications
-              console.log("Getting chatlogs is not completed. Re-opening the websocket.");
-              reopenWebSocket(data.requestId);
-            } else {
-              console.log("Either chatlogs were not requested or instructor already received notification. No need to notify instructor or re-open websocket.");
-            }
-        } else {
-            console.error("Failed to fetch notification status:", response.statusText);
-        }
-      } catch (error) {
-          console.error("Error checking notification status:", error);
-      }
-    };
-
-    const reopenWebSocket = (requestId) => {
-      const wsUrl = constructWebSocketUrl();
-      const ws = new WebSocket(wsUrl, "graphql-ws");
-
-      ws.onopen = () => {
-        console.log("WebSocket connection re-established");
-
-        // Initialize WebSocket connection
-        const initMessage = { type: "connection_init" };
-        ws.send(JSON.stringify(initMessage));
-
-        // Subscribe to notifications
-        const subscriptionId = uuidv4();
-        const subscriptionMessage = {
-          id: subscriptionId,
-          type: "start",
-          payload: {
-              data: `{"query":"subscription OnNotify($request_id: String!) { onNotify(request_id: $request_id) { message request_id } }","variables":{"request_id":"${requestId}"}}`,
-              extensions: {
-                  authorization: {
-                      Authorization: "API_KEY=",
-                      host: new URL(import.meta.env.VITE_GRAPHQL_WS_URL).hostname,
-                  },
-              },
-          },
-        };
-
-        ws.send(JSON.stringify(subscriptionMessage));
-        console.log("Subscribed to WebSocket notifications");
-      };
-
-      ws.onmessage = (event) => {
-        const message = JSON.parse(event.data);
-        console.log("WebSocket message received:", message);
-
-        // Handle notification
-        if (message.type === "data" && message.payload?.data?.onNotify) {
-          const receivedMessage = message.payload.data.onNotify.message;
-          console.log("Notification received:", receivedMessage);
-          removeCompletedNotification();
-
-          setToastMessage("CSV generation is complete!");
-          setToastOpen(true);
-
-          // Close WebSocket after receiving the notification
-          ws.close();
-          console.log("WebSocket connection closed after handling notification");
-        }
-      };
-
-      ws.onerror = (error) => {
-        console.error("WebSocket error:", error);
-        ws.close();
-      };
-
-      ws.onclose = () => {
-        console.log("WebSocket connection closed");
-      };
-    };
-
     fetchAnalytics();
-    checkNotificationStatus();
   }, [course_id]);
 
   useEffect(() => {
@@ -265,10 +106,6 @@ const InstructorAnalytics = ({ courseName, course_id }) => {
     setValue(newValue);
   };
 
-  const handleCloseToast = () => {
-    setToastOpen(false);
-  };
-
   return (
     <Container sx={{ flexGrow: 1, p: 3, marginTop: 9, overflow: "auto" }}>
       <Typography
@@ -280,16 +117,6 @@ const InstructorAnalytics = ({ courseName, course_id }) => {
       >
         {courseTitleCase(courseName)}
       </Typography>
-      <Snackbar
-        open={toastOpen}
-        autoHideDuration={6000}
-        onClose={handleCloseToast}
-        anchorOrigin={{ vertical: "top", horizontal: "center" }}
-      >
-        <Alert onClose={handleCloseToast} severity="info" sx={{ width: "100%" }}>
-          {toastMessage}
-        </Alert>
-      </Snackbar>
       <Paper>
         <Box mb={4}>
           <Typography

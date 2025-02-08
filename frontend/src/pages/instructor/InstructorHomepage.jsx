@@ -24,6 +24,7 @@ import {
   TablePagination,
   Button,
 } from "@mui/material";
+import { v4 as uuidv4 } from 'uuid';
 import PageContainer from "../Container";
 import InstructorHeader from "../../components/InstructorHeader";
 import InstructorSidebar from "./InstructorSidebar";
@@ -52,6 +53,126 @@ function titleCase(str) {
     })
     .join(" ");
 }
+
+function constructWebSocketUrl() {
+  const tempUrl = import.meta.env.VITE_GRAPHQL_WS_URL; // Replace with your WebSocket URL
+  const apiUrl = tempUrl.replace("https://", "wss://");
+  const urlObj = new URL(apiUrl);
+  const tmpObj = new URL(tempUrl);
+  const modifiedHost = urlObj.hostname.replace(
+      "appsync-api",
+      "appsync-realtime-api"
+  );
+
+  urlObj.hostname = modifiedHost;
+  const host = tmpObj.hostname;
+  const header = {
+      host: host,
+      Authorization: "API_KEY=",
+  };
+
+  const encodedHeader = btoa(JSON.stringify(header));
+  const payload = "e30=";
+
+  return `${urlObj.toString()}?header=${encodedHeader}&payload=${payload}`;
+};
+
+const removeCompletedNotification = async (course_id) => {
+  try {
+    console.log(course_id)
+    const session = await fetchAuthSession();
+    const token = session.tokens.idToken;
+    const { email } = await fetchUserAttributes();
+    const response = await fetch(
+      `${import.meta.env.VITE_API_ENDPOINT}instructor/remove_completed_notification?course_id=${encodeURIComponent(course_id)}&instructor_email=${encodeURIComponent(email)}`,
+      {
+        method: "DELETE",
+        headers: { Authorization: token, "Content-Type": "application/json" },
+      }
+    );
+
+    if (response.ok) {
+        console.log("Notification removed successfully.");
+    } else {
+        console.error("Failed to remove notification:", response.statusText);
+    }
+  } catch (error) {
+    console.error("Error removing completed notification:", error);
+  }
+};
+
+function openWebSocket(courseName, course_id, requestId, onComplete) {
+  // Open WebSocket connection
+  const wsUrl = constructWebSocketUrl();
+  const ws = new WebSocket(wsUrl, "graphql-ws");
+
+  // Handle WebSocket connection
+  ws.onopen = () => {
+    console.log("WebSocket connection established");
+
+    // Initialize WebSocket connection
+    const initMessage = { type: "connection_init" };
+    ws.send(JSON.stringify(initMessage));
+
+    // Subscribe to notifications
+    const subscriptionId = uuidv4();
+    const subscriptionMessage = {
+        id: subscriptionId,
+        type: "start",
+        payload: {
+            data: `{"query":"subscription OnNotify($request_id: String!) { onNotify(request_id: $request_id) { message request_id } }","variables":{"request_id":"${requestId}"}}`,
+            extensions: {
+                authorization: {
+                    Authorization: "API_KEY=",
+                    host: new URL(import.meta.env.VITE_GRAPHQL_WS_URL).hostname,
+                },
+            },
+        },
+    };
+
+    ws.send(JSON.stringify(subscriptionMessage));
+    console.log("Subscribed to WebSocket notifications");
+  };
+
+  ws.onmessage = (event) => {
+    const message = JSON.parse(event.data);
+    console.log("WebSocket message received:", message);
+
+    // Handle notification
+    if (message.type === "data" && message.payload?.data?.onNotify) {
+      const receivedMessage = message.payload.data.onNotify.message;
+      console.log("Notification received:", receivedMessage);
+      removeCompletedNotification(course_id);
+      alert(`Chat logs are now available for ${courseName}`);
+
+      // Close WebSocket after receiving the notification
+      ws.close();
+      console.log("WebSocket connection closed after handling notification");
+
+      // Call the callback function after WebSocket completes
+      if (typeof onComplete === "function") {
+        onComplete();
+      }
+    }
+  };
+
+  ws.onerror = (error) => {
+    console.error("WebSocket error:", error);
+    ws.close();
+  };
+
+  ws.onclose = () => {
+    console.log("WebSocket closed");
+  };
+
+  // Set a timeout to close the WebSocket if no message is received
+  setTimeout(() => {
+      if (ws && ws.readyState === WebSocket.OPEN) {
+          console.warn("WebSocket timeout reached, closing connection");
+          ws.close();
+      }
+  }, 180000);
+};
 
 // course details page
 const CourseDetails = () => {
@@ -84,8 +205,8 @@ const CourseDetails = () => {
         return <PromptSettings courseName={courseName} course_id={course_id} />;
       case "ViewStudents":
         return <ViewStudents courseName={courseName} course_id={course_id} />;
-      case "ChatLogs": // Add ChatLogs case
-        return <ChatLogs courseName={courseName} course_id={course_id} />;
+      case "ChatLogs":
+        return <ChatLogs courseName={courseName} course_id={course_id} openWebSocket={openWebSocket} />;
       default:
         return (
           <InstructorAnalytics courseName={courseName} course_id={course_id} />
@@ -157,6 +278,7 @@ const InstructorHomepage = () => {
             id: course.course_id,
           }));
           setRows(formattedData);
+          checkNotificationStatus(data, email, token);
         } else {
           console.error("Failed to fetch courses:", response.statusText);
         }
@@ -167,6 +289,36 @@ const InstructorHomepage = () => {
 
     fetchCourses();
   }, []);
+
+  const checkNotificationStatus = async (courses, email, token) => {
+    for (const course of courses) {
+      try {
+        const response = await fetch(
+          `${import.meta.env.VITE_API_ENDPOINT}instructor/check_notifications_status?course_id=${encodeURIComponent(course.course_id)}&instructor_email=${encodeURIComponent(email)}`,
+          {
+            method: "GET",
+            headers: { Authorization: token, "Content-Type": "application/json" },
+          }
+        );
+        if (response.ok) {
+          const data = await response.json();
+          if (data.completionStatus === true) {
+            console.log(`Getting chatlogs for ${course.course_name} is completed. Notifying the user and removing row from database.`);
+            alert(`Chat logs are available for course: ${course.course_name}`);
+            removeCompletedNotification(course.course_id);
+          } else if (data.completionStatus === false) {
+            // Reopen WebSocket to listen for notifications
+            console.log(`Getting chatlogs for ${course.course_name} is not completed. Re-opening the websocket.`);
+            openWebSocket(course.course_name, course.course_id, data.requestId);
+          } else {
+            console.log(`Either chatlogs for ${course.course_name} were not requested or instructor already received notification. No need to notify instructor or re-open websocket.`);
+          }
+        }
+      } catch (error) {
+        console.error("Error checking notification status for", course.course_id, error);
+      }
+    }
+  };
 
   const handleSearchChange = (event) => {
     setSearchQuery(event.target.value);
@@ -305,7 +457,7 @@ const InstructorHomepage = () => {
           </PageContainer>
         }
       />
-      <Route exact path=":courseName/*" element={<CourseDetails />} />
+      <Route exact path=":courseName/*" element={<CourseDetails openWebSocket={openWebSocket} />} />
       <Route
         path=":courseName/edit-module/:moduleId"
         element={<InstructorEditCourse />}

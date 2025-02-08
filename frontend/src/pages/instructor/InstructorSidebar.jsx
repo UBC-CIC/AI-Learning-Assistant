@@ -17,10 +17,11 @@ import EditIcon from "@mui/icons-material/Edit";
 import PsychologyIcon from "@mui/icons-material/Psychology";
 import GroupIcon from "@mui/icons-material/Group";
 import DescriptionIcon from "@mui/icons-material/Description";
+import { useNotification } from "../../context/NotificationContext";
 
-const InstructorSidebar = ({ setSelectedComponent, onClearChatLogNotification }) => {
+const InstructorSidebar = ({ setSelectedComponent }) => {
   const navigate = useNavigate();
-  const [hasNewNotification, setHasNewNotification] = useState(false);
+  const { hasNewNotification, setHasNewNotification } = useNotification();
 
   const handleNavigation = (component) => {
     if (component === "InstructorAllCourses") {
@@ -28,23 +29,10 @@ const InstructorSidebar = ({ setSelectedComponent, onClearChatLogNotification })
     } else {
       setSelectedComponent(component);
       if (component === "ChatLogs") {
-        onClearChatLogNotification?.();
-        setHasNewNotification(false); // Clear notification on visit
-
-        // Add logic here for setting the notification checked boolean to true
-        
+        setHasNewNotification(false);
       }
     }
   };
-
-  useEffect(() => {
-    // Simulate receiving a notification
-    const timer = setTimeout(() => {
-      setHasNewNotification(true);
-    }, 1000); // Notification appears after 1 second
-
-    return () => clearTimeout(timer);
-  }, []);
 
   return (
     <Drawer

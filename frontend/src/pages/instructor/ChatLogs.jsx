@@ -15,6 +15,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { fetchAuthSession, fetchUserAttributes } from "aws-amplify/auth";
 import { v4 as uuidv4 } from 'uuid';
+import { useNotification } from "../../context/NotificationContext";
 
 function courseTitleCase(str) {
     if (typeof str !== "string") {
@@ -36,6 +37,7 @@ export const ChatLogs = ({ courseName, course_id, openWebSocket }) => {
     const [loading, setLoading] = useState(false);
     const [isDownloadButtonEnabled, setIsDownloadButtonEnabled] = useState(false);
     const [previousChatLogs, setPreviousChatLogs] = useState([]);
+    const { setHasNewNotification } = useNotification();
 
     useEffect(() => {
         checkNotificationStatus();
@@ -160,7 +162,7 @@ export const ChatLogs = ({ courseName, course_id, openWebSocket }) => {
               console.log("Job submitted successfully:", data);
 
               // Invoke global WebSocket function from InstructorHomepage and delay checkNotificationStatus slightly
-              openWebSocket(courseName, course_id, request_id, () => {
+              openWebSocket(courseName, course_id, request_id, setHasNewNotification, () => {
                 console.log("Waiting before checking notification status...");
                 setTimeout(() => {
                   checkNotificationStatus();

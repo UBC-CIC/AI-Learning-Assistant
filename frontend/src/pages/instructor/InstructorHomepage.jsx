@@ -38,7 +38,8 @@ import StudentDetails from "./StudentDetails";
 import InstructorNewConcept from "./InstructorNewConcept";
 import InstructorConcepts from "./InstructorConcepts";
 import InstructorEditConcept from "./InstructorEditConcept";
-import ChatLogs from "./ChatLogs"; // Import ChatLogs
+import ChatLogs from "./ChatLogs";
+import { useNotification } from "../../context/NotificationContext";
 import { UserContext } from "../../App";
 
 function titleCase(str) {
@@ -101,7 +102,7 @@ const removeCompletedNotification = async (course_id) => {
   }
 };
 
-function openWebSocket(courseName, course_id, requestId, onComplete) {
+function openWebSocket(courseName, course_id, requestId, setHasNewNotification, onComplete) {
   // Open WebSocket connection
   const wsUrl = constructWebSocketUrl();
   const ws = new WebSocket(wsUrl, "graphql-ws");
@@ -142,7 +143,14 @@ function openWebSocket(courseName, course_id, requestId, onComplete) {
     if (message.type === "data" && message.payload?.data?.onNotify) {
       const receivedMessage = message.payload.data.onNotify.message;
       console.log("Notification received:", receivedMessage);
+      
+      // Sets icon to show new file on ChatLogs page
+      setHasNewNotification(true);
+      
+      // Remove row from database
       removeCompletedNotification(course_id);
+
+      // Notify the instructor
       alert(`Chat logs are now available for ${courseName}`);
 
       // Close WebSocket after receiving the notification
@@ -241,8 +249,9 @@ const InstructorHomepage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
-  const [courseData, setCourseData] = useState([]);
+  const [courseData, setCourseData] = useState([]);  
   const { isInstructorAsStudent } = useContext(UserContext);
+  const { setHasNewNotification } = useNotification();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -304,12 +313,19 @@ const InstructorHomepage = () => {
           const data = await response.json();
           if (data.completionStatus === true) {
             console.log(`Getting chatlogs for ${course.course_name} is completed. Notifying the user and removing row from database.`);
-            alert(`Chat logs are available for course: ${course.course_name}`);
+
+            // Sets icon to show new file on ChatLogs page
+            setHasNewNotification(true);
+
+            // Remove row from database
             removeCompletedNotification(course.course_id);
+
+            // Notify the Instructor
+            alert(`Chat logs are available for course: ${course.course_name}`);
           } else if (data.completionStatus === false) {
             // Reopen WebSocket to listen for notifications
             console.log(`Getting chatlogs for ${course.course_name} is not completed. Re-opening the websocket.`);
-            openWebSocket(course.course_name, course.course_id, data.requestId);
+            openWebSocket(course.course_name, course.course_id, data.requestId, setHasNewNotification);
           } else {
             console.log(`Either chatlogs for ${course.course_name} were not requested or instructor already received notification. No need to notify instructor or re-open websocket.`);
           }

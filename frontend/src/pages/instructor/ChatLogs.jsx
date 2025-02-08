@@ -178,13 +178,13 @@ export const ChatLogs = ({ courseName, course_id, openWebSocket }) => {
 
     return (
         <div style={{ display: "flex", justifyContent: "center", alignItems: "center", flexDirection: "column", width: "100%" }}>
-            <Box component="main" sx={{ flexGrow: 1, p: 3, marginTop: 1, display: "flex", flexDirection: "column", alignItems: "center", width: "90%"}}>
+            <Box component="main" sx={{ flexGrow: 1, p: 3, marginTop: 1, display: "flex", flexDirection: "column", alignItems: "center", width: "90%" }}>
                 <Toolbar />
                 <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", width: "100%", gap: 2, marginTop: 2, flexWrap: "wrap" }}>
                     <Typography color="black" fontStyle="semibold" textAlign="center" variant="h6">
                         {courseName} Chat Logs
                     </Typography>
-                    <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "170%", marginTop: 2, flexDirection: "column", }}> 
+                    <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "170%", marginTop: 2, flexDirection: "column", }}>
                         <Button
                             variant="contained"
                             color="primary"
@@ -196,54 +196,41 @@ export const ChatLogs = ({ courseName, course_id, openWebSocket }) => {
                     </Box>
                 </Box>
                 <Paper sx={{ marginTop: 2, flexGrow: 1, height: "calc(100vh - 270px)", overflowY: "auto", display: "flex", flexDirection: "column", alignItems: "center", padding: 2, width: "100%" }}>
-                <Typography variant="body1" color="textSecondary" textAlign="center">
-                        {isDownloadButtonEnabled ? "Click the button to generate chat logs" : "Chat log generation in progress. Please wait..."}
-                    </Typography>
-                    <TableContainer
-                        component={Paper}
-                        sx={{
-                            marginTop: 2,
-                            flexGrow: 1,
-                            height: "calc(100vh - 270px)",
-                            overflowY: "auto",
-                            display: "flex",
-                            justifyContent: "center",
-                            width: "100%"
-                        }}
-                    >
-                        <Table sx={{ width: "100%" }}>  
-                        <TableHead>
-                            <TableRow>
-                                <TableCell sx={{ width: "50%", textAlign: "center" }}><strong>Date</strong></TableCell>
-                                <TableCell sx={{ width: "50%", textAlign: "center" }}><strong>Download</strong></TableCell>
-                            </TableRow>
-                        </TableHead>
-
-                            <TableBody>
-                                {previousChatLogs.length > 0 ? (
-                                    previousChatLogs.map((log, index) => (
+                    {loading ? (
+                        <Typography variant="body1" color="textSecondary" textAlign="center">
+                            Loading chat logs...
+                        </Typography>
+                    ) : (
+                        <Typography variant="body1" color="textSecondary" textAlign="center">
+                            {isDownloadButtonEnabled ? "Click the button to generate chat logs" : ""}
+                        </Typography>
+                    )}
+                    {!loading && previousChatLogs.length > 0 && (
+                        <TableContainer component={Paper} sx={{ marginTop: 2, overflowY: "auto", width: "100%" }}>
+                            <Table sx={{ width: "100%" }}>
+                                <TableHead>
+                                    <TableRow>
+                                        <TableCell sx={{ width: "50%", textAlign: "center" }}><strong>Date</strong></TableCell>
+                                        <TableCell sx={{ width: "50%", textAlign: "center" }}><strong>Download</strong></TableCell>
+                                    </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                    {previousChatLogs.map((log, index) => (
                                         <TableRow key={index}>
                                             <TableCell sx={{ width: "50%", textAlign: "center" }}>{log.date}</TableCell>
                                             <TableCell sx={{ width: "50%", textAlign: "center" }}>
-                                                <Button
-                                                    variant="contained"
-                                                    color="secondary"
-                                                    onClick={() => downloadChatLog(log.presignedUrl)}
-                                                >
+                                                <Button variant="contained" color="secondary" onClick={() => window.open(log.presignedUrl, "_blank")}>
                                                     Download
                                                 </Button>
                                             </TableCell>
                                         </TableRow>
-                                    ))
-                                ) : (
-                                    <TableRow>
-                                        <TableCell colSpan={2} align="center">No chat logs available.</TableCell>
-                                    </TableRow>
-                                )}
-                            </TableBody>
-                        </Table>
-                    </TableContainer>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </TableContainer>
+                    )}
                 </Paper>
+
             </Box>
         </div>
     );

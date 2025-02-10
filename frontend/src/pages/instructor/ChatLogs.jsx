@@ -103,7 +103,7 @@ export const ChatLogs = ({ courseName, course_id, openWebSocket }) => {
                     const formattedLogs = Object.entries(data.log_files).map(([fileName, presignedUrl]) => ({
                         date: fileName, // Using file name as the date
                         presignedUrl: presignedUrl,
-                    }));
+                    })).reverse();
                     setPreviousChatLogs(formattedLogs);
                 } else {
                     setPreviousChatLogs([]);

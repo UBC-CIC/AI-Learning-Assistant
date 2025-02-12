@@ -42,6 +42,9 @@ def list_files_in_s3_prefix(bucket, prefix):
         else:
             break
 
+    # **Sort files in reverse order (most recent first)**
+    files.sort(reverse=True)
+
     return files
 
 def generate_presigned_url(bucket, key):

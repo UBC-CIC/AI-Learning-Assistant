@@ -103,7 +103,7 @@ export const ChatLogs = ({ courseName, course_id, openWebSocket }) => {
                     const formattedLogs = Object.entries(data.log_files).map(([fileName, presignedUrl]) => ({
                         date: convertToLocalTime(fileName), // Using file name as the date
                         presignedUrl: presignedUrl,
-                    })).reverse();
+                    }));
                     setPreviousChatLogs(formattedLogs);
                 } else {
                     setPreviousChatLogs([]);
@@ -126,7 +126,7 @@ export const ChatLogs = ({ courseName, course_id, openWebSocket }) => {
                 console.warn("Could not extract a valid timestamp from filename:", fileName);
                 return fileName; // Return original name if no timestamp found
             }
-    
+
             // Convert the extracted UTC timestamp to local time
             const utcDate = new Date(match[0] + " UTC"); // Append UTC to prevent incorrect local parsing
             return utcDate.toLocaleString(undefined, { timeZoneName: "short" }); // Convert to user's local timezone
@@ -135,7 +135,7 @@ export const ChatLogs = ({ courseName, course_id, openWebSocket }) => {
             return fileName; // Fallback in case of error
         }
     };
-    
+
 
     const downloadChatLog = (presignedUrl) => {
         try {
@@ -176,20 +176,20 @@ export const ChatLogs = ({ courseName, course_id, openWebSocket }) => {
             );
 
             if (response.ok) {
-              console.log(response)
-              const data = await response.json();
-              console.log("Job submitted successfully:", data);
+                console.log(response)
+                const data = await response.json();
+                console.log("Job submitted successfully:", data);
 
-              // Invoke global WebSocket function from InstructorHomepage and delay checkNotificationStatus slightly
-              openWebSocket(courseName, course_id, request_id, setHasNewNotification, () => {
-                console.log("Waiting before checking notification status...");
-                setTimeout(() => {
-                  checkNotificationStatus();
-                  fetchChatLogs(); // Fetch latest chat logs after WebSocket completes
-                }, 2000); // Wait 2 seconds before checking
-              });
+                // Invoke global WebSocket function from InstructorHomepage and delay checkNotificationStatus slightly
+                openWebSocket(courseName, course_id, request_id, setHasNewNotification, () => {
+                    console.log("Waiting before checking notification status...");
+                    setTimeout(() => {
+                        checkNotificationStatus();
+                        fetchChatLogs(); // Fetch latest chat logs after WebSocket completes
+                    }, 2000); // Wait 2 seconds before checking
+                });
             } else {
-              console.error("Failed to submit job:", response.statusText);
+                console.error("Failed to submit job:", response.statusText);
             }
         } catch (error) {
             console.error("Error submitting job:", error);

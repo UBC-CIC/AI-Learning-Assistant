@@ -320,8 +320,6 @@ const InstructorHomepage = () => {
             // Remove row from database
             removeCompletedNotification(course.course_id);
 
-            // Notify the Instructor
-            alert(`Chat logs are available for course: ${course.course_name}`);
           } else if (data.completionStatus === false) {
             // Reopen WebSocket to listen for notifications
             console.log(`Getting chatlogs for ${course.course_name} is not completed. Re-opening the websocket.`);

@@ -3,10 +3,14 @@ import React, { createContext, useState, useContext } from "react";
 const NotificationContext = createContext();
 
 export const NotificationProvider = ({ children }) => {
-  const [hasNewNotification, setHasNewNotification] = useState(false);
+  const [notifications, setNotifications] = useState({});
+
+  const setNotificationForCourse = (courseId, hasNotification) => {
+    setNotifications((prev) => ({ ...prev, [courseId]: hasNotification }));
+  };
 
   return (
-    <NotificationContext.Provider value={{ hasNewNotification, setHasNewNotification }}>
+    <NotificationContext.Provider value={{ notifications, setNotificationForCourse }}>
       {children}
     </NotificationContext.Provider>
   );

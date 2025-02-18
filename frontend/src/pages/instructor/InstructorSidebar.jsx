@@ -19,7 +19,7 @@ import GroupIcon from "@mui/icons-material/Group";
 import DescriptionIcon from "@mui/icons-material/Description";
 import { useNotification } from "../../context/NotificationContext";
 
-const InstructorSidebar = ({ setSelectedComponent, course_id }) => {
+const InstructorSidebar = ({ setSelectedComponent, course_id, selectedComponent }) => {
   const navigate = useNavigate();
   const { notifications, setNotificationForCourse } = useNotification();
 
@@ -105,7 +105,7 @@ const InstructorSidebar = ({ setSelectedComponent, course_id }) => {
               <Badge
                 color="error"
                 variant="dot"
-                invisible={!notifications[course_id]}
+                invisible={!notifications[course_id] || selectedComponent === "ChatLogs"}
               >
                 <DescriptionIcon />
               </Badge>

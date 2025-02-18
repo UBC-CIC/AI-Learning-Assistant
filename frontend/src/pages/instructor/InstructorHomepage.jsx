@@ -231,7 +231,7 @@ const CourseDetails = () => {
       >
         <InstructorHeader />
       </AppBar>
-      <InstructorSidebar setSelectedComponent={setSelectedComponent} course_id={course_id} />
+      <InstructorSidebar setSelectedComponent={setSelectedComponent} course_id={course_id} selectedComponent={selectedComponent} />
       {renderComponent()}
     </PageContainer>
   );

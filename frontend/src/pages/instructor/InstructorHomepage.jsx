@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from "react";
+import React, { useState, useEffect, useContext, useRef } from "react";
 import {
   Routes,
   Route,
@@ -252,6 +252,7 @@ const InstructorHomepage = () => {
   const [courseData, setCourseData] = useState([]);  
   const { isInstructorAsStudent } = useContext(UserContext);
   const { setNotificationForCourse } = useNotification();
+  const hasFetched = useRef(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -261,6 +262,8 @@ const InstructorHomepage = () => {
   }, [isInstructorAsStudent, navigate]);
   // connect to api data
   useEffect(() => {
+    if (hasFetched.current) return;
+
     const fetchCourses = async () => {
       try {
         const session = await fetchAuthSession();
@@ -297,6 +300,7 @@ const InstructorHomepage = () => {
     };
 
     fetchCourses();
+    hasFetched.current = true;
   }, []);
 
   const checkNotificationStatus = async (courses, email, token) => {

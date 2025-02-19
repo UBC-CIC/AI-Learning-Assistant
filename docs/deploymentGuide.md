@@ -254,17 +254,17 @@ aws ssm put-parameter \
     --profile <YOUR-PROFILE-NAME>
 ```
 
-#### CDK Deployment in Hybrid Cloud Environment
+#### Step 3a: CDK Deployment with an Existing VPC
 
-The following set of instructions are only if you want to deploy this application in a **hybrid cloud environment**. If you do not want to do this you can skip this section.
+The following set of instructions are only if you want to deploy this application with an **existing VPC**. If you do not want to do this you can skip this section.
 
-In order to deploy in a hybrid cloud environment, you will need to have access to the **aws-controltower-VPC** and the name of your **AWSControlTowerStackSet**.
+In order to deploy, you will need to have access to the **aws-controltower-VPC** and the name of your **AWSControlTowerStackSet**.
 
 #### Step-by-Step Instructions
 
 1. **Modify the VPC Stack:**
    - Navigate to the `vpc-stack.ts` file located at `cdk/lib/vpc-stack.ts`.
-   - Replace **line 13** with your existing VPC ID:
+   - Replace **line 16** with your existing VPC ID:
      ```typescript
      const existingVpcId: string = 'your-vpc-id'; //CHANGE IF DEPLOYING WITH EXISTING VPC
      ```
@@ -273,7 +273,7 @@ In order to deploy in a hybrid cloud environment, you will need to have access t
      ![VPC ID Image](images/ExistingVPCId.png)
 
 2. **Update the AWS Control Tower Stack Set:**
-   - Replace **line 21** with your AWS Control Tower Stack Set name:
+   - Replace **line 19** with your AWS Control Tower Stack Set name:
      ```typescript
      const AWSControlTowerStackSet = "your-stackset-name"; //CHANGE TO YOUR CONTROL TOWER STACK SET
      ```
@@ -281,8 +281,61 @@ In order to deploy in a hybrid cloud environment, you will need to have access t
 
      ![AWS Control Tower Stack Image](images/AWSControlTowerStack.png)
 
+  #### Second deployment in the Environment with an Existing VPC:
 
-You can proceed with the rest of the deployment instructions and the Vpc Stack will automatically use your existing VPC instead of creating a new one. For more detailed information about the hybrid cloud deployment you checkout the [Hybrid Cloud Deployment Guide](/docs/HybridCloudDeploymentGuide.md)
+The following set of instructions are only if this is the second project you are deploying with an **Existing VPC**. If you do not want to do this you can skip this section.
+
+In order to deploy a second project with a pre-existing vpc, you will need to have access to the **Public Subnet ID**.
+
+#### 
+
+### **3. Update the Public Subnet ID and CIDR Range**
+
+To deploy a second project with a pre-existing vpc, you need to obtain an available **Public Subnet ID** and an unused **CIDR range** within the VPC.
+
+#### **Finding the Public Subnet ID**
+1. **Navigate to the AWS VPC Console**:  
+   - Log in to the AWS Management Console.  
+   - Search for and open the **VPC** service.
+
+2. **Locate the Existing Public Subnet**:  
+   - In the left-hand menu, click **Subnets**.  
+   - Identify the **public subnet** used by your first deployment. You can confirm it is a public subnet by checking if it has a **Route Table** entry pointing to an **Internet Gateway**.
+
+3. **Copy the Subnet ID**:  
+   - Once you've identified the correct public subnet, note down its **Subnet ID** for later use.  
+   - You will replace the placeholder in your `vpc-stack.ts` file as follows:
+     ```typescript
+     const existingPublicSubnetID: string = "your-public-subnet-id"; // CHANGE IF DEPLOYING WITH EXISTING PUBLIC SUBNET
+     ```
+
+#### **Finding an Available CIDR Range**
+AWS subnets within a VPC cannot overlap in CIDR range, so you need to select an unused range that aligns with existing allocations.
+
+1. **Check Existing CIDR Allocations**:  
+   - In the **VPC Console**, navigate to **Your VPCs** and find the VPC where your first project was deployed.  
+   
+2. **Check Used Subnet CIDR Ranges**:  
+   - Go to **Subnets** and find all subnets associated with your VPC.  
+   - Look at the **CIDR Blocks** of each existing subnet (e.g., `172.31.0.0/20`, `172.31.32.0/20`, etc.).
+
+3. **Determine the Next Available CIDR Block**:  
+   - The third number in the CIDR block (e.g., `172.31.XX.0/20`) must be a **multiple of 32** (e.g., `0, 32, 64, 96, 128, 160, 192, 224`).
+   - Identify the first unused **/20** block by checking which multiples of 32 are already in use.
+
+4. **Example**:  
+   - If the existing subnets are `172.31.0.0/20`, `172.31.32.0/20`, and `172.31.64.0/20`, the next available range should be `172.31.96.0/20`.
+
+5. **Update the `vpc-stack.ts` File**:  
+   - Replace the placeholder with the available CIDR block:
+     ```typescript
+     this.vpcCidrString = "172.31.96.0/20"; // Update based on availability
+     ```
+
+By following these steps, you ensure that the new subnet does not overlap with existing ones while maintaining correct alignment with AWS best practices.
+
+
+You can proceed with the rest of the deployment instructions and the Vpc Stack will automatically use your existing VPC instead of creating a new one. For more detailed information about the deployment with an Existing VPC checkout the [Existing VPC Deployment Guide](/docs/ExistingVPCDeployment.md)
 
 
 ### Step 3: CDK Deployment

@@ -1,8 +1,8 @@
-# Hybrid Cloud Deployment Guide
+# Existing VPC Deployment Guide 
 
-## CDK Deployment in Hybrid Cloud Environment
+## CDK Deployment for Existing VPC 
 
-This section outlines the steps to deploy the application in a **hybrid cloud environment**. If you do not have an existing VPC, proceed to 3b: CDK Deployment in the [Deployment Guide](/docs/deploymentGuide.md).
+This section outlines the steps to deploy the application with a **Pre-existing VPC**. If you do not have an existing VPC, proceed to 3b: CDK Deployment in the [Deployment Guide](/docs/deploymentGuide.md).
 
 ### Prerequisites
 Ensure you have access to the **aws-controltower-VPC** and the name of your **AWSControlTowerStackSet**.
@@ -30,13 +30,13 @@ Ensure you have access to the **aws-controltower-VPC** and the name of your **AW
 
 ### Deployment Changes
 
-In this deployment, the following have been modified in the existing VPC stack to ensure compatibility with a hybrid cloud setup:
+In this deployment, the following have been modified:
 
 - **VPC Identification:** Instead of creating a new VPC, an existing VPC is now utilized by passing its ID into the `VpcStack` configuration.
 - **Private and Isolated Subnets:** Private and isolated subnet IDs and their associated route table IDs are imported using AWS Control Tower.
-- **Interface Endpoints:** Multiple AWS service endpoints (SSM, Secrets Manager, RDS, Glue) are added within isolated subnets to maintain secure access in the hybrid environment.
+- **Interface Endpoints:** Multiple AWS service endpoints (SSM, Secrets Manager, RDS, Glue) are added within isolated subnets to maintain secure access with existing VPC.
 - **Public Subnet and Internet Gateway:** A public subnet and an internet gateway are created, which are essential for NAT Gateway operations.
 - **NAT Gateway:** A NAT gateway is created in the public subnet.
 - **Private Subnet Route Tables:** For each private subnet's route table, a route to the NAT gateway is added to provide internet access to resources in private subnets
 
-These changes ensure the application seamlessly integrates into the existing VPC while preserving private and secure connectivity within a hybrid cloud environment.
+These changes ensure the application seamlessly integrates into the existing VPC.

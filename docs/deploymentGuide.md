@@ -74,32 +74,125 @@ cd AI-Learning-Assistant
 ```
 
 ### Step 2: Upload Secrets
-You would have to supply your GitHub personal access token you created earlier when deploying the solution. Run the following command and ensure you replace `<YOUR-GITHUB-TOKEN>` and `<YOUR-PROFILE-NAME>` with your actual GitHub token and the appropriate AWS profile name.
-```
+You would have to supply your GitHub personal access token you created earlier when deploying the solution. Run the following command and ensure you replace `<YOUR-GITHUB-TOKEN>` and `<YOUR-PROFILE-NAME>` with your actual GitHub token and the appropriate AWS profile name. Select the command corresponding to your operating system from the options below.
+
+<details>
+<summary>macOS</summary>
+
+```bash
 aws secretsmanager create-secret \
     --name github-personal-access-token \
-    --secret-string '{\"my-github-token\":\"<YOUR-GITHUB-TOKEN>\"}'\
+    --secret-string '{"my-github-token": "<YOUR-GITHUB-TOKEN>"}' \
     --profile <YOUR-PROFILE-NAME>
 ```
 
+</details>
+
+<details>
+<summary>Windows CMD</summary>
+
+```cmd
+aws secretsmanager create-secret ^
+    --name github-personal-access-token ^
+    --secret-string "{\"my-github-token\": \"<YOUR-GITHUB-TOKEN>\"}" ^
+    --profile <YOUR-PROFILE-NAME>
+```
+
+</details>
+
+<details>
+<summary>PowerShell</summary>
+
+```powershell
+aws secretsmanager create-secret `
+    --name github-personal-access-token `
+    --secret-string '{"my-github-token": "<YOUR-GITHUB-TOKEN>"}' `
+    --profile <YOUR-PROFILE-NAME>
+```
+</details>
+
+&nbsp;
+
 Moreover, you will need to upload your github username to Amazon SSM Parameter Store. You can do so by running the following command. Make sure you replace `<YOUR-GITHUB-USERNAME>` and `<YOUR-PROFILE-NAME>` with your actual username and the appropriate AWS profile name.
 
-```
+
+<details>
+<summary>macOS</summary>
+
+```bash
 aws ssm put-parameter \
     --name "aila-owner-name" \
     --value "<YOUR-GITHUB-USERNAME>" \
     --type String \
     --profile <YOUR-PROFILE-NAME>
 ```
+</details>
+
+<details>
+<summary>Windows CMD</summary>
+
+```cmd
+aws ssm put-parameter ^
+    --name "aila-owner-name" ^
+    --value "<YOUR-GITHUB-USERNAME>" ^
+    --type String ^
+    --profile <YOUR-PROFILE-NAME>
+```
+
+</details>
+
+<details>
+<summary>PowerShell</summary>
+
+```powershell
+aws ssm put-parameter `
+    --name "aila-owner-name" `
+    --value "<YOUR-GITHUB-USERNAME>" `
+    --type String `
+    --profile <YOUR-PROFILE-NAME>
+```
+</details>
+
+&nbsp;
 
 You would have to supply a custom database username when deploying the solution to increase security. Run the following command and ensure you replace `<YOUR-DB-USERNAME>` with the custom name of your choice.
 
-```
+
+<details>
+<summary>macOS</summary>
+
+```bash
 aws secretsmanager create-secret \
-    --name AILASecrets \
-    --secret-string '{\"DB_Username\":\"<YOUR-DB-USERNAME>\"}'\
+    --name AILASecret \
+    --secret-string "{\"DB_Username\":\"<YOUR-DB-USERNAME>\"}"\
     --profile <your-profile-name>
 ```
+</details>
+
+<details>
+<summary>Windows CMD</summary>
+
+```cmd
+aws secretsmanager create-secret ^
+    --name AILASecret ^
+    --secret-string "{\"DB_Username\":\"<YOUR-DB-USERNAME>\"}"^
+    --profile <your-profile-name>
+```
+
+</details>
+
+<details>
+<summary>PowerShell</summary>
+
+```powershell
+aws secretsmanager create-secret `
+    --name AILASecret `
+    --secret-string "{\"DB_Username\":\"<YOUR-DB-USERNAME>\"}"`
+    --profile <your-profile-name>
+```
+</details>
+
+&nbsp;
 
 For example,
 
@@ -112,13 +205,44 @@ aws secretsmanager create-secret \
 
 Finally, in order to restrict user sign up to specific email domains, you will need to upload a comma separated list of allowed email domains to Amazon SSM Parameter Store. You can do so by running the following command. Make sure you replace `<YOUR-ALLOWED-EMAIL-DOMAIN-LIST>` and `<YOUR-PROFILE-NAME>` with your actual list and the appropriate AWS profile name.
 
-```
+<details>
+<summary>macOS</summary>
+
+```bash
 aws ssm put-parameter \
     --name "/AILA/AllowedEmailDomains" \
     --value "<YOUR-ALLOWED-EMAIL-DOMAIN-LIST>" \
     --type SecureString \
     --profile <YOUR-PROFILE-NAME>
 ```
+</details>
+
+<details>
+<summary>Windows CMD</summary>
+
+```cmd
+aws ssm put-parameter ^
+    --name "/AILA/AllowedEmailDomains" ^
+    --value "<YOUR-ALLOWED-EMAIL-DOMAIN-LIST>" ^
+    --type SecureString ^
+    --profile <YOUR-PROFILE-NAME>
+```
+
+</details>
+
+<details>
+<summary>PowerShell</summary>
+
+```powershell
+aws ssm put-parameter `
+    --name "/AILA/AllowedEmailDomains" `
+    --value "<YOUR-ALLOWED-EMAIL-DOMAIN-LIST>" `
+    --type SecureString `
+    --profile <YOUR-PROFILE-NAME>
+```
+</details>
+
+&nbsp;
 
 For example,
 
@@ -140,7 +264,7 @@ In order to deploy in a hybrid cloud environment, you will need to have access t
 
 1. **Modify the VPC Stack:**
    - Navigate to the `vpc-stack.ts` file located at `cdk/lib/vpc-stack.ts`.
-   - Replace **line 15** with your existing VPC ID:
+   - Replace **line 13** with your existing VPC ID:
      ```typescript
      const existingVpcId: string = 'your-vpc-id'; //CHANGE IF DEPLOYING WITH EXISTING VPC
      ```
@@ -149,68 +273,13 @@ In order to deploy in a hybrid cloud environment, you will need to have access t
      ![VPC ID Image](images/ExistingVPCId.png)
 
 2. **Update the AWS Control Tower Stack Set:**
-   - Replace **line 18** with your AWS Control Tower Stack Set name:
+   - Replace **line 21** with your AWS Control Tower Stack Set name:
      ```typescript
      const AWSControlTowerStackSet = "your-stackset-name"; //CHANGE TO YOUR CONTROL TOWER STACK SET
      ```
      You can find this name by navigating to the **CloudFormation dashboard** in AWS, under `Stacks`. Look for a stack name that starts with `StackSet-AWSControlTowerBP-VPC-ACCOUNT-FACTORY`.
 
      ![AWS Control Tower Stack Image](images/AWSControlTowerStack.png)
-
-#### Second deployment in the Hybrid Cloud Environment:
-
-The following set of instructions are only if this is the second project you are deploying in a **hybrid cloud environment**. If you do not want to do this you can skip this section.
-
-In order to deploy a second project in a hybrid cloud environment, you will need to have access to the **Public Subnet ID**.
-
-#### 
-
-### **3. Update the Public Subnet ID and CIDR Range**
-
-To deploy a second project in a hybrid cloud environment, you need to obtain an available **Public Subnet ID** and an unused **CIDR range** within the VPC.
-
-#### **Finding the Public Subnet ID**
-1. **Navigate to the AWS VPC Console**:  
-   - Log in to the AWS Management Console.  
-   - Search for and open the **VPC** service.
-
-2. **Locate the Existing Public Subnet**:  
-   - In the left-hand menu, click **Subnets**.  
-   - Identify the **public subnet** used by your first deployment. You can confirm it is a public subnet by checking if it has a **Route Table** entry pointing to an **Internet Gateway**.
-
-3. **Copy the Subnet ID**:  
-   - Once you've identified the correct public subnet, note down its **Subnet ID** for later use.  
-   - You will replace the placeholder in your `vpc-stack.ts` file as follows:
-     ```typescript
-     const existingPublicSubnetID: string = "your-public-subnet-id"; // CHANGE IF DEPLOYING WITH EXISTING PUBLIC SUBNET
-     ```
-
-#### **Finding an Available CIDR Range**
-AWS subnets within a VPC cannot overlap in CIDR range, so you need to select an unused range that aligns with existing allocations.
-
-1. **Check Existing CIDR Allocations**:  
-   - In the **VPC Console**, navigate to **Your VPCs** and find the VPC where your first project was deployed.  
-   
-2. **Check Used Subnet CIDR Ranges**:  
-   - Go to **Subnets** and find all subnets associated with your VPC.  
-   - Look at the **CIDR Blocks** of each existing subnet (e.g., `172.31.0.0/20`, `172.31.32.0/20`, etc.).
-
-3. **Determine the Next Available CIDR Block**:  
-   - The third number in the CIDR block (e.g., `172.31.XX.0/20`) must be a **multiple of 32** (e.g., `0, 32, 64, 96, 128, 160, 192, 224`).
-   - Identify the first unused **/20** block by checking which multiples of 32 are already in use.
-
-4. **Example**:  
-   - If the existing subnets are `172.31.0.0/20`, `172.31.32.0/20`, and `172.31.64.0/20`, the next available range should be `172.31.96.0/20`.
-
-5. **Update the `vpc-stack.ts` File**:  
-   - Replace the placeholder with the available CIDR block:
-     ```typescript
-     this.vpcCidrString = "172.31.96.0/20"; // Update based on availability
-     ```
-
-By following these steps, you ensure that the new subnet does not overlap with existing ones while maintaining correct alignment with AWS best practices.
-
-
 
 
 You can proceed with the rest of the deployment instructions and the Vpc Stack will automatically use your existing VPC instead of creating a new one. For more detailed information about the hybrid cloud deployment you checkout the [Hybrid Cloud Deployment Guide](/docs/HybridCloudDeploymentGuide.md)

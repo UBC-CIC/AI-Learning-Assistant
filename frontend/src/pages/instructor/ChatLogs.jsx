@@ -37,7 +37,7 @@ export const ChatLogs = ({ courseName, course_id, openWebSocket }) => {
     const [loading, setLoading] = useState(false);
     const [isDownloadButtonEnabled, setIsDownloadButtonEnabled] = useState(false);
     const [previousChatLogs, setPreviousChatLogs] = useState([]);
-    const { setHasNewNotification } = useNotification();
+    const { setNotificationForCourse } = useNotification();
 
     useEffect(() => {
         checkNotificationStatus();
@@ -181,7 +181,7 @@ export const ChatLogs = ({ courseName, course_id, openWebSocket }) => {
                 console.log("Job submitted successfully:", data);
 
                 // Invoke global WebSocket function from InstructorHomepage and delay checkNotificationStatus slightly
-                openWebSocket(courseName, course_id, request_id, setHasNewNotification, () => {
+                openWebSocket(courseName, course_id, request_id, setNotificationForCourse, () => {
                     console.log("Waiting before checking notification status...");
                     setTimeout(() => {
                         checkNotificationStatus();

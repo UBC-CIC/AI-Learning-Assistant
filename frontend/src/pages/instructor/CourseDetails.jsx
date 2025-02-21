@@ -83,7 +83,7 @@ const CourseDetails = ({ openWebSocket }) => {
       >
         <InstructorHeader />
       </AppBar>
-      <InstructorSidebar setSelectedComponent={setSelectedComponent} />
+      <InstructorSidebar setSelectedComponent={setSelectedComponent} course_id={course_id} selectedComponent={selectedComponent} />
       {renderComponent()}
     </PageContainer>
   );

@@ -88,11 +88,11 @@ VPC Configuration:
 
 **Security Groups:**
 
-| Name          | ID        | Rules                                           |
-|---------------|-----------|-------------------------------------------------|
-| Lambda-SG     | sg-1234   | Allow outbound: 5432 (RDS Proxy)                 |
-| RDS-Proxy-SG  | sg-5678   | Allow inbound: 5432 from Lambda-SG               |
-| Default-SG    | sg-default| Block all inbound, allow outbound                |
+| Name          | Rules                                           |
+|---------------|-------------------------------------------------|
+| Lambda-SG     | Allow outbound: 5432 (RDS Proxy)                 |
+| RDS-Proxy-SG  | Allow inbound: 5432 from Lambda-SG               |
+| Default-SG    | Block all inbound, allow outbound                |
 
 **NACLs:**
 - Default NACLs in use 

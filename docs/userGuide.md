@@ -78,6 +78,12 @@ Clicking the "View Students" tab leads to a page where the instructor can view a
 The instructor can then click on a student which takes them to that student's chat logs for every module in the course. Each tab represents a different module. Different conversations with the LLM are rendered as different drop downs:
 ![image](./images/instructor-view-student-logs.png)
 
+
+
+Clicking the "Chat History" tab directs the instructor to a dedicated page where they can request a document containing the chat logs for all course sessions. Once the chat log file has been successfully generated, it will be displayed on this page, complete with the generation timestamp and a download option, allowing the instructor to easily access and save the chat logs locally if desired. If the user navigates to another screen while the request is processing, they will receive a notification once the file is ready, indicating that the chat logs are available for download:
+![image](./images/instructor-chat-history.png)
+
+
 ## Student View
 Upon logging in as an student, they see the following home page:
 ![image](./images/student-home-page.png)

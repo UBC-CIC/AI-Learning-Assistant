@@ -1628,7 +1628,7 @@ export class ApiGatewayStack extends cdk.Stack {
       visibilityConfig: {
         sampledRequestsEnabled: true,
         cloudWatchMetricsEnabled: true,
-        metricName: "digitalstrategyassistant-firewall",
+        metricName: "ailearningassistant-firewall",
       },
       rules: [
         {

@@ -56,6 +56,29 @@ VPC Configuration:
   - Accessed via NAT Gateway through Lambda functions  
   - No internet routing through NAT Gateway  
 
+  Explanation of S3 Usage:
+
+  ![S3 Workflow Diagram](images/s3-workflow.png)
+
+  The above diagram illustrates the use of S3 pre-signed URLs in our architecture. The process works as follows:
+
+  1. Client Request: The client first requests a pre-signed URL by making an API call to the Amazon API Gateway
+
+  2. Pre-Signed URL Generation: The API Gateway invokes an AWS Lambda function, which is responsible for generating the pre-signed URL. The Lambda function checks for the appropriate permissions (PutObject action) for the requested S3 bucket
+
+  3. Permission Validation: If permissions are validated, the Lambda function returns the generated pre-signed URL to the client
+
+  4. File Upload: The client uses this pre-signed URL to upload files directly to S3, bypassing the need for the server to handle large file uploads. This approach ensures:
+
+      - Secure, time-limited access to the S3 bucket without exposing long-term credentials
+
+      - Offloading file transfer workload from backend servers, reducing latency and cost
+
+Additional security measures:
+- All data is encrypted at rest using SSE-S3 (AES-256)
+- Public access is blocked for all S3 buckets
+- SSL connections are enforced for secure data transfer
+
 - **API Gateway:** 
   - Deployed in AWS public cloud space  
   - Protected by regional security controls  

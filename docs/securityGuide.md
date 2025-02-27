@@ -2,23 +2,21 @@
 
 ## 1. Network Architecture
 
-
-
 ![Network Architecture Diagram](images/NetworkDiagram.png)
 
 ### 1.1 VPC & Subnets  
 VPC Configuration:  
-- Leveraged existing VPC in AWS Hybrid Account (organizational policies prevent new VPC creation)  
-- CIDR Range: 172.31.0.0/16 (inherited from existing VPC configuration)  
+- Leveraged existing VPC in AWS Account since organizational policies prevent new VPC creation
+- CIDR Range is inherited from existing VPC configuration
 
 #### Subnet Configuration:  
 
-| Subnet Type | CIDR           | AZ              | Key Services                       |
-|-------------|----------------|-----------------|------------------------------------|
-| Private     | 172.31.32.0/20 | ca-central-1a   | Lambda                             |
-| Private     | 172.31.64.0/20 | ca-central-1b   | RDS Proxy                          |
-| Private     | 172.31.80.0/20 | ca-central-1c   | Backup Services                    |
-| Public      | 172.31.XX.0/20 | ca-central-1    | NAT Gateway, Internet Gateway      |
+| Subnet Type | AZ             | Key Services                       |
+|-------------|----------------|------------------------------------|
+| Private     | ca-central-1a  | Lambda                             |
+| Private     | ca-central-1b  | RDS Proxy, Amazon RDS              |
+| Private     | ca-central-1c  | Backup RDS                         |
+| Public      | ca-central-1   | NAT Gateway, Internet Gateway      |
 
 
 #### Services Deployment:  
@@ -42,17 +40,17 @@ VPC Configuration:
 
 
 #### Public Subnets:  
-- **NAT Gateway:** 
+- **NAT Gateway:** [Learn more](https://docs.aws.amazon.com/vpc/latest/userguide/vpc-nat-gateway.html)
+
   - Required for private subnet services to fetch external packages/updates  
   - Egress-only internet access for Lambda  
   - Cost-optimized single AZ deployment  
 
-- **Internet Gateway:** 
-  - Enables public access to API Gateway  
-  - Managed by central cloud team in Hybrid Account  
+- **Internet Gateway:** [Learn more](https://docs.aws.amazon.com/vpc/latest/userguide/VPC_Internet_Gateway.html)
+  - Enables public access to API Gateway 
 
-#### Non-VPC Services:  
-- **S3 Buckets:**
+#### Services outside of VPC:  
+- **S3 Buckets:** [Learn more](https://aws.amazon.com/pm/serv-s3/?gclid=CjwKCAiAlPu9BhAjEiwA5NDSA1VjMbPPYbzEKHPHFwna4OblKvQe5sm9sigb9iHW69Zc_pxuRifGzxoCUiEQAvD_BwE&trk=936e5692-d2c9-4e52-a837-088366a7ac3f&sc_channel=ps&ef_id=CjwKCAiAlPu9BhAjEiwA5NDSA1VjMbPPYbzEKHPHFwna4OblKvQe5sm9sigb9iHW69Zc_pxuRifGzxoCUiEQAvD_BwE:G:s&s_kwcid=AL!4422!3!536324434071!e!!g!!s3!11346198420!112250793838)
   - Accessed via NAT Gateway through Lambda functions  
   - No internet routing through NAT Gateway  
 
@@ -93,15 +91,28 @@ Additional security measures:
   - SQS queues with server-side encryption (SSE) enabled using AWS-managed keys
   - Only specific Lambda functions are granted permissions to send or receive messages
 
+- **Amazon Cognito:** 
+  - Provides authentication and authorization for Lambda access
+  - Role-based access control via IAM roles and policies
+  - Triggers (Pre-Sign-Up, Post-Confirmation, Post-Authentication) manage user provisioning.
+  - Secures real-time data sync via AppSync with Lambda authorizers
+
+- **Amazon SQS:**
+  - Facilitates real-time data synchronization and GraphQL APIs
+  - Integrated with Cognito for secure, authenticated access
+  - Employs server-side encryption using AWS-managed keys
+  - Connects to Lambda functions for data processing and custom business logic
+  - Configured with IAM roles to enforce least-privilege access control
+  - Supports secure WebSocket connections for live data updates
+
 
 ### 1.2 Hybrid Account Constraints  
 
-**VPC Creation Restriction:** Must use existing VPC within the UBC AWS account  
+**VPC Creation Restriction:** Must use existing VPC within your AWS account  
 
 **Gateway Management:**  
 - Internet Gateway: pre-attached to VPC  
 - NAT Gateway: shared across multiple projects  
-
 
 
 
@@ -145,8 +156,6 @@ Additional security measures:
 - Audit logs enabled via CloudWatch  
 
 
-
-
 ## 4. Secrets & Parameters
 
 ### 4.1 Credential Management
@@ -155,10 +164,7 @@ Additional security measures:
 
 #### AWS Secrets Manager:
 - Creates a new secret named DBSecret for RDS credentials
-- Configures automatic rotation of the secret every 90 days
-- Uses a specified Lambda function (rotationLambda) to manage the rotation process
 - Enhances security by regularly updating credentials without manual intervention
-- Supports compliance by enforcing periodic secret rotation policies
 
 
 
@@ -166,21 +172,21 @@ Additional security measures:
 
 ### 5.1 AWS WAF & Shield
 
-**WAF Rules Applied:**
+**WAF Rules Applied:** [Learn more](https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/distribution-web-awswaf.html)
 - SQLi Protection (AWSManagedRulesSQLiRuleSet)  
 - XSS Protection (AWSManagedRulesXSSRuleSet)  
 - Request Threshold: 100 requests/min per IP  
 
-**Shield Standard:**
+**Shield Standard:** [Learn more](https://docs.aws.amazon.com/waf/latest/developerguide/ddos-overview.html)
 - Enabled on API Gateway  
 - CloudWatch alarms for DDoS detection  
 
 
-### 5.2 Security Hub
+### 5.2 Security Hub 
 
-**Purpose:** Enable continuous security monitoring and automate compliance checks
+**Purpose:** Enable continuous security monitoring and automate compliance checks [Learn more](https://docs.aws.amazon.com/securityhub/latest/userguide/what-is-securityhub.html)
 
-#### Account-level monitoring:
+#### Account-level monitoring recommendations:
 
 - Enable Security Hub in the AWS Management Console for the target region (e.g., ca-central-1)
 - Integrate Security Hub with AWS services (e.g., GuardDuty, Config, Macie) for comprehensive security analysis
@@ -221,12 +227,23 @@ vpcStack.privateSubnetsCidrStrings.forEach((cidr) => {
 
 ```
 
+### 6.3 RDS Proxy
+
+**Purpose:** Purpose: Enhance RDS access performance, security, and scalability by utilizing Amazon RDS Proxy
+
+  - IAM Authentication: RDS Proxy requires IAM authentication for secure access
+  - Connection Pooling: Efficiently manages and reuses database connections, reducing the load on RDS
+  - TLS Enforcement: Secure connections with optional TLS enforcement for data-in-transit encryption.
+  - Role Management: IAM roles grant rds-db:connect permissions to trusted Lambda functions
+  - Fault Tolerance: Proxies automatically handle database failovers, improving application availability
+  - Security Groups: Configured to allow only trusted Lambda functions and services within private subnets to connect
+
 
 ## 7. S3 Security
 
 ### Bucket Security Configurations
 
-**Purpose:** Ensure data confidentiality by encrypting S3 objects and blocking public access
+**Purpose:** Ensure data confidentiality by encrypting S3 objects and blocking public access [Learn more](https://aws.amazon.com/s3/security/)
 
 - Enabled S3-managed encryption (S3_MANAGED) for data at rest
 - Blocked all public access with blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL
@@ -326,56 +343,60 @@ messagesQueue.addToResourcePolicy(
 ### 8.3 Lambda Function Access & Invocation
 
 
-#### **Summary of Lambda Function Access**:
+#### **Summary of Lambda Function Access** [Learn more](https://docs.aws.amazon.com/cognito/latest/developerguide/cognito-user-pools-working-with-lambda-triggers.html#:~:text=Except%20for%20Custom%20sender%20Lambda,attempts%2C%20the%20function%20times%20out.): 
 
 | **Lambda Function**                | **Access Level** | **Trigger/Invocation**                   | **Who Can Access?**                       |
 |-------------------------------------|-------------------|-------------------------------------------|--------------------------------------------|
-| `studentFunction`                   |  Private        | API Gateway (via Cognito, `/student/*`)   | Authenticated users in **student** group   |
-| `instructorFunction`                |  Private        | API Gateway (via Cognito, `/instructor/*`) | Authenticated users in **instructor** group|
-| `adminFunction`                     |  Private        | API Gateway (via Cognito, `/admin/*`)     | Authenticated users in **admin** group     |
+| `studentFunction`                   |  Private        | student   | Authenticated users in **student** group   |
+| `instructorFunction`                |  Private        | instructor | Authenticated users in **instructor** group|
+| `adminFunction`                     |  Private        | admin  | Authenticated users in **admin** group     |
 | `preSignupLambda`                   |  Private        | Cognito **Pre-Sign-Up** trigger           | **Cognito internal trigger** only          |
 | `addStudentOnSignUp`                |  Private        | Cognito **Post-Confirmation** trigger     | **Cognito internal trigger** only          |
 | `adjustUserRoles`                   |  Private        | Cognito **Post-Authentication** trigger   | **Cognito internal trigger** only          |
-| `TextGenLambdaDockerFunc`           |  Private        | API Gateway (`/student/*`)                | **student** group users                    |
-| `GeneratePreSignedURLFunc`          |  Private        | API Gateway (`/instructor/*`)             | **instructor** group users                 |
+| `TextGenLambdaDockerFunc`           |  Private        | student | **student** group users                    |
+| `GeneratePreSignedURLFunc`          |  Private        | instructor | **instructor** group users                 |
 | `DataIngestLambdaDockerFunc`        |  Private        | S3 Event (S3 PUT/DELETE)                  | Triggered by **S3 events** only            |
-| `GetFilesFunction`                  |  Private        | API Gateway (`/instructor/*`)             | **instructor** group users                 |
-| `DeleteFileFunc`                    |  Private        | API Gateway (`/instructor/*`)             | **instructor** group users                 |
-| `DeleteModuleFunc`                  |  Private        | API Gateway (`/instructor/*`)             | **instructor** group users                 |
-| `DeleteLastMessage`                 |  Private        | API Gateway (`/student/*`)                | **student** group users                    |
-| `adminLambdaAuthorizer`             |  Private        | API Gateway Lambda Authorizer (Admin)     | Internal to **API Gateway** for auth checks|
-| `studentLambdaAuthorizer`           |  Private        | API Gateway Lambda Authorizer (Student)   | Internal to **API Gateway** for auth checks|
-| `instructorLambdaAuthorizer`        |  Private        | API Gateway Lambda Authorizer (Instructor)| Internal to **API Gateway** for auth checks|
+| `GetFilesFunction`                  |  Private        | instrcutor | **instructor** group users                 |
+| `DeleteFileFunc`                    |  Private        | instructor | **instructor** group users                 |
+| `DeleteModuleFunc`                  |  Private        | instructor | **instructor** group users                 |
+| `DeleteLastMessage`                 |  Private        | student | **student** group users                    |
+| `adminLambdaAuthorizer`             |  Private        | API Gateway Lambda Authorizer (admin)     | Internal to **API Gateway** for auth checks|
+| `studentLambdaAuthorizer`           |  Private        | API Gateway Lambda Authorizer (student)   | Internal to **API Gateway** for auth checks|
+| `instructorLambdaAuthorizer`        |  Private        | API Gateway Lambda Authorizer (instructor)| Internal to **API Gateway** for auth checks|
 
 
 
 
 ## 9. Cognito User Authentication
 
-### 9.1 Purpose
+### 9.1 Purpose 
 
-AWS Cognito provides user authentication and authorization, enabling **secure access** to Lambda functions based on user roles. By integrating Cognito with Lambda, we ensure that **only authenticated users** with the **appropriate permissions** can invoke Lambda functions, maintaining the **principle of least privilege**.
+AWS Cognito provides user authentication and authorization, enabling **secure access** to Lambda functions based on user roles. By integrating Cognito with Lambda, we ensure that **only authenticated users** with the **appropriate permissions** can invoke Lambda functions, maintaining the **principle of least privilege**
+
+[Learn more](https://docs.aws.amazon.com/cognito/latest/developerguide/authentication.html)
 
 ---
 
 ### 9.2 How Cognito Controls Lambda Invocation
 
 - **User Pool Creation:**  
-  Cognito **User Pools** manage user registration and sign-in.  
-  - Supports multi-role user groups (e.g., student, instructor, admin).
-  - Automatic verification of user credentials.
+  Cognito **User Pools** manage user registration and sign-in
+  - Supports multi-role user groups (e.g., student, instructor, admin)
+  - Automatic verification of user credentials
 
 - **Role-Based Access Control (RBAC):**  
   Cognito assigns **IAM roles** based on user groups, allowing **fine-grained access control** to specific Lambda functions.
-  - Example roles: `StudentRole`, `InstructorRole`, `AdminRole`.
-  - IAM policies attached to each role define permitted Lambda invocations.
+  - Example roles: `StudentRole`, `InstructorRole`, `AdminRole`
+  - IAM policies attached to each role define permitted Lambda invocations
 
 - **Lambda Integration:**  
   Cognito-generated **JWT tokens** are validated by Lambda **authorizer functions** to ensure:
-  - Only **authorized users** can invoke specific Lambda endpoints.
-  - Access is logged and monitored via **CloudWatch**.
+  - Only **authorized users** can invoke specific Lambda endpoints
+  - **JWT tokens** expire 30 days after a user signs in [Learn more](https://docs.aws.amazon.com/cognito/latest/developerguide/amazon-cognito-user-pools-using-tokens-with-identity-providers.html)
+  - Access is logged and monitored via **CloudWatch**
 
 ---
+
 
 ### 9.3 Cognito Integration in CDK (ApiGatewayStack)
 

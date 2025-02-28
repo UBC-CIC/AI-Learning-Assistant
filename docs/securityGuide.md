@@ -84,9 +84,12 @@ VPC Configuration:
   - Public access is blocked for all S3 buckets
   - SSL connections are enforced for secure data transfer
 
-- **API Gateway:** 
+  - **Amazon API Gateway:**
   - Deployed in AWS public cloud space  
   - Protected by regional security controls  
+  - Custom Lambda Authorizers validate user permissions before accessing endpoints
+  - Uses Cognito User Pools for authentication and role-based access control
+  - IAM policies restrict API Gateway access based on user roles
 
 - **Amazon Bedrock:**
   - Requires explicit model access requests for utilization
@@ -111,12 +114,6 @@ VPC Configuration:
   - Connects to Lambda functions for data processing and custom business logic
   - Configured with IAM roles to enforce least-privilege access control
   - Supports secure WebSocket connections for live data updates
-
-- **Amazon API Gateway:**
-  - Custom Lambda Authorizers validate user permissions before accessing endpoints
-  - Authorizers handle JWT token verification and enforce least-privilege access
-  - Uses Cognito User Pools for authentication and role-based access control
-  - IAM policies restrict API Gateway access based on user roles
 
 
 ### 1.2 Hybrid Account Constraints  

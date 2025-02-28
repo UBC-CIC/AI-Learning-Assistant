@@ -27,10 +27,6 @@ VPC Configuration:
   - No public IP addresses  
   - Outbound internet via NAT Gateway  
 
-- **Amazon ECR:**
-  - Lambda functions utilize Docker images stored in Amazon ECR 
-  - Images are securely pulled over the internet via the NAT Gateway
-
 - **Amazon RDS (PostgreSQL):**  
   - Accessed exclusively via RDS Proxy  
   - No direct public access  
@@ -114,6 +110,10 @@ VPC Configuration:
   - Connects to Lambda functions for data processing and custom business logic
   - Configured with IAM roles to enforce least-privilege access control
   - Supports secure WebSocket connections for live data updates
+
+- **Amazon ECR:**
+  - Lambda functions utilize Docker images stored in Amazon ECR 
+  - Images are securely pulled over the internet via the NAT Gateway
 
 
 ### 1.2 Hybrid Account Constraints  

@@ -153,11 +153,6 @@ VPC Configuration:
 **Purpose:** Ensure all stored data is encrypted at rest to meet compliance and security standards
 
 
-| Service   | Encryption              | Validation                          |
-|-----------|--------------------------|--------------------------------------|
-| S3        | SSE-S3 (AES-256)         | lib/storage-stack.ts Line 88         |
-| RDS       | KMS + SSL (TLS 1.2+)     | lib/database-stack.ts Line 127       |
-
 ### 3.2 Access Controls
 
 #### RDS Proxy:

@@ -84,7 +84,7 @@ VPC Configuration:
   - Public access is blocked for all S3 buckets
   - SSL connections are enforced for secure data transfer
 
-  - **Amazon API Gateway:**
+- **Amazon API Gateway:**
   - Deployed in AWS public cloud space  
   - Protected by regional security controls  
   - Custom Lambda Authorizers validate user permissions before accessing endpoints

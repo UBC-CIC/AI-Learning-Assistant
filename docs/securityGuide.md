@@ -54,7 +54,7 @@ VPC Configuration:
   - Accessed via NAT Gateway through Lambda functions  
   - No internet routing through NAT Gateway  
 
-  Explanation of S3 Usage:
+  #### How objects in S3 are accessed:
 
   ![S3 Workflow Diagram](images/s3-workflow.png)
 
@@ -72,10 +72,17 @@ VPC Configuration:
 
       - Offloading file transfer workload from backend servers, reducing latency and cost
 
-Additional security measures:
-- All data is encrypted at rest using SSE-S3 (AES-256)
-- Public access is blocked for all S3 buckets
-- SSL connections are enforced for secure data transfer
+
+  Learn More:
+  - [Sharing objects with presigned URLs](https://docs.aws.amazon.com/AmazonS3/latest/userguide/ShareObjectPreSignedURL.html)
+
+  - [Download and upload objects with presigned URLs](https://docs.aws.amazon.com/AmazonS3/latest/userguide/using-presigned-url.html)
+  
+  
+  Additional security measures:
+  - All data is encrypted at rest using SSE-S3 (AES-256)
+  - Public access is blocked for all S3 buckets
+  - SSL connections are enforced for secure data transfer
 
 - **API Gateway:** 
   - Deployed in AWS public cloud space  
@@ -104,6 +111,12 @@ Additional security measures:
   - Connects to Lambda functions for data processing and custom business logic
   - Configured with IAM roles to enforce least-privilege access control
   - Supports secure WebSocket connections for live data updates
+
+- **Amazon API Gateway:**
+  - Custom Lambda Authorizers validate user permissions before accessing endpoints
+  - Authorizers handle JWT token verification and enforce least-privilege access
+  - Uses Cognito User Pools for authentication and role-based access control
+  - IAM policies restrict API Gateway access based on user roles
 
 
 ### 1.2 Hybrid Account Constraints  
@@ -377,7 +390,7 @@ AWS Cognito provides user authentication and authorization, enabling **secure ac
 
 ---
 
-### 9.2 How Cognito Controls Lambda Invocation
+### 9.2 How Cognito Secures Lambda Invocations
 
 - **User Pool Creation:**  
   Cognito **User Pools** manage user registration and sign-in
@@ -412,3 +425,42 @@ const userPool = new cognito.UserPool(this, 'UserPool', {
 const appClient = userPool.addClient('AppClient', {
   authFlows: { userPassword: true, userSrp: true },
 });
+
+```
+
+## 10 API Gateway Security
+
+### 10.1 Purpose
+
+AWS API Gateway acts as the entry point for clients, enabling secure, scalable, and managed API interactions. It integrates with AWS IAM, Cognito, and Lambda Authorizers to enforce authentication and authorization.
+
+### 10.2 Security Measures Applied:
+- Cognito User Pools for authentication
+- IAM Policies to enforce least-privilege access
+- Lambda Authorizers for custom permission validation
+- AWS WAF to mitigate DDoS attacks and malicious traffic
+
+
+[Learn more](https://docs.aws.amazon.com/apigateway/latest/developerguide/security.html)
+
+### 10.3 Custom Lambda Authorizer for API Gateway
+
+Lambda Authorizers provide fine-grained access control by validating requests before they reach the API Gateway methods. This allows us to enforce custom authentication and authorization logic, such as role-based access control (RBAC) or JSON Web Token (JWT) validation
+
+```typescript
+const lambdaAuthorizer = new apigateway.TokenAuthorizer(this, 'LambdaAuth', {
+  handler: myLambdaAuthorizer,
+  identitySource: 'method.request.header.Authorization',
+});
+
+const restrictedResource = api.root.addResource('restricted');
+restrictedResource.addMethod('POST', new apigateway.LambdaIntegration(myLambda), {
+  authorizationType: apigateway.AuthorizationType.CUSTOM,
+  authorizer: lambdaAuthorizer,
+});
+```
+
+**Key Features of Lambda Authorizer**:
+- Custom Authentication: Uses a Lambda function to validate JWT tokens or other credentials before granting access
+- Identity Source: Extracts authentication data from the Authorization header in HTTP requests
+- Granular Access Control: Ensures that only authorized users can access specific API methods

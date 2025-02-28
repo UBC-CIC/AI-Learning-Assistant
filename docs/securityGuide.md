@@ -243,7 +243,7 @@ vpcStack.privateSubnetsCidrStrings.forEach((cidr) => {
 
   - IAM Authentication: RDS Proxy requires IAM authentication for secure access
   - Connection Pooling: Efficiently manages and reuses database connections, reducing the load on RDS
-  - TLS Enforcement: Secure connections with optional TLS enforcement for data-in-transit encryption.
+  - TLS Enforcement: Secure connections with optional TLS enforcement for data-in-transit encryption
   - Role Management: IAM roles grant rds-db:connect permissions to trusted Lambda functions
   - Fault Tolerance: Proxies automatically handle database failovers, improving application availability
   - Security Groups: Configured to allow only trusted Lambda functions and services within private subnets to connect

@@ -229,11 +229,7 @@ export const ChatLogs = ({ courseName, course_id, openWebSocket }) => {
                         <Typography variant="body1" color="textSecondary" textAlign="center">
                             Loading chat logs...
                         </Typography>
-                    ) : (
-                        <Typography variant="body1" color="textSecondary" textAlign="center">
-                            {isDownloadButtonEnabled ? "Click the button to generate chat logs" : ""}
-                        </Typography>
-                    )}
+                    ) : null }
                     {!loading && previousChatLogs.length > 0 && (
                         <TableContainer component={Paper} sx={{ marginTop: 2, overflowY: "auto", width: "100%" }}>
                             <Table sx={{ width: "100%" }}>

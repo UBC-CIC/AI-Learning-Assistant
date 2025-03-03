@@ -121,20 +121,28 @@ export const ChatLogs = ({ courseName, course_id, openWebSocket }) => {
     const convertToLocalTime = (fileName) => {
         try {
             // Extract timestamp from file name (assuming format: "YYYY-MM-DD HH:MM:SS.csv")
-            const match = fileName.match(/(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})/);
+            const match = fileName.match(/(\d{4}-\d{2}-\d{2}) (\d{2}):(\d{2}):(\d{2})/);
             if (!match) {
                 console.warn("Could not extract a valid timestamp from filename:", fileName);
                 return fileName; // Return original name if no timestamp found
             }
-
-            // Convert the extracted UTC timestamp to local time
-            const utcDate = new Date(match[0] + " UTC"); // Append UTC to prevent incorrect local parsing
-            return utcDate.toLocaleString(undefined, { timeZoneName: "short" }); // Convert to user's local timezone
+    
+            // Extract date components
+            const [_, datePart, hours, minutes, seconds] = match;
+            const [year, month, day] = datePart.split("-").map(Number);
+    
+            // Create a new Date object with UTC time
+            const utcDate = new Date(Date.UTC(year, month - 1, day, hours, minutes, seconds));
+    
+            // Convert to user's local time
+            return utcDate.toLocaleString(undefined, { timeZoneName: "short" });
+    
         } catch (error) {
             console.error("Error converting time:", error);
             return fileName; // Fallback in case of error
         }
     };
+    
 
 
     const downloadChatLog = (presignedUrl) => {

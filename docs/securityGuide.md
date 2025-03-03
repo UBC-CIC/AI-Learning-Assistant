@@ -1,8 +1,35 @@
 # Security Documentation & Network Architecture  
 
+## Shared Responsibility Model 
+
+![Shared Responsibility Model](images/SharedResponsibilityModel.png)
+
+#### The AWS Shared Responsibility Model defines the division of security responsibilities between CIC and its sponsors. At CIC, we are responsible for securing the cloud, while customers are responsible for securing their applications and data within the cloud
+
+
+### CIC Responsibilities (Security of the Cloud):
+- Infrastructure Security
+- Network Protection 
+- Compliance with Industry Security Standards
+- Service-Level Security
+
+
+### Customer Responsibilities (Security in the Cloud):
+- Data Protection
+- Identity & Access Management
+- Application Security
+- Network Security Configuration:
+
+[Learn more](https://aws.amazon.com/compliance/shared-responsibility-model/)
+
+
+This document outlines the existing network and security configurations implemented for this project. Additionally, it provides recommendations and guidance on leveraging AWS services and features to enhance security, monitor application performance, and maintain compliance 
+
+
 ## 1. Network Architecture
 
 ![Network Architecture Diagram](images/NetworkDiagram.png)
+
 
 ### 1.1 VPC & Subnets  
 VPC Configuration:  
@@ -116,13 +143,12 @@ VPC Configuration:
   - Images are securely pulled over the internet via the NAT Gateway
 
 
-### 1.2 Hybrid Account Constraints  
 
-**VPC Creation Restriction:** Must use existing VPC within your AWS account  
+## 1.2 Security Configuration
 
-**Gateway Management:**  
-- Internet Gateway: pre-attached to VPC  
-- NAT Gateway: shared across multiple projects  
+![Security Configuration](images/SecurityConfiguration.png)
+
+
 
 
 
@@ -194,7 +220,7 @@ VPC Configuration:
 #### Account-level monitoring recommendations:
 
 - Enable Security Hub in the AWS Management Console for the target region (e.g., ca-central-1)
-- Integrate Security Hub with AWS services (e.g., GuardDuty, Config, Macie) for comprehensive security analysis
+- Integrate Security Hub with AWS services (e.g., GuardDuty) for comprehensive security analysis
 - Use Security Hub Insights to identify and prioritize security issues across AWS accounts
 
 #### How to Use:
@@ -220,7 +246,7 @@ VPC Configuration:
 
 **Purpose:** Control database access by allowing PostgreSQL traffic (5432) only from trusted CIDRs
 
-CDK Implmentation: 
+CDK Implementation: 
 ```typescript
 vpcStack.privateSubnetsCidrStrings.forEach((cidr) => {
     dbSecurityGroup.addIngressRule(
@@ -254,7 +280,7 @@ vpcStack.privateSubnetsCidrStrings.forEach((cidr) => {
 - Blocked all public access with blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL
 - Enforced SSL connections for secure data transfer by setting enforceSSL: true
 
-CDK Implmentation:
+CDK Implementation:
 ```typescript
 blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
 enforceSSL: true, // Enforce secure data transfer
@@ -361,7 +387,7 @@ messagesQueue.addToResourcePolicy(
 | `TextGenLambdaDockerFunc`           |  Private        | student | **student** group users                    |
 | `GeneratePreSignedURLFunc`          |  Private        | instructor | **instructor** group users                 |
 | `DataIngestLambdaDockerFunc`        |  Private        | S3 Event (S3 PUT/DELETE)                  | Triggered by **S3 events** only            |
-| `GetFilesFunction`                  |  Private        | instrcutor | **instructor** group users                 |
+| `GetFilesFunction`                  |  Private        | instructor | **instructor** group users                 |
 | `DeleteFileFunc`                    |  Private        | instructor | **instructor** group users                 |
 | `DeleteModuleFunc`                  |  Private        | instructor | **instructor** group users                 |
 | `DeleteLastMessage`                 |  Private        | student | **student** group users                    |
@@ -456,3 +482,31 @@ restrictedResource.addMethod('POST', new apigateway.LambdaIntegration(myLambda),
 - Custom Authentication: Uses a Lambda function to validate JWT tokens or other credentials before granting access
 - Identity Source: Extracts authentication data from the Authorization header in HTTP requests
 - Granular Access Control: Ensures that only authorized users can access specific API methods
+
+
+## 12 AWS Systems Manager Security
+
+
+### 12.1 Purpose
+
+AWS Systems Manager (SSM) provides centralized management, automation, and security enforcement for AWS resources, helping secure access to infrastructure and maintain compliance through patching, logging, and configuration management
+
+Amazon CloudWatch is used to monitor AWS resources, applications, and security logs. It plays a crucial role in performance monitoring [Learn more](https://aws.amazon.com/systems-manager/)
+
+
+### 12.2 Security Measures:
+- Parameter Store Access Logs: Monitors access to sensitive configuration data, including secrets and API keys
+- Anomalous Parameter Store Access: Triggers alarms when unauthorized services or users attempt to retrieve sensitive parameters
+
+ 
+
+ ## 13 AWS Key Management Service (KMS)
+
+
+ ### 13.1 Purpose
+
+AWS KMS (Key Management Service) provides centralized encryption key management, ensuring that sensitive data remains encrypted both at rest and in transit. It integrates with multiple AWS services to provide scalable and automated encryption security [Learn more](https://aws.amazon.com/kms/)  
+
+### 13.2 Security Measures:
+- KMS Key Access Logs: Records every use of an encryption key to detect unauthorized decryption attempts
+- Excessive Key Usage: Triggers alerts if a specific key is accessed more than usual, potentially indicating a compromise

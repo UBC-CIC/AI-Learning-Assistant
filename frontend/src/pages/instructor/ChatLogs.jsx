@@ -240,7 +240,7 @@ export const ChatLogs = ({ courseName, course_id, openWebSocket }) => {
                                         <TableRow key={index}>
                                             <TableCell sx={{ width: "50%", textAlign: "center" }}>{log.date}</TableCell>
                                             <TableCell sx={{ width: "50%", textAlign: "center" }}>
-                                                <Button variant="contained" color="secondary" onClick={() => window.open(log.presignedUrl, "_blank")}>
+                                                <Button variant="contained" color="primary" onClick={() => window.open(log.presignedUrl, "_blank")}>
                                                     Download
                                                 </Button>
                                             </TableCell>

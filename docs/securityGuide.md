@@ -149,6 +149,8 @@ VPC Configuration:
 ![Security Configuration](images/SecurityConfiguration.png)
 
 
+This diagram illustrates how our architecture handles key security aspects by leveraging AWS services tailored for each security domain. Identity Services, including AWS IAM and Amazon Cognito, ensure secure authentication and access control. Data Protection is enforced through AWS Secrets Manager and AWS KMS for secure storage and encryption. Infrastructure Protection relies on AWS WAF, AWS Shield, and AWS Systems Manager to safeguard against threats. Detection Services such as Security Hub, Amazon GuardDuty, and Amazon CloudWatch provide continuous monitoring and threat detection
+
 
 
 
@@ -505,8 +507,8 @@ Amazon CloudWatch is used to monitor AWS resources, applications, and security l
 
  ### 13.1 Purpose
 
-AWS KMS (Key Management Service) provides centralized encryption key management, ensuring that sensitive data remains encrypted both at rest and in transit. It integrates with multiple AWS services to provide scalable and automated encryption security [Learn more](https://aws.amazon.com/kms/)  
+AWS KMS (Key Management Service) provides centralized encryption key management, helping to keep sensitive data encrypted both at rest and in transit. It integrates with multiple AWS services to offer scalable and automated encryption security [Learn more](https://aws.amazon.com/kms/)  
 
 ### 13.2 Security Measures:
-- KMS Key Access Logs: Records every use of an encryption key to detect unauthorized decryption attempts
+- KMS Key Access Logs: Records every use of an encryption key to help detect unauthorized decryption attempts
 - Excessive Key Usage: Triggers alerts if a specific key is accessed more than usual, potentially indicating a compromise

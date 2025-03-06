@@ -119,7 +119,7 @@ function App() {
               }
             />
             <Route path="/home/*" element={getHomePage()} />
-            <Route path="/course/*" element={<InstructorHomepage />} />
+            <Route path="/course/*" element={getHomePage()} />
           </Routes>
         </Router>
       </UserContext.Provider>

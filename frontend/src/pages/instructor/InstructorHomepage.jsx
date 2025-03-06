@@ -185,11 +185,11 @@ function openWebSocket(courseName, course_id, requestId, setNotificationForCours
 // course details page
 const CourseDetails = () => {
   const location = useLocation();
-  const { courseName } = useParams();
   const [selectedComponent, setSelectedComponent] = useState(
     "InstructorAnalytics"
   );
-  const { course_id } = location.state;
+
+  const { courseName, course_id } = useParams();
 
   const renderComponent = () => {
     switch (selectedComponent) {
@@ -365,8 +365,10 @@ const InstructorHomepage = () => {
 
     if (course) {
       const { course_id, course_department, course_number } = course;
-      const path = `/course/${course_department} ${course_number} ${courseName.trim()}`;
-      navigate(path, { state: { course_id } });
+      // After – include course_id as a URL parameter
+      const path = `/course/${encodeURIComponent(`${course_department} ${course_number} ${courseName.trim()}`)}/${course_id}`;
+      navigate(path);
+
     } else {
       console.error("Course not found!");
     }
@@ -479,23 +481,14 @@ const InstructorHomepage = () => {
         }
       />
       <Route exact path=":courseName/*" element={<CourseDetails openWebSocket={openWebSocket} />} />
-      <Route
-        path=":courseName/edit-module/:moduleId"
-        element={<InstructorEditCourse />}
-      />
-      <Route
-        path=":courseName/edit-concept/:conceptId"
-        element={<InstructorEditConcept />}
-      />
-      <Route path=":courseName/new-module" element={<InstructorNewModule />} />
-      <Route
-        path=":courseName/new-concept"
-        element={<InstructorNewConcept />}
-      />
-      <Route
-        path=":courseName/student/:studentId"
-        element={<StudentDetails />}
-      />
+      // After
+        <Route exact path=":courseName/:course_id/*" element={<CourseDetails openWebSocket={openWebSocket} />} />
+        <Route path=":courseName/:course_id/edit-module/:moduleId" element={<InstructorEditCourse />} />
+        <Route path=":courseName/:course_id/edit-concept/:conceptId" element={<InstructorEditConcept />} />
+        <Route path=":courseName/:course_id/new-module" element={<InstructorNewModule />} />
+        <Route path=":courseName/:course_id/new-concept" element={<InstructorNewConcept />} />
+        <Route path=":courseName/:course_id/student/:studentId" element={<StudentDetails />} />
+
     </Routes>
   );
 };

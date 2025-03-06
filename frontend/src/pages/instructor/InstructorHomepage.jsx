@@ -480,7 +480,7 @@ const InstructorHomepage = () => {
           </PageContainer>
         }
       />
-      <Route exact path=":courseName/*" element={<CourseDetails openWebSocket={openWebSocket} />} />
+      <Route exact path=":courseName/:course_id/*" element={<CourseDetails openWebSocket={openWebSocket} />} />
       // After
         <Route exact path=":courseName/:course_id/*" element={<CourseDetails openWebSocket={openWebSocket} />} />
         <Route path=":courseName/:course_id/edit-module/:moduleId" element={<InstructorEditCourse />} />

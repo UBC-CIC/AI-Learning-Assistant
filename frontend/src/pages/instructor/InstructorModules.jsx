@@ -122,13 +122,13 @@ const InstructorModules = ({ courseName, course_id }) => {
   }, [course_id]);
 
   const handleEditClick = (moduleData) => {
-    navigate(`/course/${courseName}/edit-module/${moduleData.module_id}`, {
+    navigate(`/course/${courseName}/${course_id}/edit-module/${moduleData.module_id}`, {
       state: { moduleData, course_id: course_id },
     });
   };
 
   const handleCreateModuleClick = () => {
-    navigate(`/course/${courseName}/new-module`, {
+    navigate(`/course/${courseName}/${course_id}/new-module`, {
       state: { data, course_id },
     });
   };

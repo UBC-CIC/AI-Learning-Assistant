@@ -222,6 +222,7 @@ const CourseDetails = () => {
     }
   };
 
+
   return (
     <PageContainer>
       <AppBar
@@ -231,7 +232,7 @@ const CourseDetails = () => {
       >
         <InstructorHeader />
       </AppBar>
-      <InstructorSidebar setSelectedComponent={setSelectedComponent} course_id={course_id} selectedComponent={selectedComponent} />
+      <InstructorSidebar setSelectedComponent={setSelectedComponent} course_id={course_id} selectedComponent={course_id} />
       {renderComponent()}
     </PageContainer>
   );
@@ -480,8 +481,7 @@ const InstructorHomepage = () => {
           </PageContainer>
         }
       />
-      <Route exact path=":courseName/:course_id/*" element={<CourseDetails openWebSocket={openWebSocket} />} />
-      // After
+      
         <Route exact path=":courseName/:course_id/*" element={<CourseDetails openWebSocket={openWebSocket} />} />
         <Route path=":courseName/:course_id/edit-module/:moduleId" element={<InstructorEditCourse />} />
         <Route path=":courseName/:course_id/edit-concept/:conceptId" element={<InstructorEditConcept />} />

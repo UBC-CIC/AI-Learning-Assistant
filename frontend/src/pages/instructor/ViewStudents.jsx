@@ -70,6 +70,7 @@ export const ViewStudents = ({ courseName, course_id }) => {
       try {
         const session = await fetchAuthSession();
         var token = session.tokens.idToken;
+        console.log(course_id)
         const response = await fetch(
           `${
             import.meta.env.VITE_API_ENDPOINT
@@ -102,7 +103,9 @@ export const ViewStudents = ({ courseName, course_id }) => {
   useEffect(() => {
     const fetchStudents = async () => {
       try {
+        console.log("checkpoint1")
         const session = await fetchAuthSession();
+        console.log("checkpoint2")
         var token = session.tokens.idToken;
         const response = await fetch(
           `${
@@ -140,8 +143,11 @@ export const ViewStudents = ({ courseName, course_id }) => {
   
   const handleGenerateAccessCode = async () => {
     try {
+      
       const session = await fetchAuthSession();
+      
       var token = session.tokens.idToken;
+      
       const response = await fetch(
         `${
           import.meta.env.VITE_API_ENDPOINT
@@ -183,7 +189,7 @@ export const ViewStudents = ({ courseName, course_id }) => {
     row.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
   const handleRowClick = (student) => {
-    navigate(`/course/${course_id}/student/${student.name}`, {
+    navigate(`/course/${courseName}/${course_id}/student/${student.name}`, {
       state: { course_id, student },
     });
   };

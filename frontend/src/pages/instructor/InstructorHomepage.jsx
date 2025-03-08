@@ -69,7 +69,7 @@ function constructWebSocketUrl() {
   const host = tmpObj.hostname;
   const header = {
       host: host,
-      Authorization: "API_KEY=",
+      Authorization: `API_KEY=${import.meta.env.VITE_API_KEY}`,
   };
 
   const encodedHeader = btoa(JSON.stringify(header));
@@ -124,7 +124,7 @@ function openWebSocket(courseName, course_id, requestId, setNotificationForCours
             data: `{"query":"subscription OnNotify($request_id: String!) { onNotify(request_id: $request_id) { message request_id } }","variables":{"request_id":"${requestId}"}}`,
             extensions: {
                 authorization: {
-                    Authorization: "API_KEY=",
+                    Authorization: `API_KEY=${import.meta.env.VITE_API_KEY}`,
                     host: new URL(import.meta.env.VITE_GRAPHQL_WS_URL).hostname,
                 },
             },

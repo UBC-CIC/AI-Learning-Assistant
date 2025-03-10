@@ -189,19 +189,24 @@ const CourseDetails = ({ courseData }) => {
     "InstructorAnalytics"
   );
 
-  const extractCourseName = (fullName) => {
-    // Remove department and course number
-    return fullName.split(" ").slice(2).join(" ").trim();
+  const extractCourseDetails = (fullName) => {
+    const parts = fullName.split(" ");
+    if (parts.length < 3) return { department: "", number: "", name: fullName.trim() };
+    
+    const department = parts[0].trim();
+    const number = parts[1].trim();
+    const name = parts.slice(2).join(" ").trim();
+
+    return { department, number, name };
   };
   
-  const extractedCourseName = extractCourseName(courseName);
+  const { department, number, name } = extractCourseDetails(courseName);
   const course = courseData.find(
-    (course) => course.course_name.trim().toLowerCase() === extractedCourseName.toLowerCase()
+    (course) =>
+      course.course_name.trim().toLowerCase() === name.toLowerCase() &&
+      course.course_department.trim().toLowerCase() === department.toLowerCase() &&
+      course.course_number.toString() === number
   );
-
-  if (!course) {
-    return <Typography variant="h6">Course not found</Typography>;
-  }
 
   const { course_id } = course;
 

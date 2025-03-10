@@ -83,8 +83,6 @@ def store_course_data(
         port=int(vectorstore_config_dict['port'])
     )
     
-    print("vector_store",vectorstore)
-    
     if vectorstore:
         # define record manager
         namespace = f"pgvector/{vectorstore_config_dict['collection_name']}"

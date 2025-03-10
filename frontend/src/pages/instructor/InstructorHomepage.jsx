@@ -69,7 +69,7 @@ function constructWebSocketUrl() {
   const host = tmpObj.hostname;
   const header = {
       host: host,
-      Authorization: "API_KEY=",
+      Authorization: `API_KEY=${import.meta.env.VITE_API_KEY}`,
   };
 
   const encodedHeader = btoa(JSON.stringify(header));
@@ -124,7 +124,7 @@ function openWebSocket(courseName, course_id, requestId, setNotificationForCours
             data: `{"query":"subscription OnNotify($request_id: String!) { onNotify(request_id: $request_id) { message request_id } }","variables":{"request_id":"${requestId}"}}`,
             extensions: {
                 authorization: {
-                    Authorization: "API_KEY=",
+                    Authorization: `API_KEY=${import.meta.env.VITE_API_KEY}`,
                     host: new URL(import.meta.env.VITE_GRAPHQL_WS_URL).hostname,
                 },
             },
@@ -236,6 +236,7 @@ const CourseDetails = ({ courseData }) => {
     }
   };
 
+
   return (
     <PageContainer>
       <AppBar
@@ -245,7 +246,7 @@ const CourseDetails = ({ courseData }) => {
       >
         <InstructorHeader />
       </AppBar>
-      <InstructorSidebar setSelectedComponent={setSelectedComponent} course_id={course_id} selectedComponent={selectedComponent} />
+      <InstructorSidebar setSelectedComponent={setSelectedComponent} course_id={course_id} selectedComponent={course_id} />
       {renderComponent()}
     </PageContainer>
   );
@@ -379,8 +380,10 @@ const InstructorHomepage = () => {
 
     if (course) {
       const { course_id, course_department, course_number } = course;
-      const path = `/course/${course_department} ${course_number} ${courseName.trim()}`;
-      navigate(path, { state: { course_id } });
+      // After – include course_id as a URL parameter
+      const path = `/course/${encodeURIComponent(`${course_department} ${course_number} ${courseName.trim()}`)}/${course_id}`;
+      navigate(path);
+
     } else {
       console.error("Course not found!");
     }

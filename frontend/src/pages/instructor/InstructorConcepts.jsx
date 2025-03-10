@@ -116,13 +116,13 @@ const InstructorConcepts = ({ courseName, course_id }) => {
   });
 
   const handleEditClick = (conceptData) => {
-    navigate(`/course/${courseName}/edit-concept/${conceptData.concept_id}`, {
+    navigate(`/course/${courseName}/${course_id}/edit-concept/${conceptData.concept_id}`, {
       state: { conceptData, course_id: course_id },
     });
   };
 
   const handleCreateConceptClick = () => {
-    navigate(`/course/${courseName}/new-concept`, {
+    navigate(`/course/${courseName}/${course_id}/new-concept`, {
       state: { data, course_id },
     });
   };

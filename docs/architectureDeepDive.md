@@ -17,6 +17,11 @@
 9. Users can start chatting with the LLM by sending an API request that invokes the Lambda function to generate a response. The Lambda function runs a Docker container with Amazon ECR.
 10. The lambda function stores the embedded messages in Amazon DynamoDB
 11. This lambda function uses RAG architecture to retrieve the response from LLMs hosted on Amazon Bedrock augmented with the course's information stored in the Amazon RDS.
+12. When an instructor clicks download chat logs, it is queued in Amazon SQS.
+13. An AWS Lambda function is triggered by the SQS queue to process the chat messages asynchronously.
+14. The processed chat messages are then stored in the Amazon RDS database for structured storage and retrieval.
+15. Additionally, chat logs are stored in Amazon S3.
+16. The Lambda function also interacts with AWS AppSync (GraphQL) to update the frontend chat interface in real-time, with notifications for when the CSV is finished downlaoding.
 
 ## Database Schema
 

@@ -183,13 +183,27 @@ function openWebSocket(courseName, course_id, requestId, setNotificationForCours
 };
 
 // course details page
-const CourseDetails = () => {
-  const location = useLocation();
+const CourseDetails = ({ courseData }) => {
   const { courseName } = useParams();
   const [selectedComponent, setSelectedComponent] = useState(
     "InstructorAnalytics"
   );
-  const { course_id } = location.state;
+
+  const extractCourseName = (fullName) => {
+    // Remove department and course number
+    return fullName.split(" ").slice(2).join(" ").trim();
+  };
+  
+  const extractedCourseName = extractCourseName(courseName);
+  const course = courseData.find(
+    (course) => course.course_name.trim().toLowerCase() === extractedCourseName.toLowerCase()
+  );
+
+  if (!course) {
+    return <Typography variant="h6">Course not found</Typography>;
+  }
+
+  const { course_id } = course;
 
   const renderComponent = () => {
     switch (selectedComponent) {
@@ -478,7 +492,7 @@ const InstructorHomepage = () => {
           </PageContainer>
         }
       />
-      <Route exact path=":courseName/*" element={<CourseDetails openWebSocket={openWebSocket} />} />
+      <Route exact path=":courseName/*" element={<CourseDetails courseData={courseData} openWebSocket={openWebSocket} />} />
       <Route
         path=":courseName/edit-module/:moduleId"
         element={<InstructorEditCourse />}

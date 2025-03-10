@@ -246,7 +246,7 @@ const CourseDetails = ({ courseData }) => {
       >
         <InstructorHeader />
       </AppBar>
-      <InstructorSidebar setSelectedComponent={setSelectedComponent} course_id={course_id} selectedComponent={course_id} />
+      <InstructorSidebar setSelectedComponent={setSelectedComponent} course_id={course_id} selectedComponent={selectedComponent} />
       {renderComponent()}
     </PageContainer>
   );
@@ -380,10 +380,8 @@ const InstructorHomepage = () => {
 
     if (course) {
       const { course_id, course_department, course_number } = course;
-      // After – include course_id as a URL parameter
-      const path = `/course/${encodeURIComponent(`${course_department} ${course_number} ${courseName.trim()}`)}/${course_id}`;
-      navigate(path);
-
+      const path = `/course/${course_department} ${course_number} ${courseName.trim()}`;
+      navigate(path, { state: { course_id } });
     } else {
       console.error("Course not found!");
     }

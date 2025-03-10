@@ -183,64 +183,53 @@ function openWebSocket(courseName, course_id, requestId, setNotificationForCours
 };
 
 // course details page
-const CourseDetails = ({ courseData }) => {
+const CourseDetails = () => {
   const { courseName } = useParams();
   const [selectedComponent, setSelectedComponent] = useState(
     "InstructorAnalytics"
   );
+  const [courseId, setCourseId] = useState(localStorage.getItem("selectedCourseId") || null);
 
-  const extractCourseDetails = (fullName) => {
-    const parts = fullName.split(" ");
-    if (parts.length < 3) return { department: "", number: "", name: fullName.trim() };
-    
-    const department = parts[0].trim();
-    const number = parts[1].trim();
-    const name = parts.slice(2).join(" ").trim();
+  useEffect(() => {
+    if (!courseId) {
+      const storedCourseId = localStorage.getItem("selectedCourseId");
+      if (storedCourseId) {
+        setCourseId(storedCourseId);
+      }
+    }
+  }, []);
 
-    return { department, number, name };
-  };
-  
-  const { department, number, name } = extractCourseDetails(courseName);
-  const course = courseData.find(
-    (course) =>
-      course.course_name.trim().toLowerCase() === name.toLowerCase() &&
-      course.course_department.trim().toLowerCase() === department.toLowerCase() &&
-      course.course_number.toString() === number
-  );
-
-  if (!course) {
+  if (!courseId) {
     return <Typography variant="h6">Loading ...</Typography>;
   }
-
-  const { course_id } = course;
 
   const renderComponent = () => {
     switch (selectedComponent) {
       case "InstructorAnalytics":
         return (
-          <InstructorAnalytics courseName={courseName} course_id={course_id} />
+          <InstructorAnalytics courseName={courseName} course_id={courseId} />
         );
       case "InstructorEditCourse":
         return (
-          <InstructorModules courseName={courseName} course_id={course_id} />
+          <InstructorModules courseName={courseName} course_id={courseId} />
         );
       case "InstructorEditConcepts":
         return (
           <InstructorConcepts
             courseName={courseName}
-            course_id={course_id}
+            course_id={courseId}
             setSelectedComponent={setSelectedComponent}
           />
         );
       case "PromptSettings":
-        return <PromptSettings courseName={courseName} course_id={course_id} />;
+        return <PromptSettings courseName={courseName} course_id={courseId} />;
       case "ViewStudents":
-        return <ViewStudents courseName={courseName} course_id={course_id} />;
+        return <ViewStudents courseName={courseName} course_id={courseId} />;
       case "ChatLogs":
-        return <ChatLogs courseName={courseName} course_id={course_id} openWebSocket={openWebSocket} />;
+        return <ChatLogs courseName={courseName} course_id={courseId} openWebSocket={openWebSocket} />;
       default:
         return (
-          <InstructorAnalytics courseName={courseName} course_id={course_id} />
+          <InstructorAnalytics courseName={courseName} course_id={courseId} />
         );
     }
   };
@@ -255,7 +244,7 @@ const CourseDetails = ({ courseData }) => {
       >
         <InstructorHeader />
       </AppBar>
-      <InstructorSidebar setSelectedComponent={setSelectedComponent} course_id={course_id} selectedComponent={selectedComponent} />
+      <InstructorSidebar setSelectedComponent={setSelectedComponent} course_id={courseId} selectedComponent={selectedComponent} />
       {renderComponent()}
     </PageContainer>
   );
@@ -273,7 +262,7 @@ const InstructorHomepage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
-  const [courseData, setCourseData] = useState([]);  
+  const [courseData, setCourseData] = useState([]);
   const { isInstructorAsStudent } = useContext(UserContext);
   const { setNotificationForCourse } = useNotification();
   const hasFetched = useRef(false);
@@ -383,6 +372,7 @@ const InstructorHomepage = () => {
   );
 
   const handleRowClick = (courseName, course_id) => {
+    localStorage.setItem("selectedCourseId", course_id);
     const course = courseData.find(
       (course) => course.course_name.trim() === courseName.trim()
     );
@@ -502,7 +492,7 @@ const InstructorHomepage = () => {
           </PageContainer>
         }
       />
-      <Route exact path=":courseName/*" element={<CourseDetails courseData={courseData} openWebSocket={openWebSocket} />} />
+      <Route exact path=":courseName/*" element={<CourseDetails openWebSocket={openWebSocket} />} />
       <Route
         path=":courseName/edit-module/:moduleId"
         element={<InstructorEditCourse />}

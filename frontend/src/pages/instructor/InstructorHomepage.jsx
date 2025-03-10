@@ -208,6 +208,10 @@ const CourseDetails = ({ courseData }) => {
       course.course_number.toString() === number
   );
 
+  if (!course) {
+    return <Typography variant="h6">Loading ...</Typography>;
+  }
+
   const { course_id } = course;
 
   const renderComponent = () => {

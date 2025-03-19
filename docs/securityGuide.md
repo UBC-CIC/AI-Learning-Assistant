@@ -539,6 +539,7 @@ Amazon Elastic Container Registry (ECR) provides a secure, scalable private cont
 
 ---
 
+
 **Recommendation:**  
 - Enable image scanning on push to detect vulnerabilities and remediate issues 
 - Regularly review ECR logs in **AWS CloudTrail** to identify suspicious or unauthorized access attempts

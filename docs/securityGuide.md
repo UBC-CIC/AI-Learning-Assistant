@@ -512,3 +512,34 @@ AWS KMS (Key Management Service) provides centralized encryption key management,
 ### 13.2 Security Measures:
 - KMS Key Access Logs: Records every use of an encryption key to help detect unauthorized decryption attempts
 - Excessive Key Usage: Triggers alerts if a specific key is accessed more than usual, potentially indicating a compromise
+
+
+## 14. Amazon ECR
+
+**Purpose:**  
+Amazon Elastic Container Registry (ECR) provides a secure, scalable private container registry. It integrates with AWS Identity and Access Management (IAM) and other AWS security services to protect container images
+
+[Learn more](https://docs.aws.amazon.com/AmazonECR/latest/userguide/infrastructure-security.html)
+
+---
+
+**Key Security Measures:**
+1. **Private Repositories**  
+   - Images are stored privately; access is controlled by IAM and resource-based policies.  
+   - [Learn more](https://docs.aws.amazon.com/AmazonECR/latest/userguide/repository-policies.html)
+
+2. **TLS Enforcement**  
+   - All ECR API calls must use TLS 1.2 or higher, ensuring data in transit is secure
+
+3. **IAM Roles & Policies**  
+   - There are permissions (e.g., `ecr:GetAuthorizationToken`, `ecr:BatchGetImage`) that control who can push/pull images
+
+5. **Lifecycle Policies**  
+   - Automatically remove outdated images to minimize storage costs and reduce the attack surface
+
+---
+
+**Recommendation:**  
+- Enable image scanning on push to detect vulnerabilities and remediate issues 
+- Regularly review ECR logs in **AWS CloudTrail** to identify suspicious or unauthorized access attempts
+- Implement **lifecycle policies** to retain only the most recent, patched images for better security and cost efficiency

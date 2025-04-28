@@ -105,10 +105,7 @@ def get_module_name(module_id):
     connection = connect_to_db()
     if connection is None:
         logger.error("No database connection available.")
-        return {
-            "statusCode": 500,
-            "body": json.dumps("Database connection failed.")
-        }
+        return None
     
     try:
         cur = connection.cursor()
@@ -143,10 +140,7 @@ def get_system_prompt(course_id):
     connection = connect_to_db()
     if connection is None:
         logger.error("No database connection available.")
-        return {
-            "statusCode": 500,
-            "body": json.dumps("Database connection failed.")
-        }
+        return None
     
     try:
         cur = connection.cursor()
@@ -325,6 +319,10 @@ def handler(event, context):
     
     try:
         logger.info("Generating response from the LLM.")
+        connection = connect_to_db()
+        if connection is None:
+            logger.error("No database connection available.")
+            raise Exception("No database connection available.")
         response = get_response(
             query=student_query,
             topic=topic,
@@ -332,7 +330,10 @@ def handler(event, context):
             history_aware_retriever=history_aware_retriever,
             table_name=TABLE_NAME,
             session_id=session_id,
-            course_system_prompt=system_prompt
+            course_system_prompt=system_prompt,
+            course_id=course_id,
+            module_id=module_id,
+            connection=connection
         )
     except Exception as e:
         logger.error(f"Error getting response: {e}")

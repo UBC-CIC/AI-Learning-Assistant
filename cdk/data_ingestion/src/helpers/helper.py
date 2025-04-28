@@ -58,9 +58,10 @@ def get_vectorstore(
         logger.error(f"Error initializing vector store: {e}")
         return None
     
-def store_course_data(
+def store_module_data(
     bucket: str, 
     course: str, 
+    module: str,
     vectorstore_config_dict: Dict[str, str], 
     embeddings: BedrockEmbeddings
 ) -> None:
@@ -70,6 +71,7 @@ def store_course_data(
     Args:
     bucket (str): The name of the S3 bucket.
     course (str): The course name/folder in the S3 bucket.
+    module (str): The moudle name/folder in the S3 bucket.
     vectorstore_config_dict (Dict[str, str]): The configuration dictionary for the vectorstore.
     embeddings (BedrockEmbeddings): The embeddings instance.
     """
@@ -99,6 +101,7 @@ def store_course_data(
     process_documents(
         bucket=bucket,
         course=course,
+        module=module,
         vectorstore=vectorstore,
         embeddings=embeddings,
         record_manager=record_manager

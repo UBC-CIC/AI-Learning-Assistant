@@ -17,6 +17,7 @@ import {
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { fetchAuthSession, fetchUserAttributes } from "aws-amplify/auth";
+import { v4 as uuidv4 } from 'uuid';
 
 // populate with dummy data
 const createData = (name, email) => {
@@ -63,13 +64,13 @@ export const ViewStudents = ({ courseName, course_id }) => {
   const [accessCode, setAccessCode] = useState("loading...");
 
   const navigate = useNavigate();
-  const [allMessageData, setAllMessageData] = useState([]);
 
   useEffect(() => {
     const fetchCode = async () => {
       try {
         const session = await fetchAuthSession();
         var token = session.tokens.idToken;
+        console.log(course_id)
         const response = await fetch(
           `${
             import.meta.env.VITE_API_ENDPOINT
@@ -97,11 +98,14 @@ export const ViewStudents = ({ courseName, course_id }) => {
 
     fetchCode();
   }, [course_id]);
+
   // retrieve analytics data
   useEffect(() => {
     const fetchStudents = async () => {
       try {
+        console.log("checkpoint1")
         const session = await fetchAuthSession();
+        console.log("checkpoint2")
         var token = session.tokens.idToken;
         const response = await fetch(
           `${
@@ -136,63 +140,14 @@ export const ViewStudents = ({ courseName, course_id }) => {
 
     fetchStudents();
   }, []);
-
-  const fetchCourseMessages = async () => {
-    try {
-      const session = await fetchAuthSession();
-      const token = session.tokens.idToken;
-      const { email } = await fetchUserAttributes();
-      const response = await fetch(
-        `${
-          import.meta.env.VITE_API_ENDPOINT
-        }instructor/course_messages?course_id=${encodeURIComponent(
-          course_id
-        )}&instructor_email=${encodeURIComponent(email)}`,
-        {
-          method: "GET",
-          headers: {
-            Authorization: token,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-      if (response.ok) {
-        const data = await response.json();
-        setAllMessageData(data);
-        downloadCSV(data);
-      } else {
-        console.error("Failed to fetch messages:", response.statusText);
-      }
-    } catch (error) {
-      console.error("Error fetching data:", error);
-    }
-  };
-
-  function downloadCSV(data) {
-    const headers = Object.keys(data[0]);
-    const csvRows = data.map((obj) =>
-      headers
-        .map((header) => {
-          const value = obj[header];
-          // Enclose the value in quotes and escape inner quotes
-          return `"${String(value).replace(/"/g, '""')}"`;
-        })
-        .join(",")
-    );
-    const csvContent = [headers.join(","), ...csvRows].join("\n");
-    const blob = new Blob([csvContent], { type: "text/csv" });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = "data.csv";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  }
-
+  
   const handleGenerateAccessCode = async () => {
     try {
+      
       const session = await fetchAuthSession();
+      
       var token = session.tokens.idToken;
+      
       const response = await fetch(
         `${
           import.meta.env.VITE_API_ENDPOINT
@@ -234,7 +189,7 @@ export const ViewStudents = ({ courseName, course_id }) => {
     row.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
   const handleRowClick = (student) => {
-    navigate(`/course/${course_id}/student/${student.name}`, {
+    navigate(`/course/${courseName}/student/${student.name}`, {
       state: { course_id, student },
     });
   };
@@ -260,15 +215,6 @@ export const ViewStudents = ({ courseName, course_id }) => {
           >
             {courseTitleCase(courseName)} Students
           </Typography>
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={() => {
-              fetchCourseMessages();
-            }}
-          >
-            Download Classroom Chatlog
-          </Button>
         </Box>
         <Paper sx={{ width: "170%", overflow: "hidden", marginTop: 2 }}>
           <TableContainer sx={{ maxHeight: "50vh", overflowY: "auto" }}>

@@ -1253,7 +1253,71 @@ paths:
         passthroughBehavior: "when_no_match"
         httpMethod: "POST"
         type: "aws_proxy"
- 
+
+  /instructor/events_notify:
+    options:
+      summary: CORS support
+      description: |
+        Enable CORS by returning correct headers
+      responses:
+        200:
+          $ref: "#/components/responses/Success"
+      x-amazon-apigateway-integration:
+        type: mock
+        requestTemplates:
+          application/json: |
+            {
+              "statusCode" : 200
+            }
+        responses:
+          default:
+            statusCode: "200"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key'"
+              method.response.header.Access-Control-Allow-Methods: "'*'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+            responseTemplates:
+              application/json: |
+                {}
+    post:
+      tags:
+        - Events
+      summary: Notify clients of an event
+      operationId: events_notify_POST
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                  description: The message to send
+                sessionId:
+                  type: string
+                  description: The session ID
+      responses:
+        "200":
+          description: Notification sent
+        "400":
+          description: Invalid value
+        "401":
+          description: Unauthorized
+        "429":
+          description: Too Many Requests
+        "500":
+          description: Internal Server Error
+      security:
+        - instructorAuthorizer: []
+      x-amazon-apigateway-integration:
+        uri:
+          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${NotificationFunction.Arn}/invocations"
+        passthroughBehavior: "when_no_match"
+        httpMethod: "POST"
+        type: "aws_proxy"
+
+
   /instructor/course_messages:
     options:
       summary: CORS support
@@ -1279,34 +1343,39 @@ paths:
             responseTemplates:
               application/json: |
                 {}
-    get:
-      summary: Retrieve course messages and competency status for a specific student
-      description: |
-        This endpoint returns all messages for a specific student in a course. It includes user_id, module_name, session, message content, competency status (complete/incomplete), and message timestamp, ordered by user_id, module_name, session, and timestamp.
-      parameters:
-        - name: instructor_email
-          in: query
-          required: true
-          schema:
-            type: string
-          description: The email of the instructor.
-        - name: course_id
-          in: query
-          required: true
-          schema:
-            type: string
-          description: The course ID.
+    post:
+      tags:
+        - Instructor
+      summary: Submit course message retrieval job
+      operationId: instructor_course_messages_POST
+      description: Submit a job to retrieve course messages via SQS.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                instructor_email:
+                  type: string
+                  description: The instructor's email.
+                course_id:
+                  type: string
+                  description: The course ID.
+              required:
+                - instructor_email
+                - course_id
       responses:
         "200":
-          description: Presigned URL generated successfully
+          description: Job submitted successfully.
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  presignedurl:
+                  message:
                     type: string
-                    description: Presigned URL to upload document file to S3 Bucket
+                    description: A success message.
         "400":
           description: Bad Request
         "401":
@@ -1319,7 +1388,7 @@ paths:
         - instructorAuthorizer: []
       x-amazon-apigateway-integration:
         uri:
-          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${instructorFunction.Arn}/invocations"
+          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${sqsFunction.Arn}/invocations"
         passthroughBehavior: "when_no_match"
         httpMethod: "POST"
         type: "aws_proxy"
@@ -1554,6 +1623,79 @@ paths:
         passthroughBehavior: "when_no_match"
         httpMethod: "POST"
         type: "aws_proxy"
+  /instructor/fetch_chatlogs:
+    options:
+      summary: CORS support
+      description: Enable CORS by returning correct headers
+      responses:
+        200:
+          $ref: "#/components/responses/Success"
+      x-amazon-apigateway-integration:
+        type: mock
+        requestTemplates:
+          application/json: |
+            {
+              "statusCode" : 200
+            }
+        responses:
+          default:
+            statusCode: "200"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key'"
+              method.response.header.Access-Control-Allow-Methods: "'*'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+            responseTemplates:
+              application/json: |
+                {}
+
+    get:
+      tags:
+        - Instructor
+      summary: Get a chatlog files for a specific course requested by instructor
+      operationId: instructor_fetch_chatlogs_GET
+      parameters:
+        - in: query
+          name: course_id
+          required: true
+          description: ID of the course
+          schema:
+            type: string
+        - in: query
+          name: instructor_email
+          required: true
+          description: Email of the instructor
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Recieved all the chatlog files for the course requested by the instructor successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  log_files:
+                    type: object
+                    description: A dictionary where keys are file names and values are presigned URLs
+                    additionalProperties:
+                      type: string
+                      description: Presigned URL for the log file
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "429":
+          description: Too Many Requests
+        "500":
+          description: Internal Server Error
+      security:
+        - instructorAuthorizer: []
+      x-amazon-apigateway-integration:
+        uri:
+          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetChatLogsFunction.Arn}/invocations"
+        passthroughBehavior: "when_no_match"
+        httpMethod: "POST"
+        type: "aws_proxy"
   /instructor/courses:
     options:
       summary: CORS support
@@ -1594,6 +1736,68 @@ paths:
       responses:
         "200":
           description: Courses retrieved successfully
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "429":
+          description: Too Many Requests
+        "500":
+          description: Internal Server Error
+      security:
+        - instructorAuthorizer: []
+      x-amazon-apigateway-integration:
+        uri:
+          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${instructorFunction.Arn}/invocations"
+        passthroughBehavior: "when_no_match"
+        httpMethod: "POST"
+        type: "aws_proxy"
+  /instructor/remove_completed_notification:
+    options:
+      summary: CORS support
+      description: |
+        Enable CORS by returning correct headers
+      responses:
+        200:
+          $ref: "#/components/responses/Success"
+      x-amazon-apigateway-integration:
+        type: mock
+        requestTemplates:
+          application/json: |
+            {
+              "statusCode" : 200
+            }
+        responses:
+          default:
+            statusCode: "200"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key'"
+              method.response.header.Access-Control-Allow-Methods: "'*'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+            responseTemplates:
+              application/json: |
+                {}
+    delete:
+      tags:
+        - Instructor
+      summary: Delete row from database since CSV file full of chatlogs has been completed and notification has been sent to front-end
+      operationId: instructor_delete_file_DELETE
+      parameters:
+        - in: query
+          name: course_id
+          required: true
+          description: ID of the course
+          schema:
+            type: string
+        - in: query
+          name: instructor_email
+          required: true
+          description: Email of the instructor
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Notification deleted successfully
         "400":
           description: Bad Request
         "401":
@@ -2885,6 +3089,87 @@ paths:
           description: Module deleted successfully
         "400":
           description: Bad Request
+        "401":
+          description: Unauthorized
+        "429":
+          description: Too Many Requests
+        "500":
+          description: Internal Server Error
+      security:
+        - instructorAuthorizer: []
+      x-amazon-apigateway-integration:
+        uri:
+          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${instructorFunction.Arn}/invocations"
+        passthroughBehavior: "when_no_match"
+        httpMethod: "POST"
+        type: "aws_proxy"
+  /instructor/check_notifications_status:
+    options:
+      summary: CORS support
+      description: |
+        Enable CORS by returning correct headers
+      responses:
+        200:
+          $ref: "#/components/responses/Success"
+      x-amazon-apigateway-integration:
+        type: mock
+        requestTemplates:
+          application/json: |
+            {
+              "statusCode" : 200
+            }
+        responses:
+          default:
+            statusCode: "200"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key'"
+              method.response.header.Access-Control-Allow-Methods: "'*'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+            responseTemplates:
+              application/json: |
+                {}
+    get:
+      tags:
+        - Instructor
+      summary: Check the completion status for getting the chatlogs for a course requested by an instructor
+      operationId: instructor_check_notifications_status_GET
+      parameters:
+        - in: query
+          name: course_id
+          required: true
+          description: The ID of the course
+          schema:
+            type: string
+        - in: query
+          name: instructor_email
+          required: true
+          description: The email of the instructor
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Prompt retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  isEnabled:
+                    type: Boolean
+                    description: Indicates whether the button to generate chatlogs should be enabled or disabled
+                  completionStatus:
+                    type: boolean
+                    nullable: true
+                    description: The actual value of the completion status. If the row does not exist, this will be null.
+                  requestId:
+                    type: string
+                    format: uuid
+                    nullable: true
+                    description: The request_id used to subscribe to AppSync. If the row does not exist, this will be null.
+        "400":
+          description: Bad Request
+        "404":
+          description: Course not found
         "401":
           description: Unauthorized
         "429":

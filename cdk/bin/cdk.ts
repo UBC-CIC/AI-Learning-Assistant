@@ -14,7 +14,6 @@ const env = {
   region: process.env.CDK_DEFAULT_REGION 
 };
 const StackPrefix = app.node.tryGetContext("StackPrefix")
-
 const vpcStack = new VpcStack(app, `${StackPrefix}-VpcStack`, { env });
 const dbStack = new DatabaseStack(app, `${StackPrefix}-DatabaseStack`, vpcStack, { env });
 const apiStack = new ApiGatewayStack(app, `${StackPrefix}-ApiGatewayStack`, dbStack, vpcStack,  { env });

@@ -37,7 +37,7 @@ def get_secret():
             response = secrets_manager_client.get_secret_value(SecretId=DB_SECRET_NAME)["SecretString"]
             db_secret = json.loads(response)
         except Exception as e:
-            logger.error(f"Error fetching secret {DB_SECRET_NAME}: {e}")
+            logger.error(f"Error fetching secret: {e}")
             raise
     return db_secret
 
@@ -164,7 +164,7 @@ def insert_file_into_db(module_id, file_name, file_type, file_path, bucket_name)
         logger.error(f"Error inserting file {file_name}.{file_type} into database: {e}")
         raise
 
-def update_vectorstore_from_s3(bucket, course_id):
+def update_vectorstore_from_s3(bucket, course_id, module_id):
 
     embeddings = BedrockEmbeddings(
         model_id=get_parameter(), 
@@ -175,7 +175,7 @@ def update_vectorstore_from_s3(bucket, course_id):
     secret = get_secret()
 
     vectorstore_config_dict = {
-        'collection_name': f'{course_id}',
+        'collection_name': f'{module_id}',
         'dbname': secret["dbname"],
         'user': secret["username"],
         'password': secret["password"],
@@ -187,11 +187,12 @@ def update_vectorstore_from_s3(bucket, course_id):
         update_vectorstore(
             bucket=bucket,
             course=course_id,
+            module=module_id,
             vectorstore_config_dict=vectorstore_config_dict,
             embeddings=embeddings
         )
     except Exception as e:
-        logger.error(f"Error updating vectorstore for course {course_id}: {e}")
+        logger.error(f"Error updating vectorstore for module {module_id} in course {course_id}: {e}")
         raise
 
 def handler(event, context):
@@ -243,8 +244,8 @@ def handler(event, context):
         
         # Update embeddings for course after the file is successfully inserted into the database
         try:
-            update_vectorstore_from_s3(bucket_name, course_id)
-            logger.info(f"Vectorstore updated successfully for course {course_id}.")
+            update_vectorstore_from_s3(bucket_name, course_id, module_id)
+            logger.info(f"Vectorstore updated successfully for module {module_id} in course {course_id}.")
         except Exception as e:
             logger.error(f"Error updating vectorstore for course {course_id}: {e}")
             return {

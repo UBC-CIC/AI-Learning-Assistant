@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 // MUI
 import {
@@ -9,21 +9,28 @@ import {
   ListItemText,
   Divider,
   Box,
+  Badge,
 } from "@mui/material";
 import HomeIcon from "@mui/icons-material/Home";
 import ViewTimelineIcon from "@mui/icons-material/ViewTimeline";
 import EditIcon from "@mui/icons-material/Edit";
 import PsychologyIcon from "@mui/icons-material/Psychology";
 import GroupIcon from "@mui/icons-material/Group";
+import DescriptionIcon from "@mui/icons-material/Description";
+import { useNotification } from "../../context/NotificationContext";
 
-const InstructorSidebar = ({ setSelectedComponent }) => {
+const InstructorSidebar = ({ setSelectedComponent, course_id, selectedComponent }) => {
   const navigate = useNavigate();
+  const { notifications, setNotificationForCourse } = useNotification();
 
   const handleNavigation = (component) => {
     if (component === "InstructorAllCourses") {
       navigate("/home"); 
     } else {
       setSelectedComponent(component);
+      if (component === "ChatLogs") {
+        setNotificationForCourse(course_id, false);
+      }
     }
   };
 
@@ -91,6 +98,19 @@ const InstructorSidebar = ({ setSelectedComponent }) => {
               <GroupIcon />
             </ListItemIcon>
             <ListItemText primary="View Students" />
+          </ListItem>
+          <Divider />
+          <ListItem button onClick={() => handleNavigation("ChatLogs")}>
+            <ListItemIcon>
+              <Badge
+                color="error"
+                variant="dot"
+                invisible={!notifications[course_id] || selectedComponent === "ChatLogs"}
+              >
+                <DescriptionIcon />
+              </Badge>
+            </ListItemIcon>
+            <ListItemText primary="Chat History" />
           </ListItem>
         </List>
       </Box>

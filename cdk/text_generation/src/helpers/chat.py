@@ -79,6 +79,47 @@ def get_bedrock_llm(
         model_kwargs=dict(temperature=temperature),
     )
 
+def get_other_module_names(course_id: str, current_module_id: str, connection) -> list[str]:
+    """
+    Retrieve all other module names in the same course, excluding the current module.
+
+    Args:
+    course_id (str): The course ID.
+    current_module_id (str): The current module ID.
+    connection: The active database connection.
+
+    Returns:
+    list[str]: A list of other module names in the same course.
+    """
+    if connection is None:
+        print("No database connection available.")
+        return []
+
+    try:
+        cur = connection.cursor()
+
+        query = """
+            SELECT cm.module_name
+            FROM "Course_Modules" cm
+            INNER JOIN "Course_Concepts" cc ON cm.concept_id = cc.concept_id
+            WHERE cc.course_id = %s AND cm.module_id != %s;
+        """
+        cur.execute(query, (course_id, current_module_id))
+        results = cur.fetchall()
+        connection.commit()
+        cur.close()
+
+        other_modules = [row[0] for row in results]
+        print(f"Other modules in course {course_id}: {other_modules}")
+        return other_modules
+
+    except Exception as e:
+        if cur:
+            cur.close()
+        connection.rollback()
+        print(f"Error fetching other module names: {e}")
+        return []
+
 def get_student_query(raw_query: str) -> str:
     """
     Format the student's raw query into a specific template suitable for processing.
@@ -120,7 +161,10 @@ def get_response(
     history_aware_retriever,
     table_name: str,
     session_id: str,
-    course_system_prompt: str
+    course_system_prompt: str,
+    course_id: str,
+    module_id: str,
+    connection
 ) -> dict:
     """
     Generates a response to a query using the LLM and a history-aware retriever for context.
@@ -184,7 +228,7 @@ def get_response(
             session_id
         )
     
-    return get_llm_output(response)
+    return get_llm_output(response, course_id, module_id, connection)
 
 def generate_response(conversational_rag_chain: object, query: str, session_id: str) -> str:
     """
@@ -207,7 +251,12 @@ def generate_response(conversational_rag_chain: object, query: str, session_id: 
         },  # constructs a key "session_id" in `store`.
     )["answer"]
 
-def get_llm_output(response: str) -> dict:
+def get_llm_output(
+    response: str,
+    course_id: str,
+    module_id: str,
+    connection
+    ) -> dict:
     """
     Processes the response from the LLM to determine if competency has been achieved.
 
@@ -241,13 +290,22 @@ def get_llm_output(response: str) -> dict:
                         llm_verdict=False
                     )
                 else:
+                    other_modules = get_other_module_names(course_id, module_id, connection)
+                    recommendation = ""
+                    if other_modules:
+                        recommendation = " You may also want to explore these modules next: " + ", ".join(other_modules) + "."
                     return dict(
-                        llm_output=llm_response + competion_sentence,
+                        llm_output=llm_response + competion_sentence + recommendation,
                         llm_verdict=True
                     )
     elif "compet" in response or "master" in response:
+        other_modules = get_other_module_names(course_id, module_id, connection)
+        recommendation = ""
+        if other_modules:
+            recommendation = " You may also want to explore these modules next: " + ", ".join(other_modules) + "."
+        
         return dict(
-            llm_output=response + competion_sentence,
+            llm_output=response + competion_sentence + recommendation,
             llm_verdict=True
         )
 

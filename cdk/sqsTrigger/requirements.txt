@@ -1,0 +1,8 @@
+boto3
+botocore
+sqlalchemy
+Pillow
+pymupdf
+psycopg[binary,pool]
+psycopg2-binary
+httpx

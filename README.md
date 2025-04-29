@@ -3,17 +3,20 @@
 This prototype explores how Large Language Models (LLMs) can enhance education by offering a personalized and adaptive learning experience. The LLM complements an instructor's role by providing tailored feedback, identifying knowledge gaps, and recommending targeted resources to students. This approach resonates with the core principles of personalized education, transforming the learning experience into a journey of self-discovery and growth.
 
 
-| Index                                               | Description                                             |
-| :-------------------------------------------------- | :------------------------------------------------------ |
-| [High Level Architecture](#high-level-architecture) | High level overview illustrating component interactions |
-| [Deployment](#deployment-guide)                     | How to deploy the project                               |
-| [User Guide](#user-guide)                           | The working solution                                    |
-| [Directories](#directories)                         | General project directory structure                     |
-| [RAG Documentation](#rag-documentation)             | Documentation on how the project uses RAG               |
-| [API Documentation](#api-documentation)             | Documentation on the API the project uses               |
-| [Changelog](#changelog)                             | Any changes post publish                                |
-| [Credits](#credits)                                 | Meet the team behind the solution                       |
-| [License](#license)                                 | License details                                         |
+| Index                                                   | Description                                             |
+| :------------------------------------------------------ | :------------------------------------------------------ |
+| [High Level Architecture](#high-level-architecture)     | High level overview illustrating component interactions |
+| [Deployment](#deployment-guide)                         | How to deploy the project                               |
+| [User Guide](#user-guide)                               | The working solution                                    |
+| [Security & Network Guide](#security-guide-and-network-configuration) | Analysis on network architecture and security            |
+| [Directories](#directories)                             | General project directory structure                     |
+| [RAG Documentation](#rag-documentation)                 | Documentation on how the project uses RAG               |
+| [API Documentation](#api-documentation)                 | Documentation on the API the project uses               |
+| [Changelog](#changelog)                                 | Any changes post publish                                |
+| [Credits](#credits)                                     | Meet the team behind the solution                       |
+| [License](#license)                                     | License details                                         |
+
+---
 
 ## High-Level Architecture
 
@@ -28,6 +31,12 @@ To deploy this solution, please follow the steps laid out in the [Deployment Gui
 ## User Guide
 
 Please refer to the [Web App User Guide](./docs/userGuide.md) for instructions on navigating the web app interface.
+
+
+## Security Guide and Network Configuration
+
+Please refer to the [Security Guide](./docs/securityGuide.md) for an analysis on the network architecture and security of the project
+
 
 ## Directories
 

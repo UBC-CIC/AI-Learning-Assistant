@@ -11,7 +11,7 @@ import ViewStudents from "./ViewStudents";
 import InstructorModules from "./InstructorModules";
 
 // course details page
-const CourseDetails = () => {
+const CourseDetails = ({ openWebSocket }) => {
   const { courseId } = useParams();
   const [selectedComponent, setSelectedComponent] = useState(
     "InstructorAnalytics"
@@ -66,6 +66,8 @@ const CourseDetails = () => {
         return <PromptSettings courseId={courseId} />;
       case "ViewStudents":
         return <ViewStudents courseId={courseId} />;
+      case "ChatLogs":
+        return <ChatLogs courseName={courseName} course_id={course_id} openWebSocket={openWebSocket} />;
       default:
         return (
           <InstructorAnalytics courseId={courseId} course_id={course_id} />
@@ -81,7 +83,7 @@ const CourseDetails = () => {
       >
         <InstructorHeader />
       </AppBar>
-      <InstructorSidebar setSelectedComponent={setSelectedComponent} />
+      <InstructorSidebar setSelectedComponent={setSelectedComponent} course_id={course_id} selectedComponent={selectedComponent} />
       {renderComponent()}
     </PageContainer>
   );

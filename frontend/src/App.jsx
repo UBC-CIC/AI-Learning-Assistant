@@ -20,6 +20,7 @@ import StudentChat from "./pages/student/StudentChat";
 import AdminHomepage from "./pages/admin/AdminHomepage";
 import InstructorHomepage from "./pages/instructor/InstructorHomepage";
 import CourseView from "./pages/student/CourseView";
+import { NotificationProvider } from "./context/NotificationContext";
 
 export const UserContext = createContext();
 
@@ -86,41 +87,43 @@ function App() {
   };
 
   return (
-    <UserContext.Provider
-      value={{ isInstructorAsStudent, setIsInstructorAsStudent }}
-    >
-      <Router>
-        <Routes>
-          <Route
-            path="/"
-            element={user ? <Navigate to="/home" /> : <Login />}
-          />
-          <Route
-            path="/student_chat/*"
-            element={
-              <StudentChat
-                course={course}
-                module={module}
-                setModule={setModule}
-                setCourse={setCourse}
-              />
-            }
-          />
-          <Route
-            path="/student_course/*"
-            element={
-              <CourseView
-                course={course}
-                setModule={setModule}
-                setCourse={setCourse}
-              />
-            }
-          />
-          <Route path="/home/*" element={getHomePage()} />
-          <Route path="/course/*" element={<InstructorHomepage />} />
-        </Routes>
-      </Router>
-    </UserContext.Provider>
+    <NotificationProvider>
+      <UserContext.Provider
+        value={{ isInstructorAsStudent, setIsInstructorAsStudent }}
+      >
+        <Router>
+          <Routes>
+            <Route
+              path="/"
+              element={user ? <Navigate to="/home" /> : <Login />}
+            />
+            <Route
+              path="/student_chat/*"
+              element={
+                <StudentChat
+                  course={course}
+                  module={module}
+                  setModule={setModule}
+                  setCourse={setCourse}
+                />
+              }
+            />
+            <Route
+              path="/student_course/*"
+              element={
+                <CourseView
+                  course={course}
+                  setModule={setModule}
+                  setCourse={setCourse}
+                />
+              }
+            />
+            <Route path="/home/*" element={getHomePage()} />
+            <Route path="/course/*" element={<InstructorHomepage />} />
+          </Routes>
+        </Router>
+      </UserContext.Provider>
+    </NotificationProvider>
   );
 }
 

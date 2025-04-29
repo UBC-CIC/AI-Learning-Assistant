@@ -161,7 +161,17 @@
 | `timestamp`       | The timestamp of the engagement event        |
 | `engagement_type` | The type of engagement (e.g., module access) |
 
-## S3 Structure
+### `chatlogs_notifications` table
+
+| Column Name       | Description                                                                     |
+| ----------------- | ------------------------------------------------------------------------------- |
+| `id`              | The ID of the chatlogs notification entry (UUID)                                |
+| `course_id`       | The ID of the associated course (UUID)                                          |
+| `instructor_email`| The email of the instructor who requested the chat log (varchar)                |
+| `request_id`      | The ID of the associated chat log request (UUID)                                |
+| `completion`      | Boolean indicating whether the CSV file generation is completed (default FALSE) |
+
+## S3 Structure for Course Module Files
 
 ```
 .
@@ -177,3 +187,16 @@
             └── document2.pdf
 
 ```
+
+## S3 Structure for Chatlog CSVs
+.
+├── {course_id_1}
+│   └── {instructor_email}
+│       ├── chatlog_request1.csv
+│       ├── chatlog_request2.csv
+│       └── ...
+└── {course_id_2}
+    └── {instructor_email}
+        ├── chatlog_request1.csv
+        ├── chatlog_request2.csv
+        └── ...

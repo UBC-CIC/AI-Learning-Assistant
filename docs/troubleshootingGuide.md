@@ -97,4 +97,107 @@ Using an AWS SageMaker Notebook instance allows you to quickly experiment with a
 ---
 
 ### Checking Embeddings
-Coming soon...
+
+In this section, you will learn how to check whether document embeddings have been correctly generated and stored in the database.  
+Embeddings are organized into **collections**, and each collection corresponds to a **module** inside a **concept** inside a **course**.  
+To verify that embeddings are properly created, you first need to find the right **modules** inside a course. Once you have the module IDs, you can check the associated collections to make sure embeddings are present.
+
+---
+
+1. **View all concepts for a specific course**
+   - First, you need to see all the concepts belonging to a course. This will help you identify which concept you want to explore further.
+
+   - Paste the following SQL command into your database terminal:
+
+     ```sql
+     SELECT cc.concept_id, cc.concept_name
+     FROM "Course_Concepts" cc
+     JOIN "Courses" c ON cc.course_id = c.course_id
+     WHERE c.course_name = '<course name>';
+     ```
+
+   - Replace `<course name>` with the exact name of your course (case-sensitive).
+
+   - This will return a table listing **concept IDs** and **concept names** for the course you specified.
+
+   - You will use the **concept ID** you get here for the next step.
+
+---
+
+2. **View all modules within a concept**
+   - Now that you have the concept ID, you can view all the modules (which represent collections of embeddings) under that concept.
+
+   - Paste the following command:
+
+     ```sql
+     SELECT module_id, module_name 
+     FROM "Course_Modules" 
+     WHERE concept_id = '<concept_id>';
+     ```
+
+   - Replace `<concept_id>` with the concept ID you got from Step 1.
+
+   - This will return a table listing **module IDs** and **module names** that belong to the selected concept.
+
+   - Each module listed here has (or should have) an associated collection of embeddings.
+
+---
+
+3. **View embedding collections**
+   - You can now view the collections stored in your project.
+
+   - To see **all collections** in the project:
+
+     ```sql
+     SELECT * FROM langchain_pg_collection;
+     ```
+
+   - To see **only the collections related to a specific concept**:
+
+     ```sql
+     SELECT lpc.uuid, lpc.name
+     FROM "langchain_pg_collection" lpc
+     WHERE lpc.name IN (
+         SELECT cm.module_id::text
+         FROM "Course_Modules" cm
+         WHERE cm.concept_id = '<concept_id>'
+     );
+     ```
+
+   - Replace `<concept_id>` with the concept ID you retrieved earlier.
+
+   - **Notes:**
+     - The collection names should match the module IDs from Step 2.
+     - The number of collections shown should match the number of modules you saw earlier.
+     - Each collection corresponds to one module.
+
+---
+
+4. **Check number of embeddings in a collection**
+   - Finally, you can check how many embeddings exist for each module (collection).
+
+   - To check the number of embeddings for a specific module, use:
+
+     ```sql
+     SELECT COUNT(*)
+     FROM langchain_pg_embedding e
+     JOIN langchain_pg_collection c ON e.collection_id = c.uuid
+     WHERE c.name = '<module_id or name of collection>';
+     ```
+
+   - Replace `<module_id or name of collection>` with the module ID or collection name you want to inspect.
+
+   - This will return a **single number** representing how many embeddings (pieces of information) are stored for that module.
+
+   - **Example:**
+     - If you added documents into the module through the web app, you should see the number go **up**.
+     - If you delete documents from the module, the number should **go down**.
+
+   - If you want to see the **total number of embeddings** across the entire project (all modules combined), use:
+
+     ```sql
+     SELECT COUNT(*) 
+     FROM langchain_pg_embedding;
+     ```
+
+   - This total embedding count is helpful for verifying the overall ingestion health of your database.

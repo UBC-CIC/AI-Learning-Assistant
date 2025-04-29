@@ -189,6 +189,8 @@
 ```
 
 ## S3 Structure for Chatlog CSVs
+
+```
 .
 ├── {course_id_1}
 │   └── {instructor_email}
@@ -200,3 +202,4 @@
         ├── chatlog_request1.csv
         ├── chatlog_request2.csv
         └── ...
+```

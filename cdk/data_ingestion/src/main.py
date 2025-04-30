@@ -83,7 +83,7 @@ def parse_s3_file_path(file_key):
     print(f"file_key: {file_key}")
     try:
         course_id, module_id, file_category, filename_with_ext = file_key.split('/')
-        file_name, file_type = filename_with_ext.split('.')
+        file_name, file_type = filename_with_ext.rsplit('.', 1)
         return course_id, module_id, file_category, file_name, file_type
     except Exception as e:
         logger.error(f"Error parsing S3 file path: {e}")

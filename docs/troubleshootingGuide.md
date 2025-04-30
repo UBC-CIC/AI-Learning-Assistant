@@ -7,6 +7,9 @@
     - [Creating Notebook Instance](#creating-notebook-instance)
     - [Connecting to RDS](#connecting-to-rds)
     - [Checking Embeddings](#checking-embeddings)
+  - [Docker Issues](#docker-issues)
+    - [Overview](#overview)
+    - [Fixing Docker Login Error](#fixing-docker-login-error)
 
 ## SageMaker Notebook for Troubleshooting
 
@@ -201,3 +204,92 @@ To verify that embeddings are properly created, you first need to find the right
      ```
 
    - This total embedding count is helpful for verifying the overall ingestion health of your database.
+
+## Docker Issues
+
+### Overview
+
+Docker is used in this project to run two important workflows in the RAG pipeline using AWS Lambda container images:
+
+- **Text Generation**: This Lambda function runs a container image from the `./text_generation` folder to handle prompt processing, document retrieval, and Bedrock LLM generation.
+- **Data Ingestion**: This Lambda function uses the `./data_ingestion` folder to process and embed uploaded documents into the vector store.
+
+Both Lambda functions are defined in the CDK using `lambda.DockerImageFunction` and are built as Docker images pushed to AWS Elastic Container Registry (ECR).
+
+> **Note**: You do **not** need to sign into the Docker Desktop app itself. These images are built and uploaded automatically through CDK during deployment.
+
+However, you may encounter Docker login issues when the CDK attempts to push images to ECR.
+
+---
+
+### Fixing Docker Login Error
+
+#### Common Error Message
+
+You may see this error during deployment:
+
+```
+fail: docker login --username AWS --password-stdin https://<your-account-id>.dkr.ecr.ca-central-1.amazonaws.com exited with error code 1: Error saving credentials: error storing credentials - err: exit status 1, out: error storing credentials - err: exit status 1, out: The stub received bad data.`
+```
+
+This usually happens because Docker is trying to save credentials using a method or system integration that is broken (for example, Docker Desktop's credential helper).
+
+---
+
+#### How to Fix It
+
+##### 1. Locate Docker Config File
+
+Go to this path on your computer:
+```
+C:\Users<your-username>.docker\config.json
+```
+
+---
+
+##### 2. Verify the File Structure
+
+Your `config.json` file should look similar to this (with account IDs anonymized):
+
+```json
+{
+  "auths": {
+    "<account-ID-1>.dkr.ecr.ca-central-1.amazonaws.com": {},
+    "<account-ID-2>.dkr.ecr.ca-central-1.amazonaws.com": {},
+    "<account-ID-3>.dkr.ecr.us-west-2.amazonaws.com": {}
+  },
+  "credsStore": "desktop",
+  "currentContext": "desktop-linux",
+  "plugins": {
+    "-x-cli-hints": {
+      "enabled": "true"
+    }
+  },
+  "features": {
+    "hooks": "true"
+  }
+}
+```
+
+- Make sure the `auths` section includes your AWS Account ID followed by `.dkr.ecr.ca-central-1.amazonaws.com.`
+- If it is missing, manually add the following line (replace `<your-account-id>` with your actual AWS Account ID):
+```
+"<your-account-id>.dkr.ecr.ca-central-1.amazonaws.com": {},
+```
+
+- Save the file after making changes.
+
+---
+
+##### 3. Manually Log In to ECR
+
+Run the following command in your terminal or PowerShell to authenticate Docker with ECR:
+
+```
+aws ecr get-login-password --region ca-central-1 | docker login --username AWS --password-stdin <your-account-id>.dkr.ecr.ca-central-1.amazonaws.com
+```
+
+- Replace `<your-account-id>` with your actual AWS Account ID.
+
+This command retrieves a temporary login token and uses it to authenticate your Docker client with ECR.
+If the command succeeds, your Docker image deployments through CDK should now work properly without further login errors.

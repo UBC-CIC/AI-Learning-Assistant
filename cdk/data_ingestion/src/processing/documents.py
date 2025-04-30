@@ -67,7 +67,8 @@ def store_doc_texts(
     """
     with tempfile.NamedTemporaryFile(delete=False) as tmp_file:
         s3.download_file(bucket, f"{course}/{module}/documents/{filename}", tmp_file.name)
-        doc = pymupdf.open(tmp_file.name)
+        file_name, file_type = filename.rsplit('.', 1)
+        doc = pymupdf.open(tmp_file.name, filetype=file_type)
         
         with BytesIO() as output_buffer:
             for page_num, page in enumerate(doc, start=1):

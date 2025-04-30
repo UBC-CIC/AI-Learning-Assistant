@@ -12,6 +12,8 @@ This prototype explores how Large Language Models (LLMs) can enhance education b
 | [Directories](#directories)                             | General project directory structure                     |
 | [RAG Documentation](#rag-documentation)                 | Documentation on how the project uses RAG               |
 | [API Documentation](#api-documentation)                 | Documentation on the API the project uses               |
+| [Optional Modifications](#optional-modifications)       | Documentation on how to make optional project modifications               |
+| [Troubleshooting Guide](#troubleshooting-guide)         | Documentation on how to troubleshoot common issues      |
 | [Changelog](#changelog)                                 | Any changes post publish                                |
 | [Credits](#credits)                                     | Meet the team behind the solution                       |
 | [License](#license)                                     | License details                                         |
@@ -91,6 +93,10 @@ Here you can learn about the API the project uses: [API Documentation](./docs/ap
 ## Optional Modifications
 
 Steps to implement optional modifications such as restricting sign-up to certain email domains and allowing instructors to create courses can be found [here](./docs/optionalModifications.md)
+
+## Troubleshooting Guide
+
+This guide helps you check if everything in the project is working as expected using a notebook tool. It also shows how to navigate through a common Docker issue [here](./docs/troubleshootingGuide.md)
 
 ## Changelog
 N/A

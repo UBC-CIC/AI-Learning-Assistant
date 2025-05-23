@@ -163,7 +163,7 @@ You would have to supply a custom database username when deploying the solution 
 
 ```bash
 aws secretsmanager create-secret \
-    --name AILASecret \
+    --name AILASecrets \
     --secret-string "{\"DB_Username\":\"<YOUR-DB-USERNAME>\"}"\
     --profile <your-profile-name>
 ```
@@ -174,7 +174,7 @@ aws secretsmanager create-secret \
 
 ```cmd
 aws secretsmanager create-secret ^
-    --name AILASecret ^
+    --name AILASecrets ^
     --secret-string "{\"DB_Username\":\"<YOUR-DB-USERNAME>\"}"^
     --profile <your-profile-name>
 ```
@@ -186,7 +186,7 @@ aws secretsmanager create-secret ^
 
 ```powershell
 aws secretsmanager create-secret `
-    --name AILASecret `
+    --name AILASecrets `
     --secret-string "{\"DB_Username\":\"<YOUR-DB-USERNAME>\"}"`
     --profile <your-profile-name>
 ```

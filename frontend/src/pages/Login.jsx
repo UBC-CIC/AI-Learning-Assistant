@@ -146,9 +146,9 @@ export const Login = () => {
       return;
     }
 
-    if (password.length < 8) {
-      setPasswordError("Password must be at least 8 characters long");
-      toast.error("Password must be at least 8 characters long", { theme: "colored" });
+    if (password.length < 10) {
+      setPasswordError("Password must be at least 10 characters long");
+      toast.error("Password must be at least 10 characters long", { theme: "colored" });
       return;
     }
 
@@ -167,6 +167,11 @@ export const Login = () => {
     if (!/[0-9]/.test(password)) {
       setPasswordError("Password must contain at least one number");
       toast.error("Password must contain at least one number", { theme: "colored" });
+      return;
+    }
+    if (!/[^a-zA-Z0-9\s]/.test(password)) {
+      setPasswordError("Password must contain at least one special character");
+      toast.error("Password must contain at least one special character", { theme: "colored" });
       return;
     }
 

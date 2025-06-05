@@ -429,7 +429,7 @@ const userPool = new cognito.UserPool(this, 'UserPool', {
   signInAliases: { email: true },
   selfSignUpEnabled: true,
   userVerification: { emailStyle: cognito.VerificationEmailStyle.CODE },
-  passwordPolicy: { minLength: 8, requireLowercase: true, requireUppercase: true },
+  passwordPolicy: { minLength: 10, requireLowercase: true, requireUppercase: true, requireDigits: true, requireSymbols: true},
 });
 
 const appClient = userPool.addClient('AppClient', {

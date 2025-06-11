@@ -916,7 +916,7 @@ export class ApiGatewayStack extends cdk.Stack {
       `${id}-TextGenLambdaDockerFunc`,
       {
         code: lambda.DockerImageCode.fromImageAsset("./text_generation"),
-        memorySize: 512,
+        memorySize: 1024,
         timeout: cdk.Duration.seconds(300),
         vpc: vpcStack.vpc, // Pass the VPC
         functionName: `${id}-TextGenLambdaDockerFunc`,

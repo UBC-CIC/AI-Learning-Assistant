@@ -1665,6 +1665,22 @@ export class ApiGatewayStack extends cdk.Stack {
             metricName: "LimitRequests1000",
           },
         },
+        {
+          name: "AWS-AWSManagedRulesSQLiRuleSet",
+          priority: 3,
+          statement: {
+            managedRuleGroupStatement: {
+              vendorName: "AWS",
+              name: "AWSManagedRulesSQLiRuleSet",
+            },
+          },
+          overrideAction: { none: {} },
+          visibilityConfig: {
+            sampledRequestsEnabled: true,
+            cloudWatchMetricsEnabled: true,
+            metricName: "AWS-AWSManagedRulesSQLiRuleSet",
+          },
+        }
       ],
     });
     const wafAssociation = new wafv2.CfnWebACLAssociation(

@@ -27,6 +27,7 @@ import * as secretsmanager from "aws-cdk-lib/aws-secretsmanager";
 import * as ssm from "aws-cdk-lib/aws-ssm";
 import * as sqs from "aws-cdk-lib/aws-sqs";
 import * as appsync from "aws-cdk-lib/aws-appsync";
+import * as ecr from 'aws-cdk-lib/aws-ecr';
 
 
 export class ApiGatewayStack extends cdk.Stack {
@@ -918,7 +919,7 @@ export class ApiGatewayStack extends cdk.Stack {
         code: lambda.DockerImageCode.fromImageAsset("./text_generation"),
         memorySize: 1024,
         timeout: cdk.Duration.seconds(300),
-        vpc: vpcStack.vpc, // Pass the VPC
+        vpc: vpcStack.vpc,
         functionName: `${id}-TextGenLambdaDockerFunc`,
         environment: {
           SM_DB_CREDENTIALS: db.secretPathUser.secretName,
@@ -928,8 +929,9 @@ export class ApiGatewayStack extends cdk.Stack {
           EMBEDDING_MODEL_PARAM: embeddingModelParameter.parameterName,
           TABLE_NAME_PARAM: tableNameParameter.parameterName,
         },
+        tracing: lambda.Tracing.ACTIVE, 
       }
-    );
+);
 
     // Override the Logical ID of the Lambda Function to get ARN in OpenAPI
     const cfnTextGenDockerFunc = textGenLambdaDockerFunc.node
@@ -1000,6 +1002,18 @@ export class ApiGatewayStack extends cdk.Stack {
           embeddingModelParameter.parameterArn,
           tableNameParameter.parameterArn,
         ],
+      })
+    );
+
+    // X-Ray doesn’t support resource-level permissions
+    textGenLambdaDockerFunc.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: [
+          "xray:PutTraceSegments",
+          "xray:PutTelemetryRecords",
+        ],
+        resources: ["*"], 
       })
     );
 
@@ -1076,7 +1090,16 @@ export class ApiGatewayStack extends cdk.Stack {
       this,
       `${id}-DataIngestLambdaDockerFunc`,
       {
-        code: lambda.DockerImageCode.fromImageAsset("./data_ingestion"),
+        code: lambda.DockerImageCode.fromEcr(
+          ecr.Repository.fromRepositoryAttributes(this, 'DataIngestRepo', {
+            repositoryArn: 'arn:aws:ecr:ca-central-1:354326797131:repository/ai-assistant',
+            repositoryName: 'ai-assistant',
+          }),
+          {
+            tagOrDigest: 'ingestionImg',
+          }
+        ),
+        // code: lambda.DockerImageCode.fromImageAsset("./data_ingestion"),
         memorySize: 512,
         timeout: cdk.Duration.seconds(600),
         vpc: vpcStack.vpc, // Pass the VPC
@@ -1519,7 +1542,16 @@ export class ApiGatewayStack extends cdk.Stack {
      * Create a Lambda function that gets triggered when SQS has new parameters
      */
     const sqsTrigger = new lambda.DockerImageFunction(this, `${id}-SQSTriggerDockerFunc`, {
-      code: lambda.DockerImageCode.fromImageAsset("./sqsTrigger"),
+      code: lambda.DockerImageCode.fromEcr(
+        ecr.Repository.fromRepositoryAttributes(this, 'SQSTriggerRepo', {
+          repositoryArn: 'arn:aws:ecr:ca-central-1:354326797131:repository/ai-assistant',
+          repositoryName: 'ai-assistant',
+        }),
+        {
+          tagOrDigest: 'sqsTrigger',
+          }
+        ),
+      // code: lambda.DockerImageCode.fromImageAsset("./sqsTrigger"),
       memorySize: 512,
       timeout: cdk.Duration.seconds(300),
       vpc: vpcStack.vpc, // Pass the VPC

@@ -2,7 +2,7 @@ FROM public.ecr.aws/lambda/python:3.11
 
 # Install dependencies, including tesseract and its prerequisites
 RUN yum update -y && \
-    yum install -y curl gcc postgresql-devel libpq tesseract
+    yum install -y curl gcc gcc-c++ make postgresql-devel libpq tesseract
 
 # Set environment variable for tessdata path
 ENV TESSDATA_PREFIX=/usr/share/tessdata

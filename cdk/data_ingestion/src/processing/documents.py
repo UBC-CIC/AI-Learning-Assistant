@@ -1,10 +1,7 @@
 import os, tempfile, logging, uuid
 from io import BytesIO
 from typing import List
-import boto3
-import fitz
-import re
-import traceback
+import boto3, pymupdf
 
 from langchain_postgres import PGVector
 from langchain_core.documents import Document
@@ -48,16 +45,6 @@ def extract_txt(
 
     return text
 
-def clean_text(text: str) -> str:
-    # Remove non-ASCII characters
-    text = text.encode("ascii", errors="ignore").decode()
-    # Remove repeated whitespace and empty lines
-    text = re.sub(r"\s+", " ", text).strip()
-    # Filter out noise
-    if len(text) < 20 or len(text.split()) < 3:
-        return ""
-    return text
-
 def store_doc_texts(
     bucket: str, 
     course: str, 
@@ -81,42 +68,22 @@ def store_doc_texts(
     with tempfile.NamedTemporaryFile(delete=False) as tmp_file:
         s3.download_file(bucket, f"{course}/{module}/documents/{filename}", tmp_file.name)
         file_name, file_type = filename.rsplit('.', 1)
-        doc = fitz.open(tmp_file.name)
+        doc = pymupdf.open(tmp_file.name, filetype=file_type)
+        
+        with BytesIO() as output_buffer:
+            for page_num, page in enumerate(doc, start=1):
+                text = page.get_text().encode("utf8")
+                output_buffer.write(text)
+                output_buffer.write(bytes((12,)))
+                
+                page_output_key = f'{course}/{module}/documents/{filename}_page_{page_num}.txt'
+                
+                with BytesIO(text) as page_output_buffer:
+                    s3.upload_fileobj(page_output_buffer, output_bucket, page_output_key)
 
-        uploaded_keys = []
-
-        for page_num, page in enumerate(doc, start=1):
-            text = page.get_text().strip()
-
-            if len(text) < 30:
-                # Here it uses OCR
-                try:
-                    tessdata_path = os.environ.get("TESSDATA_PREFIX", "/usr/share/tessdata")
-                    tp = page.get_textpage_ocr(tessdata=tessdata_path)
-                    raw_text = tp.extractText()
-                    lines = raw_text.split("\n")
-                    cleaned_lines = [clean_text(line) for line in lines if clean_text(line)]
-                    text = "\n".join(cleaned_lines)
-                    print(f"OCR used for page {page_num} of {filename}")
-                except Exception as e:
-                    logging.warning(f"OCR failed on page {page_num} of {filename}: {e}\n{traceback.format_exc()}")
-                    text = ""
-
-            if not text.strip():
-                continue
-
-            page_output_key = f'{course}/{module}/documents/{filename}_page_{page_num}.txt'
-
-            # uploads to S3 as one .txt file per page
-            with BytesIO(text.encode("utf-8")) as page_output_buffer:
-                s3.upload_fileobj(page_output_buffer, output_bucket, page_output_key)
-
-            uploaded_keys.append(page_output_key)
-
-        doc.close()
         os.remove(tmp_file.name)
 
-    return uploaded_keys
+    return [f'{course}/{module}/documents/{filename}_page_{page_num}.txt' for page_num in range(1, len(doc) + 1)]
 
 def add_document(
     bucket: str, 

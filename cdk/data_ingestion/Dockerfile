@@ -1,16 +1,21 @@
 FROM public.ecr.aws/lambda/python:3.11
 
-# Install system dependencies including C++ compiler
-RUN yum -y install postgresql-devel gcc gcc-c++ libpq make
+# Install dependencies, including tesseract and its prerequisites
+RUN yum update -y && \
+    yum install -y curl gcc gcc-c++ make postgresql-devel libpq tesseract zlib-devel libjpeg-turbo-devel
 
-# Copy requirements.txt
+# Set environment variable for tessdata path
+ENV TESSDATA_PREFIX=/usr/share/tessdata
+
+# Download Tesseract English language data
+RUN mkdir -p $TESSDATA_PREFIX && \
+    curl -L -o $TESSDATA_PREFIX/eng.traineddata https://github.com/tesseract-ocr/tessdata/raw/main/eng.traineddata
+
+# Copy requirements and install python packages
 COPY requirements.txt ${LAMBDA_TASK_ROOT}
-
-# Install Python packages
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the source code
 COPY src/ ${LAMBDA_TASK_ROOT}
 
-# Set the CMD to your handler
 CMD [ "main.handler" ]

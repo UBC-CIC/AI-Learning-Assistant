@@ -5,7 +5,7 @@ langchain-aws
 langchain-core
 langchain-community
 langchain-postgres
-pymupdf
+PyPDF2==3.0.1
 psycopg[binary,pool]
 psycopg2-binary
 python-dotenv

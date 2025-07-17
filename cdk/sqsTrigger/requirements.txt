@@ -2,7 +2,7 @@ boto3
 botocore
 sqlalchemy
 Pillow
-pymupdf
+PyPDF2==3.0.1
 psycopg[binary,pool]
 psycopg2-binary
 httpx

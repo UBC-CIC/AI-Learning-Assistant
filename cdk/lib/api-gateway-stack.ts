@@ -108,7 +108,7 @@ export class ApiGatewayStack extends cdk.Stack {
      */
     const psycopgLayer = new LayerVersion(this, "psycopgLambdaLayer", {
       code: Code.fromAsset("./layers/psycopg2.zip"),
-      compatibleRuntimes: [Runtime.PYTHON_3_9],
+      compatibleRuntimes: [Runtime.PYTHON_3_11],
       description: "Lambda layer containing the psycopg2 Python library",
     });
 
@@ -1029,7 +1029,7 @@ export class ApiGatewayStack extends cdk.Stack {
       this,
       `${id}-GeneratePreSignedURLFunc`,
       {
-        runtime: lambda.Runtime.PYTHON_3_9,
+        runtime: lambda.Runtime.PYTHON_3_11,
         code: lambda.Code.fromAsset("lambda/generatePreSignedURL"),
         handler: "generatePreSignedURL.lambda_handler",
         timeout: Duration.seconds(300),
@@ -1175,7 +1175,7 @@ export class ApiGatewayStack extends cdk.Stack {
      * Create Lambda function that will return all file names for a specified course, concept, and module
      */
     const getFilesFunction = new lambda.Function(this, `${id}-GetFilesFunction`, {
-      runtime: lambda.Runtime.PYTHON_3_9,
+      runtime: lambda.Runtime.PYTHON_3_11,
       code: lambda.Code.fromAsset("lambda/getFilesFunction"),
       handler: "getFilesFunction.lambda_handler",
       timeout: Duration.seconds(300),
@@ -1225,7 +1225,7 @@ export class ApiGatewayStack extends cdk.Stack {
      * Create Lambda function to delete certain file
      */
     const deleteFile = new lambda.Function(this, `${id}-DeleteFileFunc`, {
-      runtime: lambda.Runtime.PYTHON_3_9,
+      runtime: lambda.Runtime.PYTHON_3_11,
       code: lambda.Code.fromAsset("lambda/deleteFile"),
       handler: "deleteFile.lambda_handler",
       timeout: Duration.seconds(300),
@@ -1274,7 +1274,7 @@ export class ApiGatewayStack extends cdk.Stack {
      * Create Lambda function to delete an entire module directory
      */
     const deleteModuleFunction = new lambda.Function(this, `${id}-DeleteModuleFunc`, {
-      runtime: lambda.Runtime.PYTHON_3_9,
+      runtime: lambda.Runtime.PYTHON_3_11,
       code: lambda.Code.fromAsset("lambda/deleteModule"),
       handler: "deleteModule.lambda_handler",
       timeout: Duration.seconds(300),
@@ -1308,7 +1308,7 @@ export class ApiGatewayStack extends cdk.Stack {
      * Create a Lambda function that deletes the last message in a conversation
      */
     const deleteLastMessage = new lambda.Function(this, `${id}-DeleteLastMessage`, {
-      runtime: lambda.Runtime.PYTHON_3_9,
+      runtime: lambda.Runtime.PYTHON_3_11,
       code: lambda.Code.fromAsset("lambda/deleteLastMessage"),
       handler: "deleteLastMessage.lambda_handler",
       timeout: Duration.seconds(300),
@@ -1398,7 +1398,7 @@ export class ApiGatewayStack extends cdk.Stack {
       this,
       `${id}-NotificationFunction`,
       {
-        runtime: lambda.Runtime.PYTHON_3_9,
+        runtime: lambda.Runtime.PYTHON_3_11,
         code: lambda.Code.fromAsset("lambda/eventNotification"),
         handler: "eventNotification.lambda_handler",
         environment: {
@@ -1591,7 +1591,7 @@ export class ApiGatewayStack extends cdk.Stack {
      * Create Lambda function that will return all the chatlog file names with their respective presigned URLs for a specified course and instructor
      */
     const getChatLogsFunction = new lambda.Function(this, `${id}-GetChatLogsFunction`, {
-      runtime: lambda.Runtime.PYTHON_3_9,
+      runtime: lambda.Runtime.PYTHON_3_11,
       code: lambda.Code.fromAsset("lambda/getChatLogsFunction"),
       handler: "getChatLogsFunction.lambda_handler",
       timeout: Duration.seconds(300),

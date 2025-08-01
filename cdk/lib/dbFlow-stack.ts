@@ -80,6 +80,7 @@ export class DBFlowStack extends Stack {
               DB_PROXY: db.secretPathTableCreator.secretName,
             },
             vpc: db.dbInstance.vpc,
+            executeOnHandlerChange: true,
             code: lambda.Code.fromAsset("lambda/initializer"),
             layers: [psycopgLambdaLayer],
             role: lambdaRole,

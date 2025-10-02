@@ -57,7 +57,7 @@ export class DatabaseStack extends Stack {
         })
         const parameterGroup = new rds.ParameterGroup(this, `${id}rdsParameterGroup`, {
             engine: rds.DatabaseInstanceEngine.postgres({
-              version: rds.PostgresEngineVersion.VER_16_3,
+              version: rds.PostgresEngineVersion.VER_16_10,
             }),
             description: "Empty parameter group", // Might need to change this later
             parameters: {
@@ -74,8 +74,9 @@ export class DatabaseStack extends Stack {
             vpcSubnets: {
                 subnetType: ec2.SubnetType.PRIVATE_ISOLATED,
             },
+            availabilityZone: vpcStack.vpc.availabilityZones[0],
             engine: rds.DatabaseInstanceEngine.postgres({
-                version: rds.PostgresEngineVersion.VER_16_3,
+                version: rds.PostgresEngineVersion.VER_16_10,
             }),
             instanceType: ec2.InstanceType.of(
                 ec2.InstanceClass.BURSTABLE3,
@@ -84,7 +85,7 @@ export class DatabaseStack extends Stack {
             credentials: rds.Credentials.fromUsername(secret.secretValueFromJson("DB_Username").unsafeUnwrap(), {
                 secretName: this.secretPathAdminName,
             }),
-            multiAz: true,
+            multiAz: false,
             allocatedStorage: 100,
             maxAllocatedStorage: 115,
             allowMajorVersionUpgrade: false,

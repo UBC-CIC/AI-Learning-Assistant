@@ -22,7 +22,7 @@
   "dependencies": {
     "@aws-cdk/aws-amplify-alpha": "2.146.0-alpha.0",
     "@aws-cdk/aws-appsync-alpha": "2.59.0-alpha.0",
-    "aws-cdk-lib": "2.146.0",
+    "aws-cdk-lib": "^2.219.0",
     "aws-sdk": "^2.1692.0",
     "constructs": "^10.4.2",
     "postgres": "^3.4.5",

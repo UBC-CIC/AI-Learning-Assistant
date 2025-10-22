@@ -354,17 +354,18 @@ cdk bootstrap aws://<YOUR_AWS_ACCOUNT_ID>/<YOUR_ACCOUNT_REGION> --profile <your-
 
 **Deploy CDK stack**
  You may run the following command to deploy the stacks all at once. Again, replace `<your-profile-name>` with the appropriate AWS profile used earlier. Also replace `<your-stack-prefix>` with the appropriate stack prefix.
-The stack prefix will be prefixed onto the physical names of the resources created during deployment.
+The stack prefix will be prefixed onto the physical names of the resources created during deployment. The environment name is either "prod" for production or "dev" for the development environment. If this variable isn't specified in the deployment command then it will default to "dev".
 ```
 cdk deploy --all \
  --parameters <your-stack-prefix>-AmplifyStack:githubRepoName=AI-Learning-Assistant \
  --context StackPrefix=<your-stack-prefix> \
+ --context environment=<environment-name> \
  --profile <your-profile-name>
 ```
 
 For example:
 ```
-cdk deploy --all --parameters AILA-AmplifyStack:githubRepoName=AI-Learning-Assistant --context StackPrefix=AILA --profile <your-profile-name>
+cdk deploy --all --parameters AILA-AmplifyStack:githubRepoName=AI-Learning-Assistant --context StackPrefix=AILA --context environment=prod --profile <your-profile-name>
 ```
 
 If you have trouble running the commands, try removing all the \ and run it in one line.

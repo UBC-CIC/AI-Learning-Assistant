@@ -4,21 +4,28 @@ import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { Fn } from "aws-cdk-lib";
 import { AwsCustomResource, AwsCustomResourcePolicy, PhysicalResourceId } from "aws-cdk-lib/custom-resources";
 
+interface VpcStackProps extends StackProps {
+  environment?: string;
+}
+
 export class VpcStack extends Stack {
   public readonly vpc: ec2.Vpc;
   public readonly vpcCidrString: string;
   public readonly privateSubnetsCidrStrings: string[];
 
-  constructor(scope: Construct, id: string, props?: StackProps) {
+  constructor(scope: Construct, id: string, props?: VpcStackProps) {
     super(scope, id, props);
+
+    const environment = props?.environment || "dev";
+    const isProduction = environment === "prod";
 
     const existingVpcId: string = ""; // CHANGE IF DEPLOYING WITH EXISTING VPC
 
     if (existingVpcId !== "") {
       const AWSControlTowerStackSet = ""; // CHANGE TO YOUR CONTROL TOWER STACK SET
-      
+
       const existingPublicSubnetID: string = "" // CHANGE IF DEPLOYING WITH EXISTING PUBLIC SUBNET
-      
+
       const ailaPrefix = "AI-LEARNING-ASSISTANT-production";
 
       this.vpcCidrString = "172.31.94.0/20";

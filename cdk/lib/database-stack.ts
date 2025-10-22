@@ -11,6 +11,10 @@ import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 
 import { VpcStack } from './vpc-stack';
 
+interface DatabaseStackProps extends StackProps {
+  environment?: string;
+}
+
 export class DatabaseStack extends Stack {
     public readonly dbInstance: rds.DatabaseInstance;
     public readonly secretPathAdminName: string;
@@ -19,8 +23,11 @@ export class DatabaseStack extends Stack {
     public readonly rdsProxyEndpoint: string; 
     public readonly rdsProxyEndpointTableCreator: string; 
     public readonly rdsProxyEndpointAdmin: string; 
-    constructor(scope: Construct, id: string, vpcStack: VpcStack, props?: StackProps){
+    constructor(scope: Construct, id: string, vpcStack: VpcStack, props?: DatabaseStackProps){
         super(scope, id, props);
+        
+        const environment = props?.environment || "dev";
+        const isProduction = environment === "prod";
 
         /**
          * 
@@ -74,18 +81,18 @@ export class DatabaseStack extends Stack {
             vpcSubnets: {
                 subnetType: ec2.SubnetType.PRIVATE_ISOLATED,
             },
-            availabilityZone: vpcStack.vpc.availabilityZones[0],
+            ...(isProduction ? {} : { availabilityZone: vpcStack.vpc.availabilityZones[0] }),
             engine: rds.DatabaseInstanceEngine.postgres({
                 version: rds.PostgresEngineVersion.VER_16_10,
             }),
             instanceType: ec2.InstanceType.of(
                 ec2.InstanceClass.BURSTABLE3,
-                ec2.InstanceSize.MICRO
+                isProduction ? ec2.InstanceSize.MEDIUM : ec2.InstanceSize.MICRO
             ),
             credentials: rds.Credentials.fromUsername(secret.secretValueFromJson("DB_Username").unsafeUnwrap(), {
                 secretName: this.secretPathAdminName,
             }),
-            multiAz: false,
+            multiAz: isProduction,
             allocatedStorage: 100,
             maxAllocatedStorage: 115,
             allowMajorVersionUpgrade: false,

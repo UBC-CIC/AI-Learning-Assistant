@@ -107,7 +107,7 @@ export class ApiGatewayStack extends cdk.Stack {
      * Create Lambda layer for Psycopg2
      */
     const psycopgLayer = new LayerVersion(this, "psycopgLambdaLayer", {
-      code: Code.fromAsset("./layers/psycopg2.zip"),
+      code: Code.fromAsset("./layers/psycopg2-py311.zip"),
       compatibleRuntimes: [Runtime.PYTHON_3_11],
       description: "Lambda layer containing the psycopg2 Python library",
     });

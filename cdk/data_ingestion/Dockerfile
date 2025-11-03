@@ -1,4 +1,4 @@
-FROM public.ecr.aws/lambda/python:3.11
+FROM --platform=linux/amd64 public.ecr.aws/lambda/python:3.11
 
 # Install dependencies, including tesseract and its prerequisites
 RUN yum update -y && \

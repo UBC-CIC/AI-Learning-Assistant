@@ -43,7 +43,8 @@ def get_vectorstore(
             embeddings=embeddings,
             collection_name=collection_name,
             connection=connection_string,
-            use_jsonb=True
+            use_jsonb=True,
+            pre_delete_collection=False
         )
 
         logger.info("VectorStore initialized")

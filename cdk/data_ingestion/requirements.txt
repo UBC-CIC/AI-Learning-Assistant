@@ -1,7 +1,7 @@
 boto3
 botocore
 langchain
-langchain-aws
+langchain-aws==0.2.29
 langchain-core
 langchain-experimental
 langchain-postgres
@@ -9,5 +9,6 @@ python-dotenv
 sqlalchemy
 Pillow
 PyPDF2==3.0.1
+PyMuPDF==1.24.10
 psycopg[binary,pool]
 psycopg2-binary

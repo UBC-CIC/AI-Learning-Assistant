@@ -130,7 +130,7 @@ export class ApiGatewayStack extends cdk.Stack {
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       visibilityTimeout: Duration.seconds(300),
     });
-    
+
     messagesQueue.addToResourcePolicy(
       new iam.PolicyStatement({
         actions: ["sqs:SendMessage"],
@@ -921,8 +921,8 @@ export class ApiGatewayStack extends cdk.Stack {
         vpc: vpcStack.vpc, // Pass the VPC
         functionName: `${id}-TextGenLambdaDockerFunc`,
         environment: {
-          SM_DB_CREDENTIALS: db.secretPathUser.secretName,
-          RDS_PROXY_ENDPOINT: db.rdsProxyEndpoint,
+          SM_DB_CREDENTIALS: db.secretPathTableCreator.secretName,
+          RDS_PROXY_ENDPOINT: db.rdsProxyEndpointTableCreator,
           REGION: this.region,
           BEDROCK_LLM_PARAM: bedrockLLMParameter.parameterName,
           EMBEDDING_MODEL_PARAM: embeddingModelParameter.parameterName,
@@ -1386,9 +1386,9 @@ export class ApiGatewayStack extends cdk.Stack {
       authorizationConfig: {
         defaultAuthorization: {
           authorizationType: appsync.AuthorizationType.LAMBDA,
-            lambdaAuthorizerConfig: {
-              handler: authHandler,
-            },
+          lambdaAuthorizerConfig: {
+            handler: authHandler,
+          },
         },
       },
       xrayEnabled: true,
@@ -1445,7 +1445,7 @@ export class ApiGatewayStack extends cdk.Stack {
     // Override the Logical ID of the Lambdas Function to get ARN in OpenAPI
     const cfnNotificationFunction = notificationFunction.node
       .defaultChild as lambda.CfnFunction;
-    cfnNotificationFunction.overrideLogicalId("NotificationFunction");  
+    cfnNotificationFunction.overrideLogicalId("NotificationFunction");
 
     /**
      *
@@ -1467,9 +1467,9 @@ export class ApiGatewayStack extends cdk.Stack {
       layers: [postgres],
       role: coglambdaRole,
     });
-    
+
     messagesQueue.grantSendMessages(sqsFunction);
-    
+
     sqsFunction.addToRolePolicy(
       new iam.PolicyStatement({
         actions: ["sqs:SendMessage"],
@@ -1481,7 +1481,7 @@ export class ApiGatewayStack extends cdk.Stack {
     // Override the Logical ID of the Lambda Function to get ARN in OpenAPI
     const cfnSqsFunction = sqsFunction.node
       .defaultChild as lambda.CfnFunction;
-      cfnSqsFunction.overrideLogicalId("sqsFunction");
+    cfnSqsFunction.overrideLogicalId("sqsFunction");
 
     // Add the permission to the Lambda function's policy to allow API Gateway access
     sqsFunction.addPermission("AllowApiGatewayInvoke", {
@@ -1532,7 +1532,7 @@ export class ApiGatewayStack extends cdk.Stack {
         REGION: this.region,
       },
     });
-    
+
     sqsTrigger.addEventSource(
       new lambdaEventSources.SqsEventSource(messagesQueue, {
         batchSize: 1, // Process messages one at a time
@@ -1542,7 +1542,7 @@ export class ApiGatewayStack extends cdk.Stack {
     // Override the Logical ID of the Lambda Function to get ARN in OpenAPI
     const cfnSqsTrigger = sqsTrigger.node
       .defaultChild as lambda.CfnFunction;
-      cfnSqsTrigger.overrideLogicalId(
+    cfnSqsTrigger.overrideLogicalId(
       "SQSTriggerDockerFunc"
     );
 
@@ -1691,6 +1691,6 @@ export class ApiGatewayStack extends cdk.Stack {
         webAclArn: waf.attrArn,
       }
     );
-  
+
   }
 }

@@ -162,6 +162,7 @@ def get_response(
     table_name: str,
     session_id: str,
     course_system_prompt: str,
+    module_prompt: str,
     course_id: str,
     module_id: str,
     connection
@@ -186,7 +187,8 @@ def get_response(
         "system"
         "You are an instructor for a course. "
         f"Your job is to help the student master the topic: {topic}. \n"        
-        f"{course_system_prompt}"
+        f"{course_system_prompt}\n"
+        f"{module_prompt}\n"
         "Continue this process until you determine that the student has mastered the topic. \nOnce mastery is achieved, include COMPETENCY ACHIEVED in your response and do not ask any further questions about the topic. "
         "Use the following pieces of retrieved context to answer "
         "a question asked by the student. Use three sentences maximum and keep the "

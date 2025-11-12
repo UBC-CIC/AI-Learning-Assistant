@@ -172,6 +172,40 @@ def get_system_prompt(course_id):
         connection.rollback()
         return None
 
+def get_module_prompt(module_id):
+    connection = connect_to_db()
+    if connection is None:
+        logger.error("No database connection available.")
+        return None
+    
+    try:
+        cur = connection.cursor()
+        cur.execute("""
+            SELECT module_prompt 
+            FROM "Course_Modules" 
+            WHERE module_id = %s;
+        """, (module_id,))
+        
+        result = cur.fetchone()
+        logger.info(f"Module prompt query result: {result}")
+        module_prompt = result[0] if result and result[0] else ""
+        
+        cur.close()
+        
+        if module_prompt:
+            logger.info(f"Module prompt for module_id {module_id} found: {module_prompt}")
+        else:
+            logger.info(f"No module prompt found for module_id {module_id}")
+        
+        return module_prompt
+
+    except Exception as e:
+        logger.error(f"Error fetching module prompt: {e}")
+        if cur:
+            cur.close()
+        connection.rollback()
+        return ""
+
 def handler(event, context):
     logger.info("Text Generation Lambda function is called!")
     initialize_constants()
@@ -236,6 +270,8 @@ def handler(event, context):
             },
             'body': json.dumps('Error fetching system prompt')
         }
+    
+    module_prompt = get_module_prompt(module_id)
     
     topic = get_module_name(module_id)
 
@@ -331,6 +367,7 @@ def handler(event, context):
             table_name=TABLE_NAME,
             session_id=session_id,
             course_system_prompt=system_prompt,
+            module_prompt=module_prompt,
             course_id=course_id,
             module_id=module_id,
             connection=connection

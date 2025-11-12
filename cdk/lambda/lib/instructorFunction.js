@@ -460,6 +460,8 @@ exports.handler = async (event) => {
             instructor_email,
           } = event.queryStringParameters;
           const { module_prompt } = JSON.parse(event.body || "{}");
+          console.log("CREATE MODULE - module_prompt:", module_prompt);
+          console.log("CREATE MODULE - event.body:", event.body);
 
           try {
             // Check if a module with the same name already exists
@@ -583,6 +585,8 @@ exports.handler = async (event) => {
           const { module_id, instructor_email, concept_id } =
             event.queryStringParameters;
           const { module_name, module_prompt } = JSON.parse(event.body || "{}");
+          console.log("EDIT MODULE - module_prompt:", module_prompt);
+          console.log("EDIT MODULE - event.body:", event.body);
 
           if (module_name) {
             try {

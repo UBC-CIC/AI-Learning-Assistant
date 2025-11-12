@@ -76,7 +76,8 @@ def handler(event, context):
                 "module_id" uuid PRIMARY KEY DEFAULT (uuid_generate_v4()),
                 "concept_id" uuid,
                 "module_name" varchar,
-                "module_number" integer
+                "module_number" integer,
+                "module_prompt" text
             );
 
             CREATE TABLE IF NOT EXISTS "Enrolments" (
@@ -197,6 +198,27 @@ def handler(event, context):
         # Execute table creation
         cursor.execute(sqlTableCreation)
         connection.commit()
+        
+        # Check if Course_Modules table exists and add module_prompt column if missing
+        cursor.execute("""
+            SELECT EXISTS (
+                SELECT 1 FROM information_schema.tables 
+                WHERE table_schema = 'public' 
+                AND table_name = 'Course_Modules'
+            )
+        """)
+        if cursor.fetchone()[0]:
+            cursor.execute("""
+                SELECT EXISTS (
+                    SELECT 1 FROM information_schema.columns 
+                    WHERE table_schema = 'public' 
+                    AND table_name = 'Course_Modules' 
+                    AND column_name = 'module_prompt'
+                )
+            """)
+            if not cursor.fetchone()[0]:
+                cursor.execute('ALTER TABLE "Course_Modules" ADD COLUMN "module_prompt" text')
+                connection.commit()
 
         # Generate 16 bytes username and password randomly
         username = secrets.token_hex(8)

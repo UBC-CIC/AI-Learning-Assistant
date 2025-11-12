@@ -51,6 +51,15 @@ const InstructorModules = ({ courseName, course_id }) => {
         Cell: ({ cell }) => titleCase(cell.getValue())
       },
       {
+        accessorKey: "module_prompt",
+        header: "Module Prompt",
+        Cell: ({ cell }) => (
+          <div style={{ maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {cell.getValue() || 'No prompt set'}
+          </div>
+        )
+      },
+      {
         accessorKey: "actions",
         header: "Actions",
         Cell: ({ row }) => (

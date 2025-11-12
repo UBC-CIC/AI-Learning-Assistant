@@ -52,6 +52,7 @@ const InstructorEditCourse = () => {
   const [module, setModule] = useState(null);
   const { moduleData, course_id } = location.state || {};
   const [moduleName, setModuleName] = useState("");
+  const [modulePrompt, setModulePrompt] = useState("");
   const [concept, setConcept] = useState("");
   const [allConcepts, setAllConcept] = useState([]);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -152,6 +153,7 @@ const InstructorEditCourse = () => {
     if (moduleData) {
       setModule(moduleData);
       setModuleName(moduleData.module_name);
+      setModulePrompt(moduleData.module_prompt || "");
       setConcept(moduleData.concept_name);
     }
     fetchConcepts();
@@ -270,6 +272,7 @@ const InstructorEditCourse = () => {
         },
         body: JSON.stringify({
           module_name: moduleName,
+          module_prompt: modulePrompt,
         }),
       }
     );
@@ -493,6 +496,17 @@ const InstructorEditCourse = () => {
           fullWidth
           margin="normal"
           inputProps={{ maxLength: 50 }}
+        />
+
+        <TextField
+          label="Module Prompt"
+          name="modulePrompt"
+          value={modulePrompt}
+          onChange={(e) => setModulePrompt(e.target.value)}
+          fullWidth
+          margin="normal"
+          multiline
+          rows={4}
         />
 
         <FormControl fullWidth margin="normal">

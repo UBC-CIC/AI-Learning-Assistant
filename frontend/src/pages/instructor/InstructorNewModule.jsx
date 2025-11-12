@@ -40,6 +40,7 @@ export const InstructorNewModule = ({ courseId }) => {
   const [isSaving, setIsSaving] = useState(false);
   const [loading, setLoading] = useState(false);
   const [moduleName, setModuleName] = useState("");
+  const [modulePrompt, setModulePrompt] = useState("");
   const [concept, setConcept] = useState("");
   const [allConcepts, setAllConcept] = useState([]);
   const location = useLocation();
@@ -197,6 +198,9 @@ export const InstructorNewModule = ({ courseId }) => {
             Authorization: token,
             "Content-Type": "application/json",
           },
+          body: JSON.stringify({
+            module_prompt: modulePrompt,
+          }),
         }
       );
       if (!response.ok) {
@@ -257,6 +261,17 @@ export const InstructorNewModule = ({ courseId }) => {
           fullWidth
           margin="normal"
           inputProps={{ maxLength: 50 }}
+        />
+
+        <TextField
+          label="Module Prompt"
+          name="modulePrompt"
+          value={modulePrompt}
+          onChange={(e) => setModulePrompt(e.target.value)}
+          fullWidth
+          margin="normal"
+          multiline
+          rows={4}
         />
 
         <FormControl fullWidth margin="normal">

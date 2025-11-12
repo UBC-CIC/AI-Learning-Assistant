@@ -459,6 +459,7 @@ exports.handler = async (event) => {
             module_number,
             instructor_email,
           } = event.queryStringParameters;
+          const { module_prompt } = JSON.parse(event.body || "{}");
 
           try {
             // Check if a module with the same name already exists
@@ -479,8 +480,8 @@ exports.handler = async (event) => {
 
             // Insert new module into Course_Modules table
             const newModule = await sqlConnection`
-                    INSERT INTO "Course_Modules" (module_id, concept_id, module_name, module_number)
-                    VALUES (uuid_generate_v4(), ${concept_id}, ${module_name}, ${module_number})
+                    INSERT INTO "Course_Modules" (module_id, concept_id, module_name, module_number, module_prompt)
+                    VALUES (uuid_generate_v4(), ${concept_id}, ${module_name}, ${module_number}, ${module_prompt})
                     RETURNING *;
                   `;
 
@@ -581,7 +582,7 @@ exports.handler = async (event) => {
         ) {
           const { module_id, instructor_email, concept_id } =
             event.queryStringParameters;
-          const { module_name } = JSON.parse(event.body || "{}");
+          const { module_name, module_prompt } = JSON.parse(event.body || "{}");
 
           if (module_name) {
             try {
@@ -605,7 +606,7 @@ exports.handler = async (event) => {
               // Update the module in the Course_Modules table
               await sqlConnection`
                     UPDATE "Course_Modules"
-                    SET module_name = ${module_name}, concept_id = ${concept_id}
+                    SET module_name = ${module_name}, concept_id = ${concept_id}, module_prompt = ${module_prompt}
                     WHERE module_id = ${module_id};
                   `;
 
@@ -813,7 +814,7 @@ exports.handler = async (event) => {
           try {
             // Query to get all modules for the given course
             const courseModules = await sqlConnection`
-        SELECT cm.module_id, cm.module_name, cm.module_number, cc.concept_name, cc.concept_number
+        SELECT cm.module_id, cm.module_name, cm.module_number, cm.module_prompt, cc.concept_name, cc.concept_number
         FROM "Course_Modules" cm
         JOIN "Course_Concepts" cc ON cm.concept_id = cc.concept_id
         WHERE cc.course_id = ${course_id}

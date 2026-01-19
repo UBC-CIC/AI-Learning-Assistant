@@ -5,6 +5,7 @@ langchain-aws
 langchain-core
 langchain-community
 langchain-postgres
+numpy<2
 PyPDF2==3.0.1
 psycopg[binary,pool]
 psycopg2-binary

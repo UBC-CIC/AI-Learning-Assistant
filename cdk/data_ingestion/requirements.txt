@@ -7,6 +7,7 @@ langchain-experimental
 langchain-postgres
 python-dotenv
 sqlalchemy
+numpy<2
 Pillow
 PyPDF2==3.0.1
 psycopg[binary,pool]

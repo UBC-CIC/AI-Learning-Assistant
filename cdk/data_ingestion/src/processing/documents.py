@@ -10,7 +10,7 @@ from langchain_postgres import PGVector
 from langchain_core.documents import Document
 from langchain_aws import BedrockEmbeddings
 from langchain_experimental.text_splitter import SemanticChunker
-from langchain.indexes import SQLRecordManager, index
+from langchain_classic.indexes import SQLRecordManager, index
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)

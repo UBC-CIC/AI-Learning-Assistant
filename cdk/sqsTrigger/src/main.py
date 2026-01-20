@@ -2,7 +2,6 @@ import os
 import json
 import logging
 import boto3
-import psycopg2
 import csv
 import httpx
 import time
@@ -42,6 +41,7 @@ def get_secret():
 def connect_to_db():
     global connection
     if connection is None or connection.closed:
+    import psycopg2
         try:
             secret = get_secret()
             connection_params = {

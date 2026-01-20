@@ -1,12 +1,10 @@
 import os
 import json
 import boto3
-import psycopg2
 from datetime import datetime, timezone
 import logging
 
 from helpers.vectorstore import update_vectorstore
-from langchain_aws import BedrockEmbeddings
 
 # Set up basic logging
 logging.basicConfig(level=logging.INFO)
@@ -29,6 +27,7 @@ bedrock_runtime = boto3.client("bedrock-runtime", region_name=REGION)
 connection = None
 db_secret = None
 EMBEDDING_MODEL_ID = None
+_embeddings = None
 
 def get_secret():
     global db_secret
@@ -55,9 +54,21 @@ def get_parameter():
             raise
     return EMBEDDING_MODEL_ID
 
+def get_embeddings():
+    global _embeddings
+    if _embeddings is None:
+        from langchain_aws import BedrockEmbeddings
+        _embeddings = BedrockEmbeddings(
+            model_id=get_parameter(),
+            client=bedrock_runtime,
+            region_name=REGION
+        )
+    return _embeddings
+
 def connect_to_db():
     global connection
     if connection is None or connection.closed:
+        import psycopg2
         try:
             secret = get_secret()
             connection_params = {
@@ -87,10 +98,7 @@ def parse_s3_file_path(file_key):
         return course_id, module_id, file_category, file_name, file_type
     except Exception as e:
         logger.error(f"Error parsing S3 file path: {e}")
-        return {
-                    "statusCode": 400,
-                    "body": json.dumps("Error parsing S3 file path.")
-                }
+        raise ValueError(f"Error parsing S3 file path: {e}")
 
 def insert_file_into_db(module_id, file_name, file_type, file_path, bucket_name):    
     connection = connect_to_db()
@@ -166,11 +174,7 @@ def insert_file_into_db(module_id, file_name, file_type, file_path, bucket_name)
 
 def update_vectorstore_from_s3(bucket, course_id, module_id):
 
-    embeddings = BedrockEmbeddings(
-        model_id=get_parameter(), 
-        client=bedrock_runtime,
-        region_name=REGION
-    )
+    embeddings = get_embeddings()
 
     secret = get_secret()
 

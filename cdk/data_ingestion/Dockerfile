@@ -1,21 +1,23 @@
-FROM public.ecr.aws/lambda/python:3.11
+FROM public.ecr.aws/lambda/python:3.12
 
-# Install dependencies, including tesseract and its prerequisites
-RUN yum update -y && \
-    yum install -y curl gcc gcc-c++ make postgresql-devel libpq tesseract zlib-devel libjpeg-turbo-devel
+# System dependencies (Amazon Linux 2023)
+RUN dnf update -y && \
+    dnf install -y \
+        gcc \
+        gcc-c++ \
+        make \
+        postgresql-devel \
+        zlib-devel \
+        libjpeg-turbo-devel && \
+    dnf clean all
 
-# Set environment variable for tessdata path
-ENV TESSDATA_PREFIX=/usr/share/tessdata
-
-# Download Tesseract English language data
-RUN mkdir -p $TESSDATA_PREFIX && \
-    curl -L -o $TESSDATA_PREFIX/eng.traineddata https://github.com/tesseract-ocr/tessdata/raw/main/eng.traineddata
-
-# Copy requirements and install python packages
+# Python dependencies
 COPY requirements.txt ${LAMBDA_TASK_ROOT}
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
 
-# Copy the source code
+# Application code
 COPY src/ ${LAMBDA_TASK_ROOT}
 
-CMD [ "main.handler" ]
+# Lambda entrypoint
+CMD ["main.handler"]

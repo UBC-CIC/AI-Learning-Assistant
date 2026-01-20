@@ -1,12 +1,13 @@
 boto3
 botocore
 langchain
+langchain-classic
 langchain-aws
 langchain-core
 langchain-community
 langchain-postgres
-numpy<2
-PyPDF2==3.0.1
+numpy>=2.2,<3
+PyMuPDF
 psycopg[binary,pool]
 psycopg2-binary
 python-dotenv

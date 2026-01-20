@@ -41,7 +41,7 @@ def get_secret():
 def connect_to_db():
     global connection
     if connection is None or connection.closed:
-    import psycopg2
+        import psycopg2
         try:
             secret = get_secret()
             connection_params = {

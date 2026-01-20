@@ -10,6 +10,6 @@ python-dotenv
 sqlalchemy
 numpy<2
 Pillow
-PyPDF2==3.0.1
+PyMuPDF
 psycopg[binary,pool]
 psycopg2-binary

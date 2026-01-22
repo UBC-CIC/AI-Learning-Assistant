@@ -1136,6 +1136,18 @@ export class ApiGatewayStack extends cdk.Stack {
     // Attach the custom Bedrock policy to Lambda function
     dataIngestLambdaDockerFunc.addToRolePolicy(bedrockPolicyStatement);
 
+    // Grant access to AWS Textract for OCR functionality
+    dataIngestLambdaDockerFunc.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: [
+          "textract:DetectDocumentText",
+          "textract:AnalyzeDocument"
+        ],
+        resources: ["*"], // no resource-level permissions
+      })
+    );
+
     // Add the S3 event source trigger to the Lambda function
     dataIngestLambdaDockerFunc.addEventSource(
       new lambdaEventSources.S3EventSource(dataIngestionBucket, {

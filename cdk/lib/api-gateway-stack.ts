@@ -1618,6 +1618,16 @@ export class ApiGatewayStack extends cdk.Stack {
       })
     );
 
+    // Provisioned Concurrency enabled with 1 execution to improve cold start performance
+    const sqsTriggerAlias = new lambda.Alias(this,
+      `${id}-SqsTriggerAlias`,
+      {
+        aliasName: "live",
+        version: sqsTrigger.currentVersion,
+        provisionedConcurrentExecutions: 1,
+      }
+    );
+
     /**
      *
      * Create Lambda function that will return all the chatlog file names with their respective presigned URLs for a specified course and instructor

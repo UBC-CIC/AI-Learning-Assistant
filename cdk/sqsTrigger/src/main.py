@@ -5,6 +5,7 @@ import boto3
 import csv
 import httpx
 import time
+import psycopg2
 from datetime import datetime
 from botocore.exceptions import ClientError
 
@@ -41,7 +42,6 @@ def get_secret():
 def connect_to_db():
     global connection
     if connection is None or connection.closed:
-        import psycopg2
         try:
             secret = get_secret()
             connection_params = {

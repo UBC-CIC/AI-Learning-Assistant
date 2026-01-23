@@ -1003,6 +1003,16 @@ export class ApiGatewayStack extends cdk.Stack {
       })
     );
 
+    // Provisioned Concurrency enabled with 1 execution to improve cold start performance
+    const textGenAlias = new lambda.Alias(this,
+      `${id}-TextGenAlias`,
+      {
+        aliasName: "live",
+        version: textGenLambdaDockerFunc.currentVersion,
+        provisionedConcurrentExecutions: 1,
+      }
+    );
+
     // Create S3 Bucket to handle documents for each course
     const dataIngestionBucket = new s3.Bucket(this, `${id}-DataIngestionBucket`, {
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,

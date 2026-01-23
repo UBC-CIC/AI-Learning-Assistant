@@ -3,6 +3,8 @@ import json
 import boto3
 import logging
 import boto3
+import psycopg2
+from langchain_aws import BedrockEmbeddings
 
 from helpers.vectorstore import get_vectorstore_retriever
 from helpers.chat import get_bedrock_llm, get_initial_student_query, get_student_query, create_dynamodb_history_table, get_response, update_session_name
@@ -68,7 +70,6 @@ def initialize_constants():
     TABLE_NAME = get_parameter(TABLE_NAME_PARAM, TABLE_NAME)
 
     if embeddings is None:
-        from langchain_aws import BedrockEmbeddings
         embeddings = BedrockEmbeddings(
             model_id=EMBEDDING_MODEL_ID,
             client=bedrock_runtime,
@@ -80,7 +81,6 @@ def initialize_constants():
 def connect_to_db():
     global connection
     if connection is None or connection.closed:
-        import psycopg2
         try:
             secret = get_secret(DB_SECRET_NAME)
             connection_params = {

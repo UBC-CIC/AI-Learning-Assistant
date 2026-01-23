@@ -1182,6 +1182,16 @@ export class ApiGatewayStack extends cdk.Stack {
       })
     );
 
+    // Provisioned Concurrency enabled with 1 execution to improve cold start performance
+    const dataIngestAlias = new lambda.Alias(this,
+      `${id}-DataIngestAlias`,
+      {
+        aliasName: "live",
+        version: dataIngestLambdaDockerFunc.currentVersion,
+        provisionedConcurrentExecutions: 1,
+      }
+    );
+
     /**
      *
      * Create Lambda function that will return all file names for a specified course, concept, and module

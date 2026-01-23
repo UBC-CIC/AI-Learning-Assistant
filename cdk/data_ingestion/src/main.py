@@ -3,6 +3,8 @@ import json
 import boto3
 from datetime import datetime, timezone
 import logging
+import psycopg2
+from langchain_aws import BedrockEmbeddings
 
 from helpers.vectorstore import update_vectorstore
 
@@ -57,7 +59,6 @@ def get_parameter():
 def get_embeddings():
     global _embeddings
     if _embeddings is None:
-        from langchain_aws import BedrockEmbeddings
         _embeddings = BedrockEmbeddings(
             model_id=get_parameter(),
             client=bedrock_runtime,
@@ -68,7 +69,6 @@ def get_embeddings():
 def connect_to_db():
     global connection
     if connection is None or connection.closed:
-        import psycopg2
         try:
             secret = get_secret()
             connection_params = {

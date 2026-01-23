@@ -10,17 +10,47 @@ from langchain_postgres import PGVector
 from langchain_core.documents import Document
 from langchain_aws import BedrockEmbeddings
 from langchain_experimental.text_splitter import SemanticChunker
-from langchain.indexes import SQLRecordManager, index
+from langchain_classic.indexes import SQLRecordManager, index
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Initialize the S3 client
+# Initialize AWS clients
 s3 = boto3.client('s3')
+textract = boto3.client('textract')
 
 EMBEDDING_BUCKET_NAME = os.environ["EMBEDDING_BUCKET_NAME"]
 print('EMBEDDING_BUCKET_NAME',EMBEDDING_BUCKET_NAME)
+
+def extract_text_with_textract(page_image_bytes: bytes) -> str:
+    """
+    Extract text from a page image using AWS Textract.
+    
+    Args:
+    page_image_bytes (bytes): The image bytes of the page
+    
+    Returns:
+    str: The extracted text
+    """
+    try:
+        response = textract.detect_document_text(
+            Document={'Bytes': page_image_bytes}
+        )
+        
+        # Extract text from response
+        text_lines = []
+        for block in response.get('Blocks', []):
+            if block['BlockType'] == 'LINE':
+                text_lines.append(block['Text'])
+        
+        raw_text = '\n'.join(text_lines)
+        cleaned_lines = [clean_text(line) for line in raw_text.split('\n') if clean_text(line)]
+        return '\n'.join(cleaned_lines)
+        
+    except Exception as e:
+        logger.error(f"Textract OCR failed: {e}")
+        return ""
 
 def extract_txt(
     bucket: str, 
@@ -89,17 +119,15 @@ def store_doc_texts(
             text = page.get_text().strip()
 
             if len(text) < 30:
-                # Here it uses OCR
+                # Use AWS Textract for OCR
                 try:
-                    tessdata_path = os.environ.get("TESSDATA_PREFIX", "/usr/share/tessdata")
-                    tp = page.get_textpage_ocr(tessdata=tessdata_path)
-                    raw_text = tp.extractText()
-                    lines = raw_text.split("\n")
-                    cleaned_lines = [clean_text(line) for line in lines if clean_text(line)]
-                    text = "\n".join(cleaned_lines)
-                    print(f"OCR used for page {page_num} of {filename}")
+                    # Get page as image for Textract
+                    pix = page.get_pixmap(matrix=fitz.Matrix(2, 2))  # 2x zoom for better quality
+                    img_bytes = pix.tobytes("png")
+                    text = extract_text_with_textract(img_bytes)
+                    print(f"AWS Textract OCR used for page {page_num} of {filename}")
                 except Exception as e:
-                    logging.warning(f"OCR failed on page {page_num} of {filename}: {e}\n{traceback.format_exc()}")
+                    logging.warning(f"AWS Textract OCR failed on page {page_num} of {filename}: {e}\n{traceback.format_exc()}")
                     text = ""
 
             if not text.strip():

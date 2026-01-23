@@ -2,10 +2,10 @@ import os
 import json
 import logging
 import boto3
-import psycopg2
 import csv
 import httpx
 import time
+import psycopg2
 from datetime import datetime
 from botocore.exceptions import ClientError
 

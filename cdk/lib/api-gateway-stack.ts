@@ -1003,6 +1003,16 @@ export class ApiGatewayStack extends cdk.Stack {
       })
     );
 
+    // Provisioned Concurrency enabled with 1 execution to improve cold start performance
+    const textGenAlias = new lambda.Alias(this,
+      `${id}-TextGenAlias`,
+      {
+        aliasName: "live",
+        version: textGenLambdaDockerFunc.currentVersion,
+        provisionedConcurrentExecutions: 1,
+      }
+    );
+
     // Create S3 Bucket to handle documents for each course
     const dataIngestionBucket = new s3.Bucket(this, `${id}-DataIngestionBucket`, {
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
@@ -1136,6 +1146,18 @@ export class ApiGatewayStack extends cdk.Stack {
     // Attach the custom Bedrock policy to Lambda function
     dataIngestLambdaDockerFunc.addToRolePolicy(bedrockPolicyStatement);
 
+    // Grant access to AWS Textract for OCR functionality
+    dataIngestLambdaDockerFunc.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: [
+          "textract:DetectDocumentText",
+          "textract:AnalyzeDocument"
+        ],
+        resources: ["*"], // no resource-level permissions
+      })
+    );
+
     // Add the S3 event source trigger to the Lambda function
     dataIngestLambdaDockerFunc.addEventSource(
       new lambdaEventSources.S3EventSource(dataIngestionBucket, {
@@ -1168,6 +1190,16 @@ export class ApiGatewayStack extends cdk.Stack {
         actions: ["ssm:GetParameter"],
         resources: [embeddingModelParameter.parameterArn],
       })
+    );
+
+    // Provisioned Concurrency enabled with 1 execution to improve cold start performance
+    const dataIngestAlias = new lambda.Alias(this,
+      `${id}-DataIngestAlias`,
+      {
+        aliasName: "live",
+        version: dataIngestLambdaDockerFunc.currentVersion,
+        provisionedConcurrentExecutions: 1,
+      }
     );
 
     /**
@@ -1584,6 +1616,16 @@ export class ApiGatewayStack extends cdk.Stack {
           `arn:aws:secretsmanager:${this.region}:${this.account}:secret:*`,
         ],
       })
+    );
+
+    // Provisioned Concurrency enabled with 1 execution to improve cold start performance
+    const sqsTriggerAlias = new lambda.Alias(this,
+      `${id}-SqsTriggerAlias`,
+      {
+        aliasName: "live",
+        version: sqsTrigger.currentVersion,
+        provisionedConcurrentExecutions: 1,
+      }
     );
 
     /**

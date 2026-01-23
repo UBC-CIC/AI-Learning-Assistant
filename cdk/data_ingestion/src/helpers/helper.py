@@ -5,7 +5,7 @@ import psycopg2
 
 from langchain_aws import BedrockEmbeddings
 from langchain_postgres import PGVector
-from langchain.indexes import SQLRecordManager
+from langchain_classic.indexes import SQLRecordManager
 
 from processing.documents import process_documents
 s3 = boto3.client('s3')

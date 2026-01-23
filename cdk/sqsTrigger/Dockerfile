@@ -1,16 +1,21 @@
-FROM public.ecr.aws/lambda/python:3.11
+FROM public.ecr.aws/lambda/python:3.12
 
-# Install system dependencies including C++ compiler
-RUN yum -y install postgresql-devel gcc gcc-c++ libpq make
+# System dependencies (Amazon Linux 2023)
+RUN dnf update -y && \
+    dnf install -y \
+        gcc \
+        gcc-c++ \
+        make \
+        postgresql-devel && \
+    dnf clean all
 
-# Copy requirements.txt
+# Python dependencies
 COPY requirements.txt ${LAMBDA_TASK_ROOT}
+RUN pip install --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
 
-# Install Python packages
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Copy the source code
+# Application code
 COPY src/ ${LAMBDA_TASK_ROOT}
 
-# Set the CMD to your handler
-CMD [ "main.handler" ]
+# Lambda handler
+CMD ["main.handler"]

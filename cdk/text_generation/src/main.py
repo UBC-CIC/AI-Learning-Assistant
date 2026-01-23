@@ -2,8 +2,8 @@ import os
 import json
 import boto3
 import logging
-import psycopg2
 import boto3
+import psycopg2
 from langchain_aws import BedrockEmbeddings
 
 from helpers.vectorstore import get_vectorstore_retriever

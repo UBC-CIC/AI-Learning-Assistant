@@ -88,7 +88,7 @@ export class ApiGatewayStack extends cdk.Stack {
      */
     const jwt = new lambda.LayerVersion(this, "aws-jwt-verify", {
       code: lambda.Code.fromAsset("./layers/aws-jwt-verify.zip"),
-      compatibleRuntimes: [lambda.Runtime.NODEJS_20_X],
+      compatibleRuntimes: [lambda.Runtime.NODEJS_24_X],
       description: "Contains the aws-jwt-verify library for JS",
     });
 
@@ -98,7 +98,7 @@ export class ApiGatewayStack extends cdk.Stack {
      */
     const postgres = new lambda.LayerVersion(this, "postgres", {
       code: lambda.Code.fromAsset("./layers/postgres.zip"),
-      compatibleRuntimes: [lambda.Runtime.NODEJS_20_X],
+      compatibleRuntimes: [lambda.Runtime.NODEJS_24_X],
       description: "Contains the postgres library for JS",
     });
 
@@ -108,7 +108,7 @@ export class ApiGatewayStack extends cdk.Stack {
      */
     const psycopgLayer = new LayerVersion(this, "psycopgLambdaLayer", {
       code: Code.fromAsset("./layers/psycopg2.zip"),
-      compatibleRuntimes: [Runtime.PYTHON_3_9],
+      compatibleRuntimes: [Runtime.PYTHON_3_12],
       description: "Lambda layer containing the psycopg2 Python library",
     });
 
@@ -510,7 +510,7 @@ export class ApiGatewayStack extends cdk.Stack {
     });
 
     const lambdaStudentFunction = new lambda.Function(this, `${id}-studentFunction`, {
-      runtime: lambda.Runtime.NODEJS_20_X,
+      runtime: lambda.Runtime.NODEJS_24_X,
       code: lambda.Code.fromAsset("lambda/lib"),
       handler: "studentFunction.handler",
       timeout: Duration.seconds(300),
@@ -541,7 +541,7 @@ export class ApiGatewayStack extends cdk.Stack {
       this,
       `${id}-instructorFunction`,
       {
-        runtime: lambda.Runtime.NODEJS_20_X,
+        runtime: lambda.Runtime.NODEJS_24_X,
         code: lambda.Code.fromAsset("lambda/lib"),
         handler: "instructorFunction.handler",
         timeout: Duration.seconds(300),
@@ -570,7 +570,7 @@ export class ApiGatewayStack extends cdk.Stack {
     cfnLambda_Instructor.overrideLogicalId("instructorFunction");
 
     const lambdaAdminFunction = new lambda.Function(this, `${id}-adminFunction`, {
-      runtime: lambda.Runtime.NODEJS_20_X,
+      runtime: lambda.Runtime.NODEJS_24_X,
       code: lambda.Code.fromAsset("lambda/adminFunction"),
       handler: "adminFunction.handler",
       timeout: Duration.seconds(300),
@@ -703,7 +703,7 @@ export class ApiGatewayStack extends cdk.Stack {
     );
 
     const preSignupLambda = new lambda.Function(this, `${id}-preSignupLambda`, {
-      runtime: lambda.Runtime.NODEJS_20_X,
+      runtime: lambda.Runtime.NODEJS_24_X,
       code: lambda.Code.fromAsset("lambda/lib"),
       handler: "preSignup.handler",
       timeout: Duration.seconds(300),
@@ -722,7 +722,7 @@ export class ApiGatewayStack extends cdk.Stack {
     );
 
     const AutoSignupLambda = new lambda.Function(this, `${id}-addStudentOnSignUp`, {
-      runtime: lambda.Runtime.NODEJS_20_X,
+      runtime: lambda.Runtime.NODEJS_24_X,
       code: lambda.Code.fromAsset("lambda/lib"),
       handler: "addStudentOnSignUp.handler",
       timeout: Duration.seconds(300),
@@ -738,7 +738,7 @@ export class ApiGatewayStack extends cdk.Stack {
     });
 
     const adjustUserRoles = new lambda.Function(this, `${id}-adjustUserRoles`, {
-      runtime: lambda.Runtime.NODEJS_20_X,
+      runtime: lambda.Runtime.NODEJS_24_X,
       code: lambda.Code.fromAsset("lambda/lib"),
       handler: "adjustUserRoles.handler",
       timeout: Duration.seconds(300),
@@ -781,7 +781,7 @@ export class ApiGatewayStack extends cdk.Stack {
       this,
       `${id}-admin-authorization-api-gateway`,
       {
-        runtime: lambda.Runtime.NODEJS_20_X,
+        runtime: lambda.Runtime.NODEJS_24_X,
         code: lambda.Code.fromAsset("lambda/adminAuthorizerFunction"),
         handler: "adminAuthorizerFunction.handler",
         timeout: Duration.seconds(300),
@@ -814,7 +814,7 @@ export class ApiGatewayStack extends cdk.Stack {
       this,
       `${id}-student-authorization-api-gateway`,
       {
-        runtime: lambda.Runtime.NODEJS_20_X,
+        runtime: lambda.Runtime.NODEJS_24_X,
         code: lambda.Code.fromAsset("lambda/studentAuthorizerFunction"),
         handler: "studentAuthorizerFunction.handler",
         timeout: Duration.seconds(300),
@@ -849,7 +849,7 @@ export class ApiGatewayStack extends cdk.Stack {
       this,
       `${id}-instructor-authorization-api-gateway`,
       {
-        runtime: lambda.Runtime.NODEJS_20_X,
+        runtime: lambda.Runtime.NODEJS_24_X,
         code: lambda.Code.fromAsset("lambda/instructorAuthorizerFunction"),
         handler: "instructorAuthorizerFunction.handler",
         timeout: Duration.seconds(300),
@@ -1003,16 +1003,6 @@ export class ApiGatewayStack extends cdk.Stack {
       })
     );
 
-    // Provisioned Concurrency enabled with 1 execution to improve cold start performance
-    const textGenAlias = new lambda.Alias(this,
-      `${id}-TextGenAlias`,
-      {
-        aliasName: "live",
-        version: textGenLambdaDockerFunc.currentVersion,
-        provisionedConcurrentExecutions: 1,
-      }
-    );
-
     // Create S3 Bucket to handle documents for each course
     const dataIngestionBucket = new s3.Bucket(this, `${id}-DataIngestionBucket`, {
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
@@ -1039,7 +1029,7 @@ export class ApiGatewayStack extends cdk.Stack {
       this,
       `${id}-GeneratePreSignedURLFunc`,
       {
-        runtime: lambda.Runtime.PYTHON_3_9,
+        runtime: lambda.Runtime.PYTHON_3_12,
         code: lambda.Code.fromAsset("lambda/generatePreSignedURL"),
         handler: "generatePreSignedURL.lambda_handler",
         timeout: Duration.seconds(300),
@@ -1146,18 +1136,6 @@ export class ApiGatewayStack extends cdk.Stack {
     // Attach the custom Bedrock policy to Lambda function
     dataIngestLambdaDockerFunc.addToRolePolicy(bedrockPolicyStatement);
 
-    // Grant access to AWS Textract for OCR functionality
-    dataIngestLambdaDockerFunc.addToRolePolicy(
-      new iam.PolicyStatement({
-        effect: iam.Effect.ALLOW,
-        actions: [
-          "textract:DetectDocumentText",
-          "textract:AnalyzeDocument"
-        ],
-        resources: ["*"], // no resource-level permissions
-      })
-    );
-
     // Add the S3 event source trigger to the Lambda function
     dataIngestLambdaDockerFunc.addEventSource(
       new lambdaEventSources.S3EventSource(dataIngestionBucket, {
@@ -1192,22 +1170,12 @@ export class ApiGatewayStack extends cdk.Stack {
       })
     );
 
-    // Provisioned Concurrency enabled with 1 execution to improve cold start performance
-    const dataIngestAlias = new lambda.Alias(this,
-      `${id}-DataIngestAlias`,
-      {
-        aliasName: "live",
-        version: dataIngestLambdaDockerFunc.currentVersion,
-        provisionedConcurrentExecutions: 1,
-      }
-    );
-
     /**
      *
      * Create Lambda function that will return all file names for a specified course, concept, and module
      */
     const getFilesFunction = new lambda.Function(this, `${id}-GetFilesFunction`, {
-      runtime: lambda.Runtime.PYTHON_3_9,
+      runtime: lambda.Runtime.PYTHON_3_12,
       code: lambda.Code.fromAsset("lambda/getFilesFunction"),
       handler: "getFilesFunction.lambda_handler",
       timeout: Duration.seconds(300),
@@ -1257,7 +1225,7 @@ export class ApiGatewayStack extends cdk.Stack {
      * Create Lambda function to delete certain file
      */
     const deleteFile = new lambda.Function(this, `${id}-DeleteFileFunc`, {
-      runtime: lambda.Runtime.PYTHON_3_9,
+      runtime: lambda.Runtime.PYTHON_3_12,
       code: lambda.Code.fromAsset("lambda/deleteFile"),
       handler: "deleteFile.lambda_handler",
       timeout: Duration.seconds(300),
@@ -1306,7 +1274,7 @@ export class ApiGatewayStack extends cdk.Stack {
      * Create Lambda function to delete an entire module directory
      */
     const deleteModuleFunction = new lambda.Function(this, `${id}-DeleteModuleFunc`, {
-      runtime: lambda.Runtime.PYTHON_3_9,
+      runtime: lambda.Runtime.PYTHON_3_12,
       code: lambda.Code.fromAsset("lambda/deleteModule"),
       handler: "deleteModule.lambda_handler",
       timeout: Duration.seconds(300),
@@ -1340,7 +1308,7 @@ export class ApiGatewayStack extends cdk.Stack {
      * Create a Lambda function that deletes the last message in a conversation
      */
     const deleteLastMessage = new lambda.Function(this, `${id}-DeleteLastMessage`, {
-      runtime: lambda.Runtime.PYTHON_3_9,
+      runtime: lambda.Runtime.PYTHON_3_12,
       code: lambda.Code.fromAsset("lambda/deleteLastMessage"),
       handler: "deleteLastMessage.lambda_handler",
       timeout: Duration.seconds(300),
@@ -1404,7 +1372,7 @@ export class ApiGatewayStack extends cdk.Stack {
     //////////////////////////////
 
     const authHandler = new lambda.Function(this, `${id}-AuthHandler`, {
-      runtime: lambda.Runtime.NODEJS_20_X,
+      runtime: lambda.Runtime.NODEJS_24_X,
       code: lambda.Code.fromAsset("lambda/lib"),
       handler: "appsync.handler",
       functionName: `${id}-AuthHandler`,
@@ -1430,7 +1398,7 @@ export class ApiGatewayStack extends cdk.Stack {
       this,
       `${id}-NotificationFunction`,
       {
-        runtime: lambda.Runtime.PYTHON_3_9,
+        runtime: lambda.Runtime.PYTHON_3_12,
         code: lambda.Code.fromAsset("lambda/eventNotification"),
         handler: "eventNotification.lambda_handler",
         environment: {
@@ -1484,7 +1452,7 @@ export class ApiGatewayStack extends cdk.Stack {
      * Create a Lambda function that populates SQS with parameters to start new job
      */
     const sqsFunction = new lambda.Function(this, `${id}-sqsFunction`, {
-      runtime: lambda.Runtime.NODEJS_20_X,
+      runtime: lambda.Runtime.NODEJS_24_X,
       code: lambda.Code.fromAsset("lambda/lib"),
       handler: "sqsFunction.handler",
       timeout: Duration.seconds(300),
@@ -1618,22 +1586,12 @@ export class ApiGatewayStack extends cdk.Stack {
       })
     );
 
-    // Provisioned Concurrency enabled with 1 execution to improve cold start performance
-    const sqsTriggerAlias = new lambda.Alias(this,
-      `${id}-SqsTriggerAlias`,
-      {
-        aliasName: "live",
-        version: sqsTrigger.currentVersion,
-        provisionedConcurrentExecutions: 1,
-      }
-    );
-
     /**
      *
      * Create Lambda function that will return all the chatlog file names with their respective presigned URLs for a specified course and instructor
      */
     const getChatLogsFunction = new lambda.Function(this, `${id}-GetChatLogsFunction`, {
-      runtime: lambda.Runtime.PYTHON_3_9,
+      runtime: lambda.Runtime.PYTHON_3_12,
       code: lambda.Code.fromAsset("lambda/getChatLogsFunction"),
       handler: "getChatLogsFunction.lambda_handler",
       timeout: Duration.seconds(300),

@@ -29,7 +29,7 @@
     "aws-amplify": "^6.3.8",
     "aws-jwt-verify": "^4.0.1",
     "aws-sdk": "^2.1659.0",
-    "axios": "^1.7.3",
+    "axios": "^1.13.5",
     "crypto-js": "^4.2.0",
     "ldrs": "^1.0.2",
     "material-react-table": "^2.13.1",

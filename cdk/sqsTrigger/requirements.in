@@ -1,7 +1,7 @@
 boto3
 botocore
 sqlalchemy
-numpy<2
+numpy
 Pillow
 PyPDF2==3.0.1
 psycopg[binary,pool]

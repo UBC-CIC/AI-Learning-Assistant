@@ -6,7 +6,7 @@ langchain-aws
 langchain-core
 langchain-community
 langchain-postgres
-numpy<2
+numpy
 PyMuPDF
 psycopg[binary,pool]
 psycopg2-binary

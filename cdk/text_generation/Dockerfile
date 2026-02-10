@@ -1,13 +1,13 @@
-FROM public.ecr.aws/lambda/python:3.11
+FROM public.ecr.aws/lambda/python:3.12
 
-# System dependencies (Amazon Linux 2)
-RUN yum update -y && \
-    yum install -y \
+# System dependencies (Amazon Linux 2023)
+RUN dnf update -y && \
+    dnf install -y \
     gcc \
     gcc-c++ \
     make \
-    postgresql-devel && \
-    yum clean all
+    libpq-devel && \
+    dnf clean all
 
 # Python dependencies
 COPY requirements.txt ${LAMBDA_TASK_ROOT}

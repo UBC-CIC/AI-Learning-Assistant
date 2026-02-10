@@ -1,12 +1,12 @@
-FROM public.ecr.aws/lambda/python:3.12
+FROM public.ecr.aws/lambda/python:3.11
 
 # System dependencies (Amazon Linux 2023)
 RUN dnf update -y && \
     dnf install -y \
-        gcc \
-        gcc-c++ \
-        make \
-        postgresql-devel && \
+    gcc \
+    gcc-c++ \
+    make \
+    postgresql-devel && \
     dnf clean all
 
 # Python dependencies

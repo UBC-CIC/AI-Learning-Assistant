@@ -10,20 +10,21 @@ import { Construct } from "constructs";
 import * as yaml from "yaml";
 import { ApiGatewayStack } from "./api-gateway-stack";
 
+interface AmplifyStackProps extends cdk.StackProps {
+  githubRepo: string;
+  githubBranch?: string;
+}
+
 export class AmplifyStack extends cdk.Stack {
   constructor(
     scope: Construct,
     id: string,
     apiStack: ApiGatewayStack,
-    props?: cdk.StackProps
+    props: AmplifyStackProps
   ) {
     super(scope, id, props);
 
-    // Define the GitHub repository name as a parameter
-    const githubRepoName = new cdk.CfnParameter(this, "githubRepoName", {
-      type: "String",
-      description: "The name of the GitHub repository",
-    }).valueAsString;
+    const githubRepoName = props.githubRepo;
 
     const amplifyYaml = yaml.parse(` 
       version: 1
@@ -47,7 +48,7 @@ export class AmplifyStack extends cdk.Stack {
                 - 'node_modules/**/*'
     `);
 
-    const username = cdk.aws_ssm.StringParameter.valueForStringParameter(
+    const username = cdk.aws_ssm.StringParameter.valueFromLookup(
       this,
       "aila-owner-name"
     );
@@ -82,5 +83,11 @@ export class AmplifyStack extends cdk.Stack {
     });
 
     amplifyApp.addBranch("main");
+
+    // Add feature branch if specified and not main
+    const branch = props.githubBranch ?? "main";
+    if (branch !== "main") {
+      amplifyApp.addBranch(branch);
+    }
   }
 }

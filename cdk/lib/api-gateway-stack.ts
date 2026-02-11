@@ -922,7 +922,7 @@ export class ApiGatewayStack extends cdk.Stack {
       runtime: lambda.Runtime.NODEJS_22_X,
       code: lambda.Code.fromAsset("lambda/ecrImageWaiter"),
       handler: "index.handler",
-      timeout: cdk.Duration.minutes(35),
+      timeout: cdk.Duration.minutes(15),
       functionName: `${id}-EcrImageWaiterFunc`,
     });
 
@@ -951,6 +951,8 @@ export class ApiGatewayStack extends cdk.Stack {
       properties: {
         RepositoryName: ecrRepos["textGeneration"].repositoryName,
         ImageTag: "latest",
+        MaxRetries: "28",
+        RetryDelaySeconds: "30",
         CodeBuildProjectName: buildProjects["textGeneration"].projectName,
         TriggerBuildOnMissing: "true",
       },
@@ -961,6 +963,8 @@ export class ApiGatewayStack extends cdk.Stack {
       properties: {
         RepositoryName: ecrRepos["dataIngestion"].repositoryName,
         ImageTag: "latest",
+        MaxRetries: "28",
+        RetryDelaySeconds: "30",
         CodeBuildProjectName: buildProjects["dataIngestion"].projectName,
         TriggerBuildOnMissing: "true",
       },
@@ -971,6 +975,8 @@ export class ApiGatewayStack extends cdk.Stack {
       properties: {
         RepositoryName: ecrRepos["sqsTrigger"].repositoryName,
         ImageTag: "latest",
+        MaxRetries: "28",
+        RetryDelaySeconds: "30",
         CodeBuildProjectName: buildProjects["sqsTrigger"].projectName,
         TriggerBuildOnMissing: "true",
       },

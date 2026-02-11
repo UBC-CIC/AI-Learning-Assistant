@@ -45,7 +45,7 @@ const cicdStack = new CICDStack(app, `${StackPrefix}-CICDStack`, {
 const apiStack = new ApiGatewayStack(app, `${StackPrefix}-ApiGatewayStack`, dbStack, vpcStack, cicdStack.ecrRepositories, cicdStack.buildProjects, { env });
 apiStack.addDependency(cicdStack);
 
-const dbFlowStack = new DBFlowStack(app, `${StackPrefix}-DBFlowStack`, vpcStack, dbStack, apiStack, { env });
+const dbFlowStack = new DBFlowStack(app, `${StackPrefix}-DBFlowStack`, vpcStack, dbStack, { env });
 const amplifyStack = new AmplifyStack(app, `${StackPrefix}-AmplifyStack`, apiStack, { env });
 
 Tags.of(app).add("app", "AI-Learning-Assistant");

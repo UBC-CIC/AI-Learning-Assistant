@@ -76,7 +76,7 @@ langchain-classic==1.0.1
     #   langchain-community
 langchain-community==0.4.1
     # via -r requirements.in
-langchain-core==1.2.9
+langchain-core==1.2.11
     # via
     #   -r requirements.in
     #   langchain
@@ -216,8 +216,6 @@ typing-inspection==0.4.2
     # via
     #   pydantic
     #   pydantic-settings
-tzdata==2025.3
-    # via psycopg
 urllib3==2.6.3
     # via
     #   botocore

@@ -21,7 +21,7 @@ const dbStack = new DatabaseStack(app, `${StackPrefix}-DatabaseStack`, vpcStack,
 
 const cicdStack = new CICDStack(app, `${StackPrefix}-CICDStack`, {
   env,
-  githubRepo: "AI-Learning-Assistant",
+  githubRepo: app.node.tryGetContext("githubRepo"),
   environmentName: "dev",
   lambdaFunctions: [
     {

@@ -18,13 +18,6 @@ const env = {
 const StackPrefix = app.node.tryGetContext("StackPrefix")
 const vpcStack = new VpcStack(app, `${StackPrefix}-VpcStack`, { env });
 const dbStack = new DatabaseStack(app, `${StackPrefix}-DatabaseStack`, vpcStack, { env });
-const apiStack = new ApiGatewayStack(app, `${StackPrefix}-ApiGatewayStack`, dbStack, vpcStack,  { env });
-const dbFlowStack = new DBFlowStack(app, `${StackPrefix}-DBFlowStack`, vpcStack, dbStack, apiStack, { env });
-const amplifyStack = new AmplifyStack(app, `${StackPrefix}-AmplifyStack`, apiStack, { 
-  env,
-  githubRepo: "AI-Learning-Assistant",
-  githubBranch: "main" 
-});
 
 const cicdStack = new CICDStack(app, `${StackPrefix}-CICDStack`, {
   env,
@@ -40,8 +33,19 @@ const cicdStack = new CICDStack(app, `${StackPrefix}-CICDStack`, {
       name: "sqsTrigger", 
       functionName: `${StackPrefix}-SQSTriggerDockerFunc`,
       sourceDir: "cdk/sqsTrigger"
+    },
+    {
+      name: "dataIngestion",
+      functionName: `${StackPrefix}-DataIngestLambdaDockerFunc`,
+      sourceDir: "cdk/data_ingestion"
     }
   ]
 });
+
+const apiStack = new ApiGatewayStack(app, `${StackPrefix}-ApiGatewayStack`, dbStack, vpcStack, cicdStack.ecrRepositories, cicdStack.buildProjects, { env });
+apiStack.addDependency(cicdStack);
+
+const dbFlowStack = new DBFlowStack(app, `${StackPrefix}-DBFlowStack`, vpcStack, dbStack, apiStack, { env });
+const amplifyStack = new AmplifyStack(app, `${StackPrefix}-AmplifyStack`, apiStack, { env });
 
 Tags.of(app).add("app", "AI-Learning-Assistant");

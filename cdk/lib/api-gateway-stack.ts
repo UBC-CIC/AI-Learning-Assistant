@@ -1,4 +1,6 @@
 import * as cdk from "aws-cdk-lib";
+import * as ecr from "aws-cdk-lib/aws-ecr";
+import * as codebuild from "aws-cdk-lib/aws-codebuild";
 import * as apigateway from "aws-cdk-lib/aws-apigateway";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as lambdaEventSources from "aws-cdk-lib/aws-lambda-event-sources";
@@ -52,6 +54,8 @@ export class ApiGatewayStack extends cdk.Stack {
     id: string,
     db: DatabaseStack,
     vpcStack: VpcStack,
+    ecrRepos: { [key: string]: ecr.IRepository },
+    buildProjects: { [key: string]: codebuild.IProject },
     props?: cdk.StackProps
   ) {
     super(scope, id, props);
@@ -911,11 +915,72 @@ export class ApiGatewayStack extends cdk.Stack {
      *
      * Create Lambda with container image for text generation workflow in RAG pipeline
      */
+    // --- EcrImageWaiter Custom Resource ---
+    // Solves the chicken-and-egg problem: waits for ECR images to exist
+    // (auto-triggering CodeBuild if needed) before creating Docker Lambdas.
+    const ecrWaiterFunction = new lambda.Function(this, `${id}-EcrImageWaiterFunc`, {
+      runtime: lambda.Runtime.NODEJS_22_X,
+      code: lambda.Code.fromAsset("lambda/ecrImageWaiter"),
+      handler: "index.handler",
+      timeout: cdk.Duration.minutes(35),
+      functionName: `${id}-EcrImageWaiterFunc`,
+    });
+
+    // Grant permissions to check ECR and trigger CodeBuild
+    ecrWaiterFunction.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: [
+          "ecr:DescribeImages",
+          "ecr:BatchGetImage",
+        ],
+        resources: Object.values(ecrRepos).map((repo) => repo.repositoryArn),
+      })
+    );
+    ecrWaiterFunction.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: ["codebuild:StartBuild"],
+        resources: Object.values(buildProjects).map((p) => p.projectArn),
+      })
+    );
+
+    // Create waiters for each Docker Lambda
+    const textGenWaiter = new cdk.CustomResource(this, `${id}-TextGenEcrWaiter`, {
+      serviceToken: ecrWaiterFunction.functionArn,
+      properties: {
+        RepositoryName: ecrRepos["textGeneration"].repositoryName,
+        ImageTag: "latest",
+        CodeBuildProjectName: buildProjects["textGeneration"].projectName,
+        TriggerBuildOnMissing: "true",
+      },
+    });
+
+    const dataIngestWaiter = new cdk.CustomResource(this, `${id}-DataIngestEcrWaiter`, {
+      serviceToken: ecrWaiterFunction.functionArn,
+      properties: {
+        RepositoryName: ecrRepos["dataIngestion"].repositoryName,
+        ImageTag: "latest",
+        CodeBuildProjectName: buildProjects["dataIngestion"].projectName,
+        TriggerBuildOnMissing: "true",
+      },
+    });
+
+    const sqsTriggerWaiter = new cdk.CustomResource(this, `${id}-SqsTriggerEcrWaiter`, {
+      serviceToken: ecrWaiterFunction.functionArn,
+      properties: {
+        RepositoryName: ecrRepos["sqsTrigger"].repositoryName,
+        ImageTag: "latest",
+        CodeBuildProjectName: buildProjects["sqsTrigger"].projectName,
+        TriggerBuildOnMissing: "true",
+      },
+    });
+
     const textGenLambdaDockerFunc = new lambda.DockerImageFunction(
       this,
       `${id}-TextGenLambdaDockerFunc`,
       {
-        code: lambda.DockerImageCode.fromImageAsset("./text_generation"),
+        code: lambda.DockerImageCode.fromEcr(ecrRepos["textGeneration"]),
         memorySize: 1024,
         timeout: cdk.Duration.seconds(300),
         vpc: vpcStack.vpc, // Pass the VPC
@@ -930,6 +995,7 @@ export class ApiGatewayStack extends cdk.Stack {
         },
       }
     );
+    textGenLambdaDockerFunc.node.addDependency(textGenWaiter);
 
     // Override the Logical ID of the Lambda Function to get ARN in OpenAPI
     const cfnTextGenDockerFunc = textGenLambdaDockerFunc.node
@@ -1076,7 +1142,7 @@ export class ApiGatewayStack extends cdk.Stack {
       this,
       `${id}-DataIngestLambdaDockerFunc`,
       {
-        code: lambda.DockerImageCode.fromImageAsset("./data_ingestion"),
+        code: lambda.DockerImageCode.fromEcr(ecrRepos["dataIngestion"]),
         memorySize: 512,
         timeout: cdk.Duration.seconds(600),
         vpc: vpcStack.vpc, // Pass the VPC
@@ -1091,6 +1157,7 @@ export class ApiGatewayStack extends cdk.Stack {
         },
       }
     );
+    dataIngestLambdaDockerFunc.node.addDependency(dataIngestWaiter);
 
     // Override the Logical ID of the Lambda Function to get ARN in OpenAPI
     const cfnDataIngestLambdaDockerFunc = dataIngestLambdaDockerFunc.node
@@ -1519,7 +1586,7 @@ export class ApiGatewayStack extends cdk.Stack {
      * Create a Lambda function that gets triggered when SQS has new parameters
      */
     const sqsTrigger = new lambda.DockerImageFunction(this, `${id}-SQSTriggerDockerFunc`, {
-      code: lambda.DockerImageCode.fromImageAsset("./sqsTrigger"),
+      code: lambda.DockerImageCode.fromEcr(ecrRepos["sqsTrigger"]),
       memorySize: 512,
       timeout: cdk.Duration.seconds(300),
       vpc: vpcStack.vpc, // Pass the VPC
@@ -1532,6 +1599,7 @@ export class ApiGatewayStack extends cdk.Stack {
         REGION: this.region,
       },
     });
+    sqsTrigger.node.addDependency(sqsTriggerWaiter);
     
     sqsTrigger.addEventSource(
       new lambdaEventSources.SqsEventSource(messagesQueue, {

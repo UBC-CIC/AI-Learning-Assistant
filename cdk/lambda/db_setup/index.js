@@ -6,7 +6,6 @@ const {
 const { Client } = require("pg");
 const crypto = require("crypto");
 const path = require("path");
-const migrate = require("node-pg-migrate").default;
 
 const sm = new SecretsManagerClient();
 
@@ -25,6 +24,7 @@ async function putSecret(name, secret) {
 }
 
 async function runMigrations(db) {
+  const migrate = require("node-pg-migrate").default;
   const dbUrl = `postgresql://${encodeURIComponent(
     db.username,
   )}:${encodeURIComponent(db.password)}@${db.host}:${db.port || 5432}/${
@@ -42,6 +42,56 @@ async function runMigrations(db) {
 }
 
 async function ensureBaselineOrMigrate(db) {
+  const { Client } = require("pg");
+  const client = new Client({
+    user: db.username,
+    password: db.password,
+    host: db.host,
+    database: db.dbname,
+    port: db.port || 5432,
+  });
+  await client.connect();
+
+  try {
+    // Check if tables already exist (from old initializer.py)
+    const tableCheck = await client.query(
+      `SELECT EXISTS (
+        SELECT 1 FROM information_schema.tables
+        WHERE table_schema = 'public' AND table_name = 'Users'
+      ) AS has_tables`,
+    );
+
+    // Check if pgmigrations tracking table exists
+    const migrationCheck = await client.query(
+      `SELECT EXISTS (
+        SELECT 1 FROM information_schema.tables
+        WHERE table_schema = 'public' AND table_name = 'pgmigrations'
+      ) AS has_migrations`,
+    );
+
+    const hasTables = tableCheck.rows[0].has_tables;
+    const hasMigrations = migrationCheck.rows[0].has_migrations;
+
+    if (hasTables && !hasMigrations) {
+      // DB was set up by old initializer — baseline the migration tracker
+      console.log(
+        "Existing tables detected without migration tracking. Baselining...",
+      );
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS pgmigrations (
+          id SERIAL PRIMARY KEY,
+          name varchar(255) NOT NULL,
+          run_on timestamp NOT NULL DEFAULT now()
+        );
+        INSERT INTO pgmigrations (name) VALUES ('000_initial_schema');
+      `);
+      console.log("Baseline complete. 000_initial_schema marked as applied.");
+    }
+  } finally {
+    await client.end();
+  }
+
+  // Now run migrations — baseline record will cause 000 to be skipped
   await runMigrations(db);
 }
 

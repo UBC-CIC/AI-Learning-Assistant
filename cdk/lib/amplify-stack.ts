@@ -19,24 +19,23 @@ export class AmplifyStack extends cdk.Stack {
 
     const amplifyYaml = yaml.parse(` 
       version: 1
-      applications:
-        - appRoot: frontend
-          frontend:
-            phases:
-              preBuild:
-                commands:
-                  - pwd
-                  - npm ci
-              build:
-                commands:
-                  - npm run build
-            artifacts:
-              baseDirectory: dist
-              files:
-                - '**/*'
-            cache:
-              paths:
-                - 'node_modules/**/*'
+      frontend:
+        phases:
+          preBuild:
+            commands:
+              - cd frontend
+              - npm ci
+          build:
+            commands:
+              - npm run build
+              - ls -la dist || echo "dist not found"
+        artifacts:
+          baseDirectory: frontend/dist
+          files:
+            - '**/*'
+        cache:
+          paths:
+            - 'frontend/node_modules/**/*'
     `);
 
     // Deploy the Amplify app shell without a source code provider.

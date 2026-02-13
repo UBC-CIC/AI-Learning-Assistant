@@ -1,8 +1,6 @@
 import {
   App,
-  BasicAuth,
-  GitHubSourceCodeProvider,
-  RedirectStatus, // Import RedirectStatus
+  RedirectStatus,
 } from "@aws-cdk/aws-amplify-alpha";
 import * as cdk from "aws-cdk-lib";
 import { BuildSpec } from "aws-cdk-lib/aws-codebuild";
@@ -10,61 +8,40 @@ import { Construct } from "constructs";
 import * as yaml from "yaml";
 import { ApiGatewayStack } from "./api-gateway-stack";
 
-interface AmplifyStackProps extends cdk.StackProps {
-  githubRepo: string;
-  githubBranch?: string;
-}
-
 export class AmplifyStack extends cdk.Stack {
   constructor(
     scope: Construct,
     id: string,
     apiStack: ApiGatewayStack,
-    props: AmplifyStackProps
+    props?: cdk.StackProps
   ) {
     super(scope, id, props);
 
-    const githubRepoName = props.githubRepo;
-
     const amplifyYaml = yaml.parse(` 
       version: 1
-      applications:
-        - appRoot: frontend
-          frontend:
-            phases:
-              preBuild:
-                commands:
-                  - pwd
-                  - npm ci
-              build:
-                commands:
-                  - npm run build
-            artifacts:
-              baseDirectory: dist
-              files:
-                - '**/*'
-            cache:
-              paths:
-                - 'node_modules/**/*'
+      frontend:
+        phases:
+          preBuild:
+            commands:
+              - cd frontend
+              - npm ci
+          build:
+            commands:
+              - npm run build
+              - ls -la dist || echo "dist not found"
+        artifacts:
+          baseDirectory: frontend/dist
+          files:
+            - '**/*'
+        cache:
+          paths:
+            - 'frontend/node_modules/**/*'
     `);
 
-    const username = cdk.aws_ssm.StringParameter.valueFromLookup(
-      this,
-      "aila-owner-name"
-    );
-
+    // Deploy the Amplify app shell without a source code provider.
+    // Connect to GitHub via the Amplify Console using the GitHub App (one-time manual step).
     const amplifyApp = new App(this, `${id}-amplifyApp`, {
       appName: `${id}-amplify`,
-      sourceCodeProvider: new GitHubSourceCodeProvider({
-        owner: username,
-        repository: githubRepoName,
-        oauthToken: cdk.SecretValue.secretsManager(
-          "github-personal-access-token",
-          {
-            jsonField: "my-github-token",
-          }
-        ),
-      }),
       environmentVariables: {
         VITE_AWS_REGION: this.region,
         VITE_COGNITO_USER_POOL_ID: apiStack.getUserPoolId(),
@@ -81,13 +58,5 @@ export class AmplifyStack extends cdk.Stack {
       target: "/",
       status: RedirectStatus.NOT_FOUND_REWRITE,
     });
-
-    amplifyApp.addBranch("main");
-
-    // Add feature branch if specified and not main
-    const branch = props.githubBranch ?? "main";
-    if (branch !== "main") {
-      amplifyApp.addBranch(branch);
-    }
   }
 }

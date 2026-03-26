@@ -177,7 +177,7 @@ pyyaml==6.0.3
     #   langchain-classic
     #   langchain-community
     #   langchain-core
-requests==2.32.5
+requests==2.33.0
     # via
     #   langchain-classic
     #   langchain-community
@@ -216,8 +216,6 @@ typing-inspection==0.4.2
     # via
     #   pydantic
     #   pydantic-settings
-tzdata==2025.3
-    # via psycopg
 urllib3==2.6.3
     # via
     #   botocore

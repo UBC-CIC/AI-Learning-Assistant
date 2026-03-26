@@ -28,6 +28,6 @@
     "postgres": "^3.4.5",
     "readline-sync": "^1.4.10",
     "source-map-support": "^0.5.21",
-    "yaml": "^2.4.5"
+    "yaml": "^2.8.3"
   }
 }

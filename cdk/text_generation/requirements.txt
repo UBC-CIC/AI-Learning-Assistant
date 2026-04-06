@@ -6,7 +6,7 @@
 #
 aiohappyeyeballs==2.6.1
     # via aiohttp
-aiohttp==3.13.3
+aiohttp==3.13.4
     # via langchain-community
 aiosignal==1.4.0
     # via aiohttp
@@ -216,8 +216,6 @@ typing-inspection==0.4.2
     # via
     #   pydantic
     #   pydantic-settings
-tzdata==2025.3
-    # via psycopg
 urllib3==2.6.3
     # via
     #   botocore

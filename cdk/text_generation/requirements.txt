@@ -102,7 +102,7 @@ langgraph-prebuilt==1.0.7
     # via langgraph
 langgraph-sdk==0.3.4
     # via langgraph
-langsmith==0.7.0
+langsmith==0.7.31
     # via
     #   langchain-classic
     #   langchain-community
@@ -216,8 +216,6 @@ typing-inspection==0.4.2
     # via
     #   pydantic
     #   pydantic-settings
-tzdata==2025.3
-    # via psycopg
 urllib3==2.6.3
     # via
     #   botocore

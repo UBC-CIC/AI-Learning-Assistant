@@ -168,7 +168,7 @@ pymupdf==1.26.7
     # via -r requirements.in
 python-dateutil==2.9.0.post0
     # via botocore
-python-dotenv==1.2.1
+python-dotenv==1.2.2
     # via
     #   -r requirements.in
     #   pydantic-settings
@@ -216,8 +216,6 @@ typing-inspection==0.4.2
     # via
     #   pydantic
     #   pydantic-settings
-tzdata==2025.3
-    # via psycopg
 urllib3==2.6.3
     # via
     #   botocore
